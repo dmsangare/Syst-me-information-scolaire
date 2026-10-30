@@ -1,9 +1,8 @@
 ﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { assessmentsApi, AssessmentListFilters } from "@/api/assessments";
-import { gradesApi } from "@/api/grades";
 import { getErrorMessage } from "@/lib/axios";
-import type { CreateAssessmentInput, GradeEntry } from "@/types/grades";
+import type { CreateAssessmentInput } from "@/types/grades";
 
 const KEY = "assessments";
 
@@ -19,14 +18,6 @@ export function useAssessment(id: string | undefined) {
     queryKey: [KEY, "detail", id],
     queryFn: () => assessmentsApi.getById(id!),
     enabled: !!id,
-  });
-}
-
-export function useAssessmentGrades(assessmentId: string | undefined) {
-  return useQuery({
-    queryKey: [KEY, "grades", assessmentId],
-    queryFn: () => gradesApi.findByAssessment(assessmentId!),
-    enabled: !!assessmentId,
   });
 }
 
@@ -50,19 +41,6 @@ export function useUpdateAssessmentStatus() {
     },
     onSuccess: () => {
       toast.success("Statut mis a jour");
-      qc.invalidateQueries({ queryKey: [KEY] });
-    },
-    onError: (error) => toast.error(getErrorMessage(error)),
-  });
-}
-
-export function useSaveGrades() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ assessmentId, grades }: { assessmentId: string; grades: GradeEntry[] }) =>
-      gradesApi.bulkEntry(assessmentId, grades),
-    onSuccess: () => {
-      toast.success("Notes enregistrees");
       qc.invalidateQueries({ queryKey: [KEY] });
     },
     onError: (error) => toast.error(getErrorMessage(error)),

@@ -45,7 +45,6 @@ export function GradesGrid({
   onToggleAbsent,
   onChangeObservation,
 }: GradesGridProps) {
-  // Refs pour la navigation clavier
   const inputRefs = useRef<Record<string, HTMLInputElement>>({});
 
   const focusCell = (row: number, col: "note" | "observation") => {
@@ -61,33 +60,32 @@ export function GradesGrid({
   ) => {
     const key = e.key;
 
-    // Tab : cellule suivante
     if (key === "Tab" && !e.shiftKey) {
       e.preventDefault();
       if (col === "note") focusCell(rowIndex, "observation");
       else if (rowIndex < students.length - 1) focusCell(rowIndex + 1, "note");
     }
 
-    // Shift+Tab : cellule precedente
     if (key === "Tab" && e.shiftKey) {
       e.preventDefault();
       if (col === "observation") focusCell(rowIndex, "note");
       else if (rowIndex > 0) focusCell(rowIndex - 1, "observation");
     }
 
-    // Entree ou Fleche bas : descendre
     if (key === "Enter" || key === "ArrowDown") {
       e.preventDefault();
-      if (rowIndex < students.length - 1) focusCell(rowIndex + 1, col);
+      if (col === "note") {
+        if (rowIndex < students.length - 1) focusCell(rowIndex + 1, "note");
+      } else {
+        if (rowIndex < students.length - 1) focusCell(rowIndex + 1, col);
+      }
     }
 
-    // Fleche haut : monter
     if (key === "ArrowUp") {
       e.preventDefault();
       if (rowIndex > 0) focusCell(rowIndex - 1, col);
     }
 
-    // Fleche gauche/droite (uniquement si curseur au bord)
     if (key === "ArrowLeft") {
       const input = e.currentTarget;
       if (input.selectionStart === 0) {
@@ -112,7 +110,7 @@ export function GradesGrid({
             <th className="text-left p-2 font-medium">Nom & Prénom</th>
             <th className="text-center p-2 font-medium w-24">Note /{maxScore}</th>
             <th className="text-center p-2 font-medium w-20">Rang</th>
-            <th className="text-center p-2 font-medium w-20">Absent</th>
+            <th className="text-center p-2 font-medium w-24">Absent</th>
             <th className="text-left p-2 font-medium w-48">Observation</th>
           </tr>
         </thead>
@@ -120,6 +118,12 @@ export function GradesGrid({
           {students.map((s, idx) => {
             const isAbsent = absences[s.studentId] || false;
             const isLocked = s.grade?.locked || disabled;
+            
+            // ✅ Détection visuelle : note vide, zéro, ou renseignée
+            const valueStr = values[s.studentId] || "";
+            const hasValue = valueStr !== "";
+            const isZero = valueStr === "0";
+            const isMissing = !hasValue && !isAbsent;
 
             return (
               <tr
@@ -127,8 +131,10 @@ export function GradesGrid({
                 className={cn(
                   "border-b last:border-0 transition-colors",
                   isAbsent
-                    ? "bg-orange-50 dark:bg-orange-950/20"
-                    : "hover:bg-muted/30",
+                    ? "bg-orange-50/60 dark:bg-orange-950/20 opacity-75"
+                    : isMissing
+                      ? "bg-red-50/30 dark:bg-red-950/10" // Légèrement rouge si vide
+                      : "hover:bg-muted/30",
                 )}
               >
                 <td className="p-2 text-center text-muted-foreground font-mono text-xs">
@@ -155,9 +161,9 @@ export function GradesGrid({
                     </span>
                   </div>
                 </td>
-                <td className="p-2">
+                <td className="p-2 relative">
                   <GradeInput
-                    value={values[s.studentId] || ""}
+                    value={valueStr}
                     maxScore={maxScore}
                     disabled={isLocked || isAbsent}
                     onChange={(v) => onChangeValue(s.studentId, v)}
@@ -166,6 +172,17 @@ export function GradesGrid({
                       if (el) inputRefs.current[`${idx}-note`] = el;
                     }}
                   />
+                  {/* ✅ Indicateur visuel de note manquante */}
+                  {isMissing && (
+                    <span className="absolute -bottom-1 left-0 right-0 text-[9px] text-center text-red-500 font-medium">
+                      À saisir
+                    </span>
+                  )}
+                  {isZero && (
+                    <span className="absolute -bottom-1 left-0 right-0 text-[9px] text-center text-muted-foreground">
+                      Zéro
+                    </span>
+                  )}
                 </td>
                 <td className="p-2 text-center">
                   {ranks[s.studentId] ? (
@@ -211,7 +228,6 @@ export function GradesGrid({
     </div>
   );
 }
-
 
 function RankBadge({ rank }: { rank: number }) {
   const medals = ["🥇", "🥈", "🥉"];

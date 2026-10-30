@@ -28,6 +28,18 @@ export class AnnualDecisionsController {
     return this.service.list(q, user);
   }
 
+  // ✅ NOUVELLE ROUTE : Suggestion automatique
+  @Get("suggest/:studentId/:academicYearId")
+  @RequirePermissions("report_card:view")
+  @ApiOperation({ summary: "Suggérer la décision annuelle basée sur la moyenne annuelle" })
+  suggest(
+    @Param("studentId") studentId: string,
+    @Param("academicYearId") academicYearId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.service.suggestDecision(studentId, academicYearId, user);
+  }
+
   @Post("propose")
   @RequirePermissions("report_card:update")
   @ApiOperation({ summary: "Proposer une décision annuelle" })

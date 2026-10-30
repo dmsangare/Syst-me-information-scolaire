@@ -21,6 +21,7 @@ import {
   Layers,
   AlertTriangle,
   TrendingDown,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,6 +66,7 @@ const SECTIONS: NavSection[] = [
       { label: "Notes", to: "/assessments", icon: FileText, permission: "grade:view" },
       { label: "Bulletins", to: "/report-cards", icon: Award, permission: "report_card:view" },
       { label: "Résultats annuels", to: "/annual-results", icon: TrendingUp, permission: "report_card:view" },
+      { label: "Décisions annuelles", to: "/annual-decisions", icon: CheckCircle2, permission: "report_card:view" },
     ],
   },
   {

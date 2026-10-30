@@ -32,6 +32,7 @@ import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
 import { ReportCardsListPage, ReportCardDetailPage } from "@/pages/report-cards";
 import { CalculationPage } from "@/pages/report-cards/CalculationPage";
 import { AnnualResultsPage } from "@/pages/report-cards/AnnualResultsPage";
+import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // ✅ NOUVEL IMPORT
 import {
   InvoicesListPage,
   InvoiceDetailPage,
@@ -68,12 +69,10 @@ export function AppRoutes() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        {/* Page de changement de mot de passe force (sans sidebar ni header) */}
         <Route
           path="/change-password-required"
           element={<ChangePasswordRequiredPage />}
         />
-        {/* Premiere installation : creation de l'ecole */}
         <Route path="/init-school" element={<InitSchoolPage />} />
       </Route>
 
@@ -100,7 +99,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/students/import"
             element={
@@ -276,6 +274,16 @@ export function AppRoutes() {
             }
           />
 
+          {/* ✅ Décisions annuelles */}
+          <Route
+            path="/annual-decisions"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <AnnualDecisionsPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Finances */}
           <Route
             path="/finance/dashboard"
@@ -285,7 +293,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/finance/point-de-caisse"
             element={
@@ -294,7 +301,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/finance/facturation"
             element={
@@ -303,7 +309,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/finance/encaissement"
             element={
@@ -312,7 +317,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/finance/recouvrement"
             element={
@@ -321,7 +325,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/finance/configuration"
             element={
@@ -330,8 +333,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
-
           <Route
             path="/fee-types"
             element={
@@ -396,7 +397,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/reminders"
             element={
@@ -462,131 +462,118 @@ export function AppRoutes() {
             }
           />
         </Route>
-          <Route
-            path="/report-cards/calculation"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <CalculationPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/id-cards"
-            element={
-              <ProtectedRoute requiredPermission="student:view">
-                <IdCardsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/academic-years"
-            element={
-              <ProtectedRoute requiredPermission="academic_year:view">
-                <AcademicYearsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/year-rollover"
-            element={
-              <ProtectedRoute requiredPermission="academic_year:create">
-                <YearRolloverPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/state-exams"
-            element={
-              <ProtectedRoute requiredPermission="academic_year:view">
-                <StateExamsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-reports"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <AdminReportsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-reports/dashboard"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <AdminReportsDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-reports/deadlines"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <AdminReportsDeadlinesPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-reports/new"
-            element={
-              <ProtectedRoute requiredPermission="report_card:create">
-                <AdminReportNewPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-reports/:id"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <AdminReportDetailPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin-reports/archives"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <AdminReportsArchivesPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/state-exam-dossiers"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <StateExamSessionsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/state-exam-dossiers/sessions/:id"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <StateExamSessionDetailPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/state-exam-dossiers/dossiers/:id"
-            element={
-              <ProtectedRoute requiredPermission="report_card:view">
-                <StateExamDossierDetailPage />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/report-cards/calculation"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <CalculationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/id-cards"
+          element={
+            <ProtectedRoute requiredPermission="student:view">
+              <IdCardsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/academic-years"
+          element={
+            <ProtectedRoute requiredPermission="academic_year:view">
+              <AcademicYearsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/year-rollover"
+          element={
+            <ProtectedRoute requiredPermission="academic_year:create">
+              <YearRolloverPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/state-exams"
+          element={
+            <ProtectedRoute requiredPermission="academic_year:view">
+              <StateExamsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-reports"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <AdminReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-reports/dashboard"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <AdminReportsDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-reports/deadlines"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <AdminReportsDeadlinesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-reports/new"
+          element={
+            <ProtectedRoute requiredPermission="report_card:create">
+              <AdminReportNewPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-reports/:id"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <AdminReportDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-reports/archives"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <AdminReportsArchivesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/state-exam-dossiers"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <StateExamSessionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/state-exam-dossiers/sessions/:id"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <StateExamSessionDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/state-exam-dossiers/dossiers/:id"
+          element={
+            <ProtectedRoute requiredPermission="report_card:view">
+              <StateExamDossierDetailPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="/v/:shortCode" element={<PublicVerificationPage />} />

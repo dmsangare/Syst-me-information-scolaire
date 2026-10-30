@@ -9,14 +9,14 @@ import { api } from "@/lib/axios";
 import { isTermAllowedForCycle } from "@/lib/grading";
 
 const ASSESSMENT_TYPES = [
-  { value: "INTERROGATION", label: "Interrogation", emoji: "âšª" },
-  { value: "DEVOIR", label: "Devoir", emoji: "ðŸ”µ" },
-  { value: "CONTROLE", label: "Controle", emoji: "ðŸŸ£" },
-  { value: "COMPOSITION", label: "Composition", emoji: "ðŸŸ " },
-  { value: "EXAMEN", label: "Examen", emoji: "ðŸ”´" },
-  { value: "TP", label: "Travaux Pratiques", emoji: "ðŸŸ¢" },
-  { value: "ORAL", label: "Oral", emoji: "ðŸŸ¡" },
-  { value: "PROJET", label: "Projet", emoji: "ðŸ”·" },
+  { value: "INTERROGATION", label: "Interrogation", emoji: "❔" },
+  { value: "DEVOIR", label: "Devoir", emoji: "🔵" },
+  { value: "CONTROLE", label: "Controle", emoji: "🟣" },
+  { value: "COMPOSITION", label: "Composition", emoji: "🟠" },
+  { value: "EXAMEN", label: "Examen", emoji: "🔴" },
+  { value: "TP", label: "Travaux Pratiques", emoji: "🟢" },
+  { value: "ORAL", label: "Oral", emoji: "🟡" },
+  { value: "PROJET", label: "Projet", emoji: "🔷" },
 ];
 
 interface Props {
@@ -97,7 +97,6 @@ export function CreateAssessmentModal({ onClose }: Props) {
     }
   }, [selectedLevel, isFirstCycle]);
 
-  // Periodes proposees selon le cycle : mois (1er cycle) ou trimestre (2eme cycle, lycee)
   useEffect(() => {
     if (!terms || !selectedLevel) return;
     const allowed = terms.filter((t: any) => isTermAllowedForCycle(t.type, selectedLevel.cycle));
@@ -127,12 +126,18 @@ export function CreateAssessmentModal({ onClose }: Props) {
     e.preventDefault();
     if (!formValid || !selectedClass) return;
 
+    // ✅ CORRECTION ICI : On bloque la création si la classe n'a pas de prof
+    if (!selectedClass.mainTeacherId) {
+      alert("Cette classe n'a pas de professeur principal défini. Veuillez d'abord l'assigner dans la gestion des classes.");
+      return;
+    }
+
     const input: any = {
       academicYearId,
       classId,
       subjectId,
       termId,
-      teacherId: selectedClass.mainTeacherId || "00000000-0000-0000-0000-000000000000",
+      teacherId: selectedClass.mainTeacherId, // ✅ Utilisation du vrai ID
       type,
       title: title.trim(),
       date,
@@ -208,7 +213,7 @@ export function CreateAssessmentModal({ onClose }: Props) {
                   <option value="">-- Selectionner --</option>
                   {sortedClasses.map((c) => {
                     const level = levels?.find((l) => l.id === c.levelId);
-                    const emoji = level?.cycle === "PREMIER_CYCLE" ? "ðŸ“—" : "ðŸ“˜";
+                    const emoji = level?.cycle === "PREMIER_CYCLE" ? "📗" : "📘";
                     return (
                       <option key={c.id} value={c.id}>
                         {emoji} {c.name}
@@ -241,7 +246,7 @@ export function CreateAssessmentModal({ onClose }: Props) {
             <div>
               <Label className="flex items-center gap-2">
                 <BookOpen className="h-3.5 w-3.5" />
-                Matiere
+                Matière
               </Label>
               <select
                 value={subjectId}

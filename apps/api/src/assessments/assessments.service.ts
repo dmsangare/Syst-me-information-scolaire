@@ -6,11 +6,29 @@ import { AssessmentCreateDto, AssessmentUpdateDto } from "./dto";
 export class AssessmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ============================================================
+  // HELPERS
+  // ============================================================
+
+  /**
+   * Construit un where Prisma avec isolation multi-tenant.
+   * Si schoolId est null/undefined (SUPER_ADMIN), pas de filtre.
+   */
+  private buildWhere(id: string, schoolId?: string | null): any {
+    const where: any = { id };
+    if (schoolId) where.schoolId = schoolId;
+    return where;
+  }
+
+  // ============================================================
+  // LECTURE
+  // ============================================================
+
   async findAll(
     schoolId: string | null,
     page = 1,
     limit = 20,
-    filters: { classId?: string; subjectId?: string; termId?: string; teacherId?: string; status?: string } = {},
+    filters: { classId?: string; subjectId?: string; termId?: string; teacherId?: string; status?: string; type?: string } = {}, // ✅ type ajouté
     user?: { id: string; roles: string[] },
   ) {
     const where: any = {};
@@ -20,6 +38,7 @@ export class AssessmentsService {
     if (filters.termId) where.termId = filters.termId;
     if (filters.teacherId) where.teacherId = filters.teacherId;
     if (filters.status) where.status = filters.status;
+    if (filters.type) where.type = filters.type; // ✅ Filtre type appliqué
 
     // FILTRE TEACHER : forcer le teacherId si TEACHER connecte
     const isTeacherOnly =
@@ -57,9 +76,14 @@ export class AssessmentsService {
     return { data, meta: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
-  async findOne(id: string) {
-    const assessment = await this.prisma.assessment.findUnique({
-      where: { id },
+  /**
+   * Point d'entree UNIQUE pour toute lecture/modification d'une evaluation.
+   * Applique l'isolation multi-tenant : si schoolId fourni, l'evaluation doit
+   * appartenir a cette ecole. Sinon (SUPER_ADMIN), pas de filtre.
+   */
+  async findOne(id: string, schoolId?: string | null) {
+    const assessment = await this.prisma.assessment.findFirst({
+      where: this.buildWhere(id, schoolId),
       include: {
         class: true,
         subject: true,
@@ -82,6 +106,10 @@ export class AssessmentsService {
     return assessment;
   }
 
+  // ============================================================
+  // ECRITURE
+  // ============================================================
+
   async create(dto: AssessmentCreateDto) {
     return this.prisma.assessment.create({
       data: {
@@ -96,15 +124,19 @@ export class AssessmentsService {
     });
   }
 
-  async update(id: string, dto: AssessmentUpdateDto) {
-    const existing = await this.prisma.assessment.findUnique({
-      where: { id },
+  async update(id: string, dto: AssessmentUpdateDto, schoolId?: string | null) {
+    const existing = await this.prisma.assessment.findFirst({
+      where: this.buildWhere(id, schoolId),
       select: { status: true },
     });
     if (!existing) throw new NotFoundException("Evaluation introuvable");
 
-    // Si l'evaluation est validee ou verrouillee, on ne peut plus modifier les champs critiques
-    if (existing.status === "VALIDATED" || existing.status === "LOCKED") {
+    if (existing.status === "LOCKED") {
+      throw new BadRequestException("Impossible de modifier une evaluation verrouillee");
+    }
+
+    // Si l'evaluation est validee, on ne peut plus modifier les champs critiques
+    if (existing.status === "VALIDATED") {
       const criticalFields = ["classId", "termId", "subjectId", "schoolId", "maxScore", "academicYearId"];
       const hasCritical = criticalFields.some((f) => (dto as any)[f] !== undefined);
       if (hasCritical) {
@@ -114,18 +146,14 @@ export class AssessmentsService {
       }
     }
 
-    const assessment = await this.findOne(id);
-    if (assessment.status === "LOCKED") {
-      throw new BadRequestException("Impossible de modifier une evaluation verrouillee");
-    }
     const data: any = { ...dto };
     if (dto.date) data.date = new Date(dto.date);
     return this.prisma.assessment.update({ where: { id }, data });
   }
 
-  async remove(id: string) {
-    const existing = await this.prisma.assessment.findUnique({
-      where: { id },
+  async remove(id: string, schoolId?: string | null) {
+    const existing = await this.prisma.assessment.findFirst({
+      where: this.buildWhere(id, schoolId),
       select: { status: true },
     });
     if (!existing) throw new NotFoundException("Evaluation introuvable");
@@ -134,11 +162,6 @@ export class AssessmentsService {
         "Impossible de supprimer une evaluation validee ou verrouillee. Reouvrez-la d'abord.",
       );
     }
-
-    const assessment = await this.findOne(id);
-    if (assessment.status === "LOCKED" || assessment.status === "VALIDATED") {
-      throw new BadRequestException("Impossible de supprimer une evaluation validee ou verrouillee");
-    }
     return this.prisma.assessment.delete({ where: { id } });
   }
 
@@ -146,8 +169,8 @@ export class AssessmentsService {
   // WORKFLOW : DRAFT -> OPEN -> SUBMITTED -> VALIDATED -> LOCKED
   // ============================================================
 
-  async open(id: string) {
-    const assessment = await this.findOne(id);
+  async open(id: string, schoolId?: string | null) {
+    const assessment = await this.findOne(id, schoolId);
     if (assessment.status !== "DRAFT") {
       throw new BadRequestException(`Impossible d ouvrir une evaluation avec statut ${assessment.status}`);
     }
@@ -157,13 +180,13 @@ export class AssessmentsService {
     });
   }
 
-  async submit(id: string) {
-    const assessment = await this.findOne(id);
+  async submit(id: string, schoolId?: string | null) {
+    const assessment = await this.findOne(id, schoolId);
     if (assessment.status !== "OPEN") {
       throw new BadRequestException("Seule une evaluation ouverte peut etre soumise");
     }
 
-    // Verifier que toutes les notes sont saisies
+    // Verifier que toutes les notes sont saisies (value !== null)
     const students = await this.prisma.enrollment.findMany({
       where: {
         classId: assessment.classId,
@@ -173,8 +196,9 @@ export class AssessmentsService {
       select: { studentId: true },
     });
 
+    // Compter uniquement les notes reellement saisies (value non null)
     const gradesCount = await this.prisma.grade.count({
-      where: { assessmentId: id },
+      where: { assessmentId: id, value: { not: null } },
     });
 
     if (gradesCount < students.length) {
@@ -189,8 +213,8 @@ export class AssessmentsService {
     });
   }
 
-  async validate(id: string) {
-    const assessment = await this.findOne(id);
+  async validate(id: string, schoolId?: string | null) {
+    const assessment = await this.findOne(id, schoolId);
     if (assessment.status !== "SUBMITTED") {
       throw new BadRequestException("Seule une evaluation soumise peut etre validee");
     }
@@ -200,8 +224,8 @@ export class AssessmentsService {
     });
   }
 
-  async lock(id: string) {
-    const assessment = await this.findOne(id);
+  async lock(id: string, schoolId?: string | null) {
+    const assessment = await this.findOne(id, schoolId);
     if (assessment.status !== "VALIDATED") {
       throw new BadRequestException("Seule une evaluation validee peut etre verrouillee");
     }
@@ -218,9 +242,9 @@ export class AssessmentsService {
     });
   }
 
-  async reopen(id: string) {
-    const existing = await this.prisma.assessment.findUnique({
-      where: { id },
+  async reopen(id: string, schoolId?: string | null) {
+    const existing = await this.prisma.assessment.findFirst({
+      where: this.buildWhere(id, schoolId),
       select: { status: true },
     });
     if (!existing) throw new NotFoundException("Evaluation introuvable");
@@ -228,12 +252,7 @@ export class AssessmentsService {
       throw new BadRequestException("Cette evaluation n'est pas validée, elle n'a pas besoin d'être réouverte.");
     }
 
-    const assessment = await this.findOne(id);
-    if (assessment.status === "OPEN" || assessment.status === "DRAFT") {
-      return assessment; // deja modifiable
-    }
-
-    // Reinitialiser toutes les notes : debloquer
+    // Debloquer toutes les notes
     await this.prisma.grade.updateMany({
       where: { assessmentId: id },
       data: { locked: false },
@@ -245,18 +264,19 @@ export class AssessmentsService {
     });
   }
 
+  // ============================================================
+  // EXPORTS
+  // ============================================================
+
   /**
    * Prepare les donnees pour l'export (PDF/Excel/CSV).
+   * Applique l'isolation multi-tenant (schoolId).
    */
-  async getExportData(assessmentId: string) {
-    const assessment = await this.prisma.assessment.findUnique({
-      where: { id: assessmentId },
+  async getExportData(assessmentId: string, schoolId?: string | null) {
+    const assessment = await this.prisma.assessment.findFirst({
+      where: this.buildWhere(assessmentId, schoolId),
       include: {
-        class: {
-          include: {
-            level: true,
-          },
-        },
+        class: { include: { level: true } },
         subject: true,
         term: true,
         teacher: true,
@@ -264,7 +284,6 @@ export class AssessmentsService {
     });
 
     if (!assessment) {
-      const { NotFoundException } = await import("@nestjs/common");
       throw new NotFoundException("Evaluation introuvable");
     }
 
@@ -297,9 +316,7 @@ export class AssessmentsService {
       where: { assessmentId },
     });
 
-    const gradesMap = new Map(
-      grades.map((g) => [g.studentId, g]),
-    );
+    const gradesMap = new Map(grades.map((g) => [g.studentId, g]));
 
     // Construire les lignes
     const rows = enrollments.map((e, idx) => {
@@ -370,14 +387,7 @@ export class AssessmentsService {
         : null,
       academicYear: academicYear?.label || "",
       grades: rows,
-      stats: {
-        count,
-        total: rows.length,
-        average,
-        min,
-        max,
-      },
+      stats: { count, total: rows.length, average, min, max },
     };
   }
-
 }

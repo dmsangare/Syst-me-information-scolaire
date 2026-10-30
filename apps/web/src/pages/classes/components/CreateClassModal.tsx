@@ -30,7 +30,6 @@ export function CreateClassModal({
   defaultCycle = "PREMIER_CYCLE",
   onClose,
 }: CreateClassModalProps) {
-  // --- State du formulaire ---
   const [cycle, setCycle] = useState<LevelCycle>(defaultCycle);
   const [academicYearId, setAcademicYearId] = useState<string>("");
   const [levelId, setLevelId] = useState<string>("");
@@ -41,14 +40,12 @@ export function CreateClassModal({
   const [capacity, setCapacity] = useState<number>(50);
   const [mainTeacherId, setMainTeacherId] = useState<string>("");
 
-  // --- Data hooks ---
   const { data: levels, isLoading: levelsLoading } = useLevels(cycle);
   const { data: rooms, isLoading: roomsLoading } = useRooms();
   const { data: teachers, isLoading: teachersLoading } = useTeachers();
   const { data: academicYears, isLoading: yearsLoading } = useAcademicYears();
   const createMutation = useCreateClass();
 
-  // --- Année courante par défaut ---
   useEffect(() => {
     if (academicYears && academicYears.length > 0 && !academicYearId) {
       const current = academicYears.find((y) => y.isCurrent) || academicYears[0];
@@ -56,12 +53,10 @@ export function CreateClassModal({
     }
   }, [academicYears, academicYearId]);
 
-  // --- Reset niveau si changement de cycle ---
   useEffect(() => {
     setLevelId("");
   }, [cycle]);
 
-  // --- Auto-génération : nom -> code ---
   useEffect(() => {
     if (codeManuallyEdited) return;
     if (!name.trim()) {
@@ -77,7 +72,6 @@ export function CreateClassModal({
     }
   }, [name, codeManuallyEdited]);
 
-  // --- Auto-génération : code -> nom (si nom vide) ---
   useEffect(() => {
     if (name.trim()) return;
     if (!code.trim()) return;
@@ -90,10 +84,10 @@ export function CreateClassModal({
     }
   }, [code, name]);
 
-  // --- Validation ---
+  // ✅ CORRECTION : Le prof principal est obligatoire au 1er cycle
   const isFirstCycle = cycle === "PREMIER_CYCLE";
-  const teacherRequired = false;
-  const teacherMissing = false;
+  const teacherRequired = isFirstCycle;
+  const teacherMissing = teacherRequired && !mainTeacherId;
 
   const formValid =
     academicYearId &&
@@ -103,7 +97,6 @@ export function CreateClassModal({
     capacity > 0 &&
     !teacherMissing;
 
-  // --- Submit ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formValid) return;
@@ -181,7 +174,6 @@ export function CreateClassModal({
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
-          {/* HEADER */}
           <div className="flex items-center justify-between p-6 border-b">
             <div>
               <h2 className="text-lg font-semibold">Nouvelle classe</h2>
@@ -200,9 +192,7 @@ export function CreateClassModal({
             </Button>
           </div>
 
-          {/* CORPS */}
           <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-            {/* ANNEE SCOLAIRE */}
             <div>
               <Label htmlFor="academicYear" className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5" />
@@ -228,7 +218,6 @@ export function CreateClassModal({
               )}
             </div>
 
-            {/* CYCLE */}
             <div>
               <Label className="flex items-center gap-2 mb-2">
                 <BookOpen className="h-3.5 w-3.5" />
@@ -272,7 +261,6 @@ export function CreateClassModal({
               </div>
             </div>
 
-            {/* NIVEAU */}
             <div>
               <Label htmlFor="level">Niveau</Label>
               {levelsLoading ? (
@@ -295,7 +283,6 @@ export function CreateClassModal({
               )}
             </div>
 
-            {/* NOM + CODE (grille) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
                 <Label htmlFor="name">Nom de la classe</Label>
@@ -337,7 +324,6 @@ export function CreateClassModal({
               </div>
             </div>
 
-            {/* SALLE + CAPACITE */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="room" className="flex items-center gap-2">
@@ -380,7 +366,6 @@ export function CreateClassModal({
               </div>
             </div>
 
-            {/* TITULAIRE */}
             <div>
               <Label
                 htmlFor="teacher"
@@ -446,7 +431,6 @@ export function CreateClassModal({
             </div>
           </div>
 
-          {/* FOOTER */}
           <div className="flex justify-end gap-2 px-6 py-4 border-t bg-muted/30">
             <Button
               type="button"

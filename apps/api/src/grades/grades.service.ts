@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+﻿import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReportCardsService } from "../report-cards/report-cards.service";
 import { GradesBulkDto, GradeUpdateDto } from "./dto";
@@ -84,7 +84,7 @@ export class GradesService {
     };
   }
 
-  async bulkEntry(dto: GradesBulkDto, user: { id: string; roles: string[] }) {
+  async bulkEntry(dto: GradesBulkDto, user: { id: string; roles: string[]; schoolId?: string | null }) {
     await this.assertCanGrade(dto.assessmentId, user);
     const enteredBy = user.id;
     const assessment = await this.prisma.assessment.findUnique({
@@ -206,7 +206,7 @@ export class GradesService {
     return { updated: results.length, grades: results, audited: auditsToCreate.length };
   }
 
-  async update(id: string, dto: GradeUpdateDto, user: { id: string; roles: string[] }) {
+  async update(id: string, dto: GradeUpdateDto, user: { id: string; roles: string[]; schoolId?: string | null }) {
     // Verifier le droit sur l'evaluation de cette note
     const gradeRef = await this.prisma.grade.findUnique({
       where: { id },
@@ -344,7 +344,7 @@ export class GradesService {
     };
   }
 
-  async remove(id: string, user: { id: string; roles: string[] }) {
+  async remove(id: string, user: { id: string; roles: string[]; schoolId?: string | null }) {
     const gradeRef = await this.prisma.grade.findUnique({
       where: { id },
       select: { assessmentId: true },
@@ -359,21 +359,29 @@ export class GradesService {
 
   /**
    * Verifie que l'utilisateur a le droit de noter cette evaluation.
-   * - SUPER_ADMIN, DIRECTOR, SECRETARY : toujours autorises
+   * - SUPER_ADMIN, DIRECTOR, SECRETARY : toujours autorises (mais dans leur ecole)
    * - TEACHER : doit avoir une assignation (TeacherAssignment) sur la classe/matiere
    * - Autres : refuses
    */
-  private async assertCanGrade(assessmentId: string, user: { id: string; roles: string[] }) {
+  private async assertCanGrade(
+    assessmentId: string,
+    user: { id: string; roles: string[]; schoolId?: string | null },
+  ) {
     // Verifier que l'evaluation n'est pas deja validee ou verrouillee
     const assessmentStatus = await this.prisma.assessment.findUnique({
       where: { id: assessmentId },
-      select: { status: true },
+      select: { status: true, schoolId: true },
     });
     if (!assessmentStatus) throw new NotFoundException("Evaluation introuvable");
     if (assessmentStatus.status === "VALIDATED" || assessmentStatus.status === "LOCKED") {
       throw new BadRequestException(
         "Cette evaluation est validee/verrouillee. Les notes ne peuvent plus etre modifiees.",
       );
+    }
+
+    // Isolation multi-tenant : refuser si l'evaluation appartient a une autre ecole
+    if (user.schoolId && assessmentStatus.schoolId !== user.schoolId) {
+      throw new ForbiddenException("Acces interdit : evaluation d'un autre etablissement");
     }
 
     // Les roles privilegies passent toujours

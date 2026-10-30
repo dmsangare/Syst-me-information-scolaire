@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
-
+import { ThrottlerModule } from "@nestjs/throttler";
+import { UserThrottlerGuard } from "./common/guards"; // ou depuis './common/guards/user-throttler.guard'
 import configuration from "./config/configuration";
 import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./auth/auth.module";
@@ -73,11 +73,15 @@ import { FilesModule } from "./files/files.module";
       envFilePath: [".env", "../../.env"],
       cache: true,
     }),
-    ThrottlerModule.forRoot([
-      // Throttler par defaut : 100 req / min par IP (large, usage normal)
-      { name: "default", ttl: 60 * 60_000, limit: 5000 },
-      // Throttler "auth" : 5 tentatives / 15 min (anti brute force login)
+        ThrottlerModule.forRoot([
+      // Throttler global : 50 000 requêtes / heure (quasi illimité pour un utilisateur normal)
+      // L'objectif est de bloquer les attaques DDoS, pas de gêner le travail des comptables.
+      { name: "default", ttl: 60 * 60_000, limit: 50000 },
+      
+      // Throttler "auth" : STRICT. 5 tentatives / 15 min (anti brute force login).
+      // C'est la seule vraie porte d'entrée sensible.
       { name: "auth", ttl: 15 * 60_000, limit: 5 },
+      
       // Throttler "verify" : 30 verifications / min (anti enumeration QR)
       { name: "verify", ttl: 60_000, limit: 30 },
     ]),
@@ -130,12 +134,10 @@ import { FilesModule } from "./files/files.module";
     ExportModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: MustChangePasswordGuard },
-    { provide: APP_GUARD, useClass: PermissionsGuard },
-    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
-  ],
+  { provide: APP_GUARD, useClass: UserThrottlerGuard }, // ✅ Remplacé
+  { provide: APP_GUARD, useClass: JwtAuthGuard },
+  { provide: APP_GUARD, useClass: MustChangePasswordGuard },
+  { provide: APP_GUARD, useClass: PermissionsGuard },
+],
 })
 export class AppModule {}

@@ -7,10 +7,12 @@ import { GradesService } from "./grades.service";
 import { GradesBulkSchema, GradeUpdateSchema } from "./dto";
 import { ZodValidationPipe } from "../common/pipes";
 import { RequirePermissions, CurrentUser } from "../common/decorators";
+import { SchoolScopeGuard } from "../common/guards";
 
 @ApiTags("Grades")
 @ApiBearerAuth("access-token")
 @Controller("grades")
+@UseGuards(SchoolScopeGuard)
 export class GradesController {
   constructor(private readonly service: GradesService) {}
 

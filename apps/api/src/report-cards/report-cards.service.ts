@@ -1080,5 +1080,98 @@ export class ReportCardsService {
       });
     }
   }
+  /**
+   * Calcule la moyenne annuelle officielle d'un élève et suggère la décision.
+   * Réutilise la logique de getAnnualExportData (aucune duplication).
+   */
+  async computeAnnualAverage(studentId: string, academicYearId: string) {
+    // 1. Récupérer l'élève et sa classe
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        academicYearId,
+        status: "VALIDATED",
+      },
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true, matricule: true, schoolId: true } },
+        class: { include: { level: true } },
+      },
+    });
 
+    if (!enrollment) {
+      throw new NotFoundException("Élève non inscrit pour cette année");
+    }
+
+    const cycle = enrollment.class.level?.cycle === "PREMIER_CYCLE"
+      ? "PREMIER_CYCLE"
+      : "DEUXIEME_CYCLE";
+    const scale = cycle === "PREMIER_CYCLE" ? 10 : 20;
+
+    // 2. Récupérer les périodes (MOIS pour 1er cycle, TRIMESTRE pour 2ème cycle)
+    const termType = cycle === "PREMIER_CYCLE" ? "MOIS" : "TRIMESTRE";
+    const terms = await this.prisma.term.findMany({
+      where: { academicYearId, type: termType },
+      orderBy: { startDate: "asc" },
+    });
+
+    // 3. Récupérer les bulletins de l'élève pour ces périodes
+    const kind = cycle === "PREMIER_CYCLE" ? "COMPOSITION" : "TRIMESTRIEL";
+    const reportCards = await this.prisma.reportCard.findMany({
+      where: {
+        studentId,
+        academicYearId,
+        kind,
+        termId: { in: terms.map((t) => t.id) },
+      },
+    });
+
+    // 4. Calculer la moyenne annuelle
+    const validAverages = reportCards
+      .map((r) => (r.average !== null ? Number(r.average) : null))
+      .filter((a): a is number => a !== null);
+
+    const annualAverage = validAverages.length > 0
+      ? Math.round((validAverages.reduce((s, v) => s + v, 0) / validAverages.length) * 100) / 100
+      : null;
+
+    // 5. Récupérer le seuil de l'école
+    const settings = await this.prisma.setting.findUnique({
+      where: { schoolId: enrollment.student.schoolId },
+      select: { passMark: true },
+    });
+    const passMarkOn20 = settings ? Number(settings.passMark) : 10;
+    const passingScore = Math.round(((passMarkOn20 * scale) / 20) * 100) / 100;
+
+    // 6. Déterminer la décision
+    const complete = reportCards.length > 0 && validAverages.length === terms.length;
+    let suggestedDecision: string;
+    let reason: string;
+
+    if (annualAverage === null || !complete) {
+      suggestedDecision = "INCOMPLET";
+      reason = `Bulletins manquants : ${validAverages.length}/${terms.length} périodes disponibles`;
+    } else if (annualAverage >= passingScore) {
+      suggestedDecision = "ADMIS";
+      reason = `Moyenne annuelle ${annualAverage}/${scale} ≥ ${passingScore}/${scale}`;
+    } else {
+      suggestedDecision = "REDOUBLE";
+      reason = `Moyenne annuelle ${annualAverage}/${scale} < ${passingScore}/${scale}`;
+    }
+
+    return {
+      studentId: enrollment.studentId,
+      studentName: `${enrollment.student.lastName} ${enrollment.student.firstName}`,
+      matricule: enrollment.student.matricule,
+      className: enrollment.class.name,
+      cycle,
+      scale,
+      annualAverage,
+      passingScore,
+      suggestedDecision,
+      reason,
+      complete,
+      periodsCount: terms.length,
+      periodsAvailable: validAverages.length,
+    };
+  }
 }

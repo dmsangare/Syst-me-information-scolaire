@@ -1,3 +1,4 @@
+import { ReportCardsService } from "../report-cards/report-cards.service";
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class AnnualDecisionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reportCards: ReportCardsService, // ✅ Ajout
+  ) {}
 
   async list(query: AnnualDecisionListQueryDto, user: CurrentUserPayload) {
     // Récupérer les StudentPathway pour cette classe + année
@@ -133,5 +137,20 @@ export class AnnualDecisionsService {
       where: { id },
       data: { decision: "A_EXAMINER", result: null },
     });
+  }
+
+  // ✅ NOUVELLE MÉTHODE : Suggestion automatique de décision
+  async suggestDecision(studentId: string, academicYearId: string, user: CurrentUserPayload) {
+    // Vérifier l'accès école
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { studentId, academicYearId, status: "VALIDATED" },
+      include: { student: { select: { schoolId: true } } },
+    });
+    if (!enrollment) throw new NotFoundException("Élève non inscrit");
+    if (user.schoolId && enrollment.student.schoolId !== user.schoolId) {
+      throw new ForbiddenException("Accès interdit");
+    }
+
+    return this.reportCards.computeAnnualAverage(studentId, academicYearId);
   }
 }

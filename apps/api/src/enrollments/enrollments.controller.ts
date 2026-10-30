@@ -17,18 +17,22 @@ import { PaginationDto } from "../common/dto/pagination.dto";
 export class EnrollmentsController {
   constructor(private readonly service: EnrollmentsService) {}
 
-  @Get()
+    @Get()
   @RequirePermissions("enrollment:view")
   @ApiOperation({ summary: "Liste des inscriptions" })
   async findAll(
     @CurrentUser() user: CurrentUserPayload,
-    @Query() query: PaginationDto,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("q") q?: string,
     @Query("academicYearId") academicYearId?: string,
     @Query("classId") classId?: string,
     @Query("status") status?: string,
   ) {
     const schoolId = user.roles.includes("SUPER_ADMIN") ? null : user.schoolId;
-    return this.service.findAll(schoolId, query.page, query.limit, query.q, academicYearId, classId, status);
+    const pageNum = Number(page) || 1;
+    const limitNum = Math.min(Number(limit) || 20, 200);
+    return this.service.findAll(schoolId, pageNum, limitNum, q, academicYearId, classId, status);
   }
 
   @Get(":id")

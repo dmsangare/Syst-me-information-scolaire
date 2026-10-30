@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Save,
@@ -10,12 +10,11 @@ import {
   FileText,
   Clock,
   Calendar,
-  Unlock} from "lucide-react";
-import {
-  Button,
-  Card,
-  CardContent,
-} from "@/components/ui";
+  Unlock,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
+import { Button, Card, CardContent } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useAssessment, useUpdateAssessmentStatus } from "@/hooks/assessments";
 import { useAssessmentGrades, useBulkSaveGrades } from "@/hooks/grades";
@@ -45,6 +44,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 export function AssessmentGradesPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: assessment, isLoading: loadingA } = useAssessment(id);
   const { data: gradesData, isLoading: loadingG } = useAssessmentGrades(id);
   const saveGrades = useBulkSaveGrades();
@@ -78,12 +78,30 @@ export function AssessmentGradesPage() {
     }
   }, [gradesData]);
 
+  // ✅ PROTECTION 1 : Avertir avant de fermer l'onglet ou de recharger la page
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
+
   const students = gradesData?.grades || [];
   const maxScore = Number(assessment?.maxScore) || 20;
   const isEditable =
     assessment?.status === "OPEN" || assessment?.status === "DRAFT";
   const isLocked =
     assessment?.status === "LOCKED" || assessment?.status === "VALIDATED";
+
+  // Calcul du récapitulatif
+  const totalStudents = students.length;
+  const gradesSaisies = Object.values(values).filter(v => v !== "").length;
+  const gradesManquantes = totalStudents - gradesSaisies;
+  const hasMissingGrades = gradesManquantes > 0;
 
   // Handlers
   const handleChangeValue = (studentId: string, value: string) => {
@@ -126,7 +144,23 @@ export function AssessmentGradesPage() {
     action: "open" | "submit" | "validate" | "lock" | "reopen",
   ) => {
     if (!id) return;
+    
+    if (action === "submit" && hasMissingGrades) {
+      alert(`Attention : Il manque ${gradesManquantes} note(s). Veuillez tout saisir avant de soumettre.`);
+      return;
+    }
+    
     await updateStatus.mutateAsync({ id, action });
+  };
+
+  // ✅ PROTECTION 2 : Avertir avant de cliquer sur "Retour aux évaluations"
+  const handleBackClick = (e: React.MouseEvent) => {
+    if (hasChanges) {
+      e.preventDefault();
+      if (window.confirm("Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter sans enregistrer ?")) {
+        navigate("/assessments");
+      }
+    }
   };
 
   // Calculer les rangs
@@ -154,10 +188,26 @@ export function AssessmentGradesPage() {
   }, [students, values, absences]);
 
   // Loading
-  if (loadingA || loadingG || !assessment || !gradesData) {
+  if (loadingA || loadingG) {
     return (
       <div className="flex h-96 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!assessment || !gradesData) {
+    return (
+      <div className="flex flex-col h-96 items-center justify-center gap-4">
+        <FileText className="h-12 w-12 text-muted-foreground opacity-50" />
+        <h2 className="text-xl font-semibold">Impossible de charger l'évaluation</h2>
+        <p className="text-muted-foreground">L'évaluation n'existe pas ou une erreur réseau est survenue.</p>
+        <Button onClick={() => window.location.reload()} variant="outline">
+          Réessayer
+        </Button>
+        <Link to="/assessments" className="text-sm text-primary hover:underline">
+          Retour à la liste
+        </Link>
       </div>
     );
   }
@@ -167,10 +217,19 @@ export function AssessmentGradesPage() {
 
   return (
     <div className="p-6 space-y-5">
+      {/* ✅ BANNIÈRE D'AVERTISSEMENT */}
+      {hasChanges && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-sis-warning-bg border border-sis-warning-border rounded-lg text-sm text-sis-warning">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Vous avez des modifications non enregistrées. Pensez à cliquer sur "Enregistrer".</span>
+        </div>
+      )}
+
       {/* HEADER */}
       <div>
         <Link
           to="/assessments"
+          onClick={handleBackClick}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -316,15 +375,29 @@ export function AssessmentGradesPage() {
           )}
 
           {assessment.status === "OPEN" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleStatusChange("submit")}
-              disabled={updateStatus.isPending || hasChanges}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Soumettre
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-right hidden sm:block">
+                <div className="text-muted-foreground">{totalStudents} élèves</div>
+                <div className="font-medium text-green-600">{gradesSaisies} notes saisies</div>
+                {hasMissingGrades && (
+                  <div className="text-orange-600 font-semibold flex items-center justify-end gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {gradesManquantes} manquantes
+                  </div>
+                )}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStatusChange("submit")}
+                disabled={updateStatus.isPending || hasChanges || hasMissingGrades}
+                title={hasMissingGrades ? "Toutes les notes doivent être saisies" : ""}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Soumettre
+              </Button>
+            </div>
           )}
 
           {assessment.status === "SUBMITTED" && (
