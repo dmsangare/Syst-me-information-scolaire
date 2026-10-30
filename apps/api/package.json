@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@sis-mali/api",
   "version": "1.0.0",
   "private": true,
@@ -21,8 +21,8 @@
     "@nestjs/platform-express": "^11.2.7",
     "@nestjs/swagger": "^11.4.7",
     "@nestjs/throttler": "^6.7.1",
-    "@prisma/client": "^5.10.0",
-    "bcryptjs": "^2.4.3",
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.6",
@@ -58,7 +58,8 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "prisma": "5.22.0"
   },
   "overrides": {
     "uuid": "^11.1.1",
