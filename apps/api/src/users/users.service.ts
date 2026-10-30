@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from "@nestjs/common";
+﻿import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import * as bcrypt from "bcryptjs";
 import { CurrentUserPayload } from "../common/decorators";
@@ -9,7 +9,7 @@ import { assertSchoolAccess, isSuperAdmin } from "../common/utils";
  * et lors d'une reinitialisation. L'utilisateur DOIT le changer a sa
  * premiere connexion (mustChangePassword = true).
  */
-// La constante est supprimée, on utilise generateTempPassword()
+// La constante est supprimÃ©e, on utilise generateTempPassword()
 
 
 @Injectable()
@@ -162,7 +162,7 @@ export class UsersService {
   }
 
   async update(id: string, dto: any, caller: CurrentUserPayload) {
-    await this.getTargetOrFail(id, caller);
+    const target = await this.getTargetOrFail(id, caller);
 
     const data: any = {
       firstName: dto.firstName,
@@ -188,7 +188,7 @@ export class UsersService {
         data: dto.roleIds.map((roleId: string) => ({
           userId: id,
           roleId,
-          schoolId: dto.schoolId,
+          schoolId: target.schoolId,
         })),
       });
     }
