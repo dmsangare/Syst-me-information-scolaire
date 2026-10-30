@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+﻿import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { SchoolCreateDto, SchoolUpdateDto } from "./dto";
@@ -100,7 +100,7 @@ export class SchoolsService {
     }
 
     // Valider le type
-    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"];
+    const allowed = ["image/png", "image/jpeg", "image/jpg"];
     if (!allowed.includes(file.mimetype)) {
       throw new BadRequestException(
         "Format non supporte (PNG, JPG ou SVG uniquement)",
@@ -152,7 +152,7 @@ export class SchoolsService {
       throw new BadRequestException("Aucun fichier fourni");
     }
 
-    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"];
+    const allowed = ["image/png", "image/jpeg", "image/jpg"];
     if (!allowed.includes(file.mimetype)) {
       throw new BadRequestException(
         "Format non supporte (PNG, JPG ou SVG uniquement)",
