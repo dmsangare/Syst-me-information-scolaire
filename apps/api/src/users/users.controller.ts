@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
   HttpCode, HttpStatus, UseGuards, BadRequestException,
 } from "@nestjs/common";
@@ -8,6 +8,8 @@ import { CurrentUser, CurrentUserPayload, RequirePermissions } from "../common/d
 import { SchoolScopeGuard } from "../common/guards";
 import { isSuperAdmin } from "../common/utils";
 import { PaginationDto } from "../common/dto/pagination.dto";
+import { ZodValidationPipe } from "../common/pipes";
+import { UpdateUserSchema, UpdateUserDto } from "./dto";
 
 @ApiTags("Users")
 @ApiBearerAuth("access-token")
@@ -83,7 +85,7 @@ export class UsersController {
   @ApiOperation({ summary: "Modifier un utilisateur" })
   async update(
     @Param("id") id: string,
-    @Body() dto: any,
+    @Body(new ZodValidationPipe(UpdateUserSchema)) dto: UpdateUserDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.usersService.update(id, dto, user);
