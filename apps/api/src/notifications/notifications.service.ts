@@ -78,7 +78,7 @@ export class NotificationsService {
    */
   async sendBulk(dto: NotificationBulkDto) {
     const created = await this.prisma.$transaction(
-      dto.recipientIds.map((recipientId) =>
+      dto.recipientIds.map((recipientId: any) =>
         this.prisma.notification.create({
           data: {
             schoolId: dto.schoolId,

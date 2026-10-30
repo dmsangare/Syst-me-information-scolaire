@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Get,
@@ -16,13 +16,17 @@ import { CashSessionsService } from './cash-sessions.service';
 import { OpenCashSessionDto } from './dto/open-cash-session.dto';
 import { CloseCashSessionDto } from './dto/close-cash-session.dto';
 import { generateCashSessionPDF } from './utils/cash-session-pdf.util';
+import { PdfGeneratorService } from '../common/pdf';
 import { loadLogoAsBase64 } from '../common/utils/load-logo.util';
 import { fileToBase64 } from '../common/utils/file-to-base64.util';
 
 @Controller('cash-sessions')
 @UseGuards(JwtAuthGuard)
 export class CashSessionsController {
-  constructor(private service: CashSessionsService) {}
+  constructor(
+    private service: CashSessionsService,
+    private pdfGenerator: PdfGeneratorService,
+  ) {}
 
   @Get('current')
   current(@Req() req: any) {
@@ -121,7 +125,7 @@ export class CashSessionsController {
         : null,
       difference: session.difference ? Number(session.difference) : null,
       movements,
-    });
+    }, this.pdfGenerator);
 
     const filename = `rapport-caisse-${session.id.slice(0, 8)}.pdf`;
     res.set({

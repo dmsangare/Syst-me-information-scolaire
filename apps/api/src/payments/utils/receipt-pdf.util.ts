@@ -1,4 +1,4 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 
 interface ReceiptData {
   schoolName: string;
@@ -37,7 +37,10 @@ const METHOD_LABELS: Record<string, string> = {
   OTHER: "Autre",
 };
 
-export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
+export async function generateReceiptPDF(
+  data: ReceiptData,
+  pdfGenerator: PdfGeneratorService,
+): Promise<Buffer> {
   let qrDataUrl = "";
   try {
     const QRCode = await import("qrcode");
@@ -50,23 +53,11 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
   } catch {}
 
   const html = buildHTML(data, qrDataUrl);
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--font-render-hinting=none"],
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
   });
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-    const pdf = await page.pdf({
-      format: "A4", printBackground: true,
-      margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
-    });
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function fmtMoney(n: number): string {
@@ -137,7 +128,7 @@ body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1F293
 <div class="title-block">
   <div class="title">RECU DE PAIEMENT</div>
   <div class="subtitle">Emis le ${fmtDateTime(data.issuedAt)}</div>
-  <div class="receipt-number">N° ${data.receiptNumber}</div>
+  <div class="receipt-number">NÂ° ${data.receiptNumber}</div>
 </div>
 <div class="info-box">
   <div class="info-grid">
@@ -158,7 +149,7 @@ body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1F293
   ${data.invoiceItems && data.invoiceItems.length > 0 ? `
     <tr><td colspan="2" style="padding:12px 0 6px 0;">
       <div style="font-weight:600;font-size:11px;color:#374151;border-bottom:1px solid #E5E7EB;padding-bottom:4px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
-        Détail des frais
+        DÃ©tail des frais
       </div>
     </td></tr>
     ${data.invoiceItems.map((it) => `

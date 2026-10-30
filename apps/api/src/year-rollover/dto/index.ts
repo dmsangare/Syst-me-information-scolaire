@@ -1,7 +1,7 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 // ============================================================
-// BLOC G — DTO du wizard de passage a l'annee
+// BLOC G â€” DTO du wizard de passage a l'annee
 // ============================================================
 
 export const PeriodsToCloneEnum = z.enum(["TRIMESTRE", "SEMESTRE", "MOIS"]);
@@ -33,7 +33,7 @@ export const PreviewYearRolloverSchema = z.object({
   newStartDate: z.string(),   // ISO date
   newEndDate: z.string(),     // ISO date
   periodsToClone: z.array(PeriodsToCloneEnum).default(["TRIMESTRE", "MOIS"]),
-  structureToClone: StructureToCloneSchema.default({}),
+  structureToClone: StructureToCloneSchema.default({ classes: true, teacherAssignments: true, feeStructures: true, timetable: true }),
   feeIncreasePercent: z.number().min(-100).max(100).default(0),
 });
 

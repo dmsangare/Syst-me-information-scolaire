@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 // ============================================================
 // SCHEMAS
@@ -11,7 +11,7 @@ export const ExpenseCreateSchema = z.object({
   description: z.string().min(2, "Description requise (min. 2 caracteres)").max(500),
   beneficiary: z.string().max(150).optional(),
   receiptUrl: z.string().url().optional().or(z.literal("")),
-  spentAt: z.string().datetime().optional(),
+  spentAt: z.iso.datetime().optional(),
   cashSessionId: z.string().uuid().optional().nullable(),
 });
 

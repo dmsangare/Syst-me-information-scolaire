@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, Res, UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -6,13 +6,17 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AdminReportsService } from './admin-reports.service';
 import { generateReportPDF } from '../reports/pdf/report-pdf.util';
 import { generateOfficialReportPDF } from './pdf/admin-report-pdf.util';
+import { PdfGeneratorService } from '../common/pdf';
 import { generateExcel } from '../students/utils/excel.util';
 import { ListTemplatesQuerySchema, ListReportsQuerySchema } from './dto';
 
 @Controller('admin-reports')
 @UseGuards(JwtAuthGuard)
 export class AdminReportsController {
-  constructor(private readonly service: AdminReportsService) {}
+  constructor(
+    private readonly service: AdminReportsService,
+    private readonly pdfGenerator: PdfGeneratorService,
+  ) {}
 
   private sid(req: any): string { return req.user.schoolId; }
   private uid(req: any): string { return req.user.id ?? req.user.userId; }
@@ -94,7 +98,7 @@ export class AdminReportsController {
 
     const pdf = await generateOfficialReportPDF({
       school: {
-        name: school?.name ?? req.user.schoolName ?? 'Établissement',
+        name: school?.name ?? req.user.schoolName ?? 'Ã‰tablissement',
         code: school?.code,
         sigle: school?.sigle,
         type: school?.type,
@@ -130,7 +134,7 @@ export class AdminReportsController {
         role: 'Le Directeur',
         place: school?.commune,
       },
-    });
+    }, this.pdfGenerator);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
@@ -147,7 +151,7 @@ export class AdminReportsController {
   @Get('reports/:id/excel')
   async excel(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
     const { data: report } = await this.service.getReport(this.sid(req), id);
-    const opts = this.buildExcelOptions(report, req.user.schoolName ?? 'Établissement');
+    const opts = this.buildExcelOptions(report, req.user.schoolName ?? 'Ã‰tablissement');
 
     const excel = await generateExcel(opts);
 
@@ -164,7 +168,7 @@ export class AdminReportsController {
 
   private buildExcelOptions(report: any, schoolName: string): any {
     const d = (report.data as any) ?? {};
-    const subtitle = `${report.code} — ${report.periodLabel ?? ''}`;
+    const subtitle = `${report.code} â€” ${report.periodLabel ?? ''}`;
 
     // === RAP-02 / RAP-03 : effectifs ===
     if (report.code === 'RAP-02' || report.code === 'RAP-03') {
@@ -178,10 +182,10 @@ export class AdminReportsController {
           { header: 'Classe', key: 'className', width: 20 },
           { header: 'Niveau', key: 'levelName', width: 15 },
           { header: 'Cycle', key: 'cycle', width: 20 },
-          { header: 'Capacité', key: 'capacity', width: 12 },
+          { header: 'CapacitÃ©', key: 'capacity', width: 12 },
           { header: 'Total', key: 'total', width: 10 },
           { header: 'Filles', key: 'girls', width: 10 },
-          { header: 'Garçons', key: 'boys', width: 10 },
+          { header: 'GarÃ§ons', key: 'boys', width: 10 },
         ],
         data: classes.map((c) => ({
           className: c.className,
@@ -207,10 +211,10 @@ export class AdminReportsController {
           { header: 'Matricule', key: 'matricule', width: 15 },
           { header: 'Nom complet', key: 'fullName', width: 30 },
           { header: 'Sexe', key: 'gender', width: 8 },
-          { header: 'Spécialité', key: 'specialty', width: 20 },
-          { header: 'Diplôme', key: 'diploma', width: 20 },
+          { header: 'SpÃ©cialitÃ©', key: 'specialty', width: 20 },
+          { header: 'DiplÃ´me', key: 'diploma', width: 20 },
           { header: 'Contrat', key: 'contractType', width: 15 },
-          { header: 'Matières', key: 'subjects', width: 40 },
+          { header: 'MatiÃ¨res', key: 'subjects', width: 40 },
         ],
         data: teachers.map((t) => ({
           matricule: t.matricule,
@@ -235,10 +239,10 @@ export class AdminReportsController {
         columns: [
           { header: 'Salle', key: 'name', width: 25 },
           { header: 'Type', key: 'type', width: 18 },
-          { header: 'Capacité', key: 'capacity', width: 12 },
+          { header: 'CapacitÃ©', key: 'capacity', width: 12 },
           { header: 'Emplacement', key: 'location', width: 25 },
           { header: 'Disponible', key: 'available', width: 12 },
-          { header: 'Équipements', key: 'equipmentCount', width: 14 },
+          { header: 'Ã‰quipements', key: 'equipmentCount', width: 14 },
         ],
         data: salles.map((r) => ({
           name: r.name,
@@ -259,19 +263,19 @@ export class AdminReportsController {
       return {
         title: report.title,
         subtitle,
-        sheetName: 'Synthèse',
+        sheetName: 'SynthÃ¨se',
         schoolName,
         columns: [
           { header: 'Rubrique', key: 'label', width: 40 },
           { header: 'Valeur', key: 'value', width: 40 },
         ],
         data: [
-          { label: 'Statut établissement', value: admin.statutEtablissement ?? '—' },
-          { label: 'Directeur', value: admin.directeur ?? '—' },
+          { label: 'Statut Ã©tablissement', value: admin.statutEtablissement ?? 'â€”' },
+          { label: 'Directeur', value: admin.directeur ?? 'â€”' },
           { label: 'Classes ouvertes', value: admin.classesOuvertes ?? 0 },
           { label: 'Effectif total', value: peda.effectifsTotal ?? 0 },
           { label: 'Filles', value: peda.effectifsFilles ?? 0 },
-          { label: 'Garçons', value: peda.effectifsGarcons ?? 0 },
+          { label: 'GarÃ§ons', value: peda.effectifsGarcons ?? 0 },
           { label: 'Enseignants', value: peda.personnelEnseignant ?? 0 },
           { label: 'Salles totales', value: mat.sallesTotal ?? 0 },
           { label: 'Salles disponibles', value: mat.sallesDisponibles ?? 0 },
@@ -294,7 +298,7 @@ export class AdminReportsController {
           { header: 'Admis', key: 'passed', width: 10 },
           { header: 'Redoublants', key: 'repeated', width: 12 },
           { header: 'Exclus', key: 'excluded', width: 10 },
-          { header: 'Transférés', key: 'transferred', width: 12 },
+          { header: 'TransfÃ©rÃ©s', key: 'transferred', width: 12 },
         ],
         data: classes.map((c) => ({
           className: c.className,
@@ -352,7 +356,7 @@ export class AdminReportsController {
   }
 
   // ============================================================
-  // RAP-10 : Transmission + réception
+  // RAP-10 : Transmission + rÃ©ception
   // ============================================================
 
   @Post('reports/:id/transmit')
@@ -405,13 +409,13 @@ export class AdminReportsController {
 
     const excel = await generateExcel({
       title: 'Archives des rapports',
-      subtitle: 'Historique des rapports validés et transmis',
+      subtitle: 'Historique des rapports validÃ©s et transmis',
       sheetName: 'Archives',
-      schoolName: req.user.schoolName ?? 'Établissement',
+      schoolName: req.user.schoolName ?? 'Ã‰tablissement',
       columns: [
         { header: 'Code', key: 'code', width: 12 },
         { header: 'Titre', key: 'title', width: 40 },
-        { header: 'Année scolaire', key: 'anneeScolaire', width: 16 },
+        { header: 'AnnÃ©e scolaire', key: 'anneeScolaire', width: 16 },
         { header: 'Statut', key: 'statut', width: 20 },
         { header: 'Version', key: 'version', width: 10 },
         { header: 'Bordereau', key: 'bordereau', width: 25 },
@@ -434,7 +438,7 @@ export class AdminReportsController {
   }
 
   // ============================================================
-  // RAP-11 : Calendrier + échéances
+  // RAP-11 : Calendrier + Ã©chÃ©ances
   // ============================================================
 
   @Get('deadlines')
@@ -520,7 +524,7 @@ export class AdminReportsController {
         { label: 'Salles totales', value: s.totalRooms ?? 0 },
         { label: 'Salles disponibles', value: s.totalAvailable ?? 0 },
         { label: 'Salles de classe', value: s.classroomCount ?? 0 },
-        { label: 'Capacité totale', value: s.totalCapacity ?? 0 },
+        { label: 'CapacitÃ© totale', value: s.totalCapacity ?? 0 },
       ];
     }
 
@@ -529,7 +533,7 @@ export class AdminReportsController {
       const peda = d.situationPedagogique ?? {};
       const mat = d.situationMaterielle ?? {};
       return [
-        { label: 'Élèves', value: peda.effectifsTotal ?? 0 },
+        { label: 'Ã‰lÃ¨ves', value: peda.effectifsTotal ?? 0 },
         { label: 'Classes', value: peda.nombreClasses ?? 0 },
         { label: 'Enseignants', value: peda.personnelEnseignant ?? 0 },
         { label: 'Salles', value: mat.sallesTotal ?? 0 },
@@ -539,18 +543,18 @@ export class AdminReportsController {
     // RAP-07 : fin d'annee
     if (report.code === 'RAP-07') {
       return [
-        { label: 'Élèves évalués', value: s.totalEvaluated ?? 0 },
+        { label: 'Ã‰lÃ¨ves Ã©valuÃ©s', value: s.totalEvaluated ?? 0 },
         { label: 'Admis', value: s.passed ?? 0 },
         { label: 'Redoublants', value: s.repeated ?? 0 },
-        { label: 'Taux de réussite', value: (d.taux?.tauxReussite ?? 0) + ' %' },
+        { label: 'Taux de rÃ©ussite', value: (d.taux?.tauxReussite ?? 0) + ' %' },
       ];
     }
 
     // Par defaut : effectifs eleves (RAP-02, RAP-03)
     return [
-      { label: 'Élèves inscrits', value: s.totalStudents ?? 0 },
+      { label: 'Ã‰lÃ¨ves inscrits', value: s.totalStudents ?? 0 },
       { label: 'Filles', value: s.totalGirls ?? 0 },
-      { label: 'Garçons', value: s.totalBoys ?? 0 },
+      { label: 'GarÃ§ons', value: s.totalBoys ?? 0 },
       { label: 'Classes ouvertes', value: s.classesCount ?? 0 },
     ];
   }
@@ -563,15 +567,15 @@ export class AdminReportsController {
     const school = d.identification?.school ?? d.reference?.school;
     if (school) {
       sections.push({
-        title: 'Identification de l\'établissement',
+        title: 'Identification de l\'Ã©tablissement',
         rows: [
-          { label: 'Nom', value: school.name ?? '—' },
-          { label: 'Code', value: school.code ?? '—' },
-          { label: 'Type', value: school.type ?? '—' },
-          { label: 'Région', value: school.region ?? '—' },
-          { label: 'CAP', value: school.cap ?? '—' },
-          { label: 'Académie', value: school.academy ?? '—' },
-          { label: 'Directeur', value: school.directorName ?? '—' },
+          { label: 'Nom', value: school.name ?? 'â€”' },
+          { label: 'Code', value: school.code ?? 'â€”' },
+          { label: 'Type', value: school.type ?? 'â€”' },
+          { label: 'RÃ©gion', value: school.region ?? 'â€”' },
+          { label: 'CAP', value: school.cap ?? 'â€”' },
+          { label: 'AcadÃ©mie', value: school.academy ?? 'â€”' },
+          { label: 'Directeur', value: school.directorName ?? 'â€”' },
         ],
         columns: [
           { key: 'label', label: 'Champ' },
@@ -591,7 +595,7 @@ export class AdminReportsController {
           { key: 'levelName', label: 'Niveau' },
           { key: 'total', label: 'Total', align: 'right' },
           { key: 'girls', label: 'Filles', align: 'right' },
-          { key: 'boys', label: 'Garçons', align: 'right' },
+          { key: 'boys', label: 'GarÃ§ons', align: 'right' },
         ],
       });
     }
@@ -607,14 +611,14 @@ export class AdminReportsController {
         boys: v.boys,
       }));
       sections.push({
-        title: 'Répartition par cycle',
+        title: 'RÃ©partition par cycle',
         rows,
         columns: [
           { key: 'cycle', label: 'Cycle' },
           { key: 'classes', label: 'Classes', align: 'right' },
           { key: 'total', label: 'Total', align: 'right' },
           { key: 'girls', label: 'Filles', align: 'right' },
-          { key: 'boys', label: 'Garçons', align: 'right' },
+          { key: 'boys', label: 'GarÃ§ons', align: 'right' },
         ],
       });
     }
@@ -630,16 +634,16 @@ export class AdminReportsController {
           rows: d.enseignants.map((t: any) => ({
             matricule: t.matricule,
             nom: t.fullName,
-            diplome: t.diploma ?? '—',
-            contrat: t.contractType ?? '—',
+            diplome: t.diploma ?? 'â€”',
+            contrat: t.contractType ?? 'â€”',
             matieres: (t.subjects ?? []).join(', '),
           })),
           columns: [
             { key: 'matricule', label: 'Matricule' },
             { key: 'nom', label: 'Nom' },
-            { key: 'diplome', label: 'Diplôme' },
+            { key: 'diplome', label: 'DiplÃ´me' },
             { key: 'contrat', label: 'Contrat' },
-            { key: 'matieres', label: 'Matières' },
+            { key: 'matieres', label: 'MatiÃ¨res' },
           ],
         });
       }
@@ -651,10 +655,10 @@ export class AdminReportsController {
           count: v,
         }));
         sections.push({
-          title: 'Répartition des enseignants par matière',
+          title: 'RÃ©partition des enseignants par matiÃ¨re',
           rows,
           columns: [
-            { key: 'matiere', label: 'Matière' },
+            { key: 'matiere', label: 'MatiÃ¨re' },
             { key: 'count', label: 'Nb enseignants', align: 'right' },
           ],
         });
@@ -667,10 +671,10 @@ export class AdminReportsController {
           count: v,
         }));
         sections.push({
-          title: 'Répartition par diplôme',
+          title: 'RÃ©partition par diplÃ´me',
           rows,
           columns: [
-            { key: 'diplome', label: 'Diplôme' },
+            { key: 'diplome', label: 'DiplÃ´me' },
             { key: 'count', label: 'Nb', align: 'right' },
           ],
         });
@@ -683,14 +687,14 @@ export class AdminReportsController {
           rows: d.personnelAdministratif.map((u: any) => ({
             nom: u.fullName,
             roles: (u.roles ?? []).join(', '),
-            email: u.email ?? '—',
-            phone: u.phone ?? '—',
+            email: u.email ?? 'â€”',
+            phone: u.phone ?? 'â€”',
           })),
           columns: [
             { key: 'nom', label: 'Nom' },
-            { key: 'roles', label: 'Rôle(s)' },
+            { key: 'roles', label: 'RÃ´le(s)' },
             { key: 'email', label: 'Email' },
-            { key: 'phone', label: 'Téléphone' },
+            { key: 'phone', label: 'TÃ©lÃ©phone' },
           ],
         });
       }
@@ -705,22 +709,22 @@ export class AdminReportsController {
       // Section : detail des salles
       if (Array.isArray(d.salles) && d.salles.length > 0) {
         sections.push({
-          title: 'Détail des salles',
+          title: 'DÃ©tail des salles',
           rows: d.salles.map((r: any) => ({
             name: r.name,
             type: r.type,
-            capacity: r.capacity ?? '—',
-            location: r.location ?? '—',
+            capacity: r.capacity ?? 'â€”',
+            location: r.location ?? 'â€”',
             available: r.isAvailable ? 'Oui' : 'Non',
             equipment: r.equipmentCount ?? 0,
           })),
           columns: [
             { key: 'name', label: 'Salle' },
             { key: 'type', label: 'Type' },
-            { key: 'capacity', label: 'Capacité', align: 'right' },
+            { key: 'capacity', label: 'CapacitÃ©', align: 'right' },
             { key: 'location', label: 'Emplacement' },
             { key: 'available', label: 'Dispo' },
-            { key: 'equipment', label: 'Équip.', align: 'right' },
+            { key: 'equipment', label: 'Ã‰quip.', align: 'right' },
           ],
         });
       }
@@ -734,12 +738,12 @@ export class AdminReportsController {
           available: v.available,
         }));
         sections.push({
-          title: 'Répartition par type',
+          title: 'RÃ©partition par type',
           rows,
           columns: [
             { key: 'type', label: 'Type' },
             { key: 'count', label: 'Nb', align: 'right' },
-            { key: 'capacity', label: 'Capacité', align: 'right' },
+            { key: 'capacity', label: 'CapacitÃ©', align: 'right' },
             { key: 'available', label: 'Dispo', align: 'right' },
           ],
         });
@@ -751,11 +755,11 @@ export class AdminReportsController {
         if (entries.length > 0) {
           const rows = entries.map(([k, v]) => ({ name: k, count: v }));
           sections.push({
-            title: 'Équipements (agrégés)',
+            title: 'Ã‰quipements (agrÃ©gÃ©s)',
             rows,
             columns: [
-              { key: 'name', label: 'Équipement' },
-              { key: 'count', label: 'Quantité', align: 'right' },
+              { key: 'name', label: 'Ã‰quipement' },
+              { key: 'count', label: 'QuantitÃ©', align: 'right' },
             ],
           });
         }
@@ -773,10 +777,10 @@ export class AdminReportsController {
       sections.push({
         title: 'A. Situation administrative',
         rows: [
-          { label: 'Statut établissement', value: admin.statutEtablissement ?? '—' },
-          { label: 'Type', value: admin.typeEtablissement ?? '—' },
-          { label: 'Autorisation', value: admin.autorisation ?? '—' },
-          { label: 'Directeur', value: admin.directeur ?? '—' },
+          { label: 'Statut Ã©tablissement', value: admin.statutEtablissement ?? 'â€”' },
+          { label: 'Type', value: admin.typeEtablissement ?? 'â€”' },
+          { label: 'Autorisation', value: admin.autorisation ?? 'â€”' },
+          { label: 'Directeur', value: admin.directeur ?? 'â€”' },
           { label: 'Classes ouvertes', value: admin.classesOuvertes ?? 0 },
           { label: 'Ordres d\'enseignement', value: (admin.ordresEnseignement ?? []).join(', ') },
         ],
@@ -786,14 +790,14 @@ export class AdminReportsController {
         ],
       });
 
-      // Section : situation pédagogique
+      // Section : situation pÃ©dagogique
       const peda = d.situationPedagogique ?? {};
       sections.push({
-        title: 'B. Situation pédagogique',
+        title: 'B. Situation pÃ©dagogique',
         rows: [
           { label: 'Effectif total', value: peda.effectifsTotal ?? 0 },
           { label: 'Filles', value: peda.effectifsFilles ?? 0 },
-          { label: 'Garçons', value: peda.effectifsGarcons ?? 0 },
+          { label: 'GarÃ§ons', value: peda.effectifsGarcons ?? 0 },
           { label: 'Nombre de classes', value: peda.nombreClasses ?? 0 },
           { label: 'Enseignants', value: peda.personnelEnseignant ?? 0 },
           { label: 'Personnel administratif', value: peda.personnelAdministratif ?? 0 },
@@ -804,15 +808,15 @@ export class AdminReportsController {
         ],
       });
 
-      // Section : situation matérielle
+      // Section : situation matÃ©rielle
       const mat = d.situationMaterielle ?? {};
       sections.push({
-        title: 'C. Situation matérielle',
+        title: 'C. Situation matÃ©rielle',
         rows: [
           { label: 'Salles totales', value: mat.sallesTotal ?? 0 },
           { label: 'Salles disponibles', value: mat.sallesDisponibles ?? 0 },
           { label: 'Salles de classe', value: mat.sallesClasse ?? 0 },
-          { label: 'Capacité totale', value: mat.capaciteTotale ?? 0 },
+          { label: 'CapacitÃ© totale', value: mat.capaciteTotale ?? 0 },
         ],
         columns: [
           { key: 'label', label: 'Rubrique' },
@@ -823,11 +827,11 @@ export class AdminReportsController {
       // Section : situation morale (peut etre vide)
       const morale = d.situationMorale ?? {};
       const moraleRows = [
-        { label: 'Règlement intérieur', value: morale.reglementInterieur || '—' },
-        { label: 'Application', value: morale.applicationReglement || '—' },
-        { label: 'Vie scolaire', value: morale.organisationVieScolaire || '—' },
-        { label: 'Actions de sensibilisation', value: morale.actionsSensibilisation || '—' },
-        { label: 'Activités éducatives', value: morale.activitesEducatives || '—' },
+        { label: 'RÃ¨glement intÃ©rieur', value: morale.reglementInterieur || 'â€”' },
+        { label: 'Application', value: morale.applicationReglement || 'â€”' },
+        { label: 'Vie scolaire', value: morale.organisationVieScolaire || 'â€”' },
+        { label: 'Actions de sensibilisation', value: morale.actionsSensibilisation || 'â€”' },
+        { label: 'ActivitÃ©s Ã©ducatives', value: morale.activitesEducatives || 'â€”' },
       ];
       sections.push({
         title: 'D. Situation morale et vie scolaire',
@@ -841,13 +845,13 @@ export class AdminReportsController {
       // Section : perspectives
       const persp = d.perspectives ?? {};
       sections.push({
-        title: 'E. Difficultés et perspectives',
+        title: 'E. DifficultÃ©s et perspectives',
         rows: [
-          { label: 'Difficultés rencontrées', value: persp.difficultesRencontrees || '—' },
-          { label: 'Mesures prises', value: persp.mesuresPrises || '—' },
-          { label: 'Besoins identifiés', value: persp.besoinsIdentifies || '—' },
-          { label: 'Plan d\'amélioration', value: persp.planAmelioration || '—' },
-          { label: 'Projets année suivante', value: persp.projetsAnneeSuivante || '—' },
+          { label: 'DifficultÃ©s rencontrÃ©es', value: persp.difficultesRencontrees || 'â€”' },
+          { label: 'Mesures prises', value: persp.mesuresPrises || 'â€”' },
+          { label: 'Besoins identifiÃ©s', value: persp.besoinsIdentifies || 'â€”' },
+          { label: 'Plan d\'amÃ©lioration', value: persp.planAmelioration || 'â€”' },
+          { label: 'Projets annÃ©e suivante', value: persp.projetsAnneeSuivante || 'â€”' },
         ],
         columns: [
           { key: 'label', label: 'Rubrique' },
@@ -860,9 +864,9 @@ export class AdminReportsController {
       sections.push({
         title: 'F. Validation',
         rows: [
-          { label: 'Responsable', value: val.responsableNom ?? '—' },
-          { label: 'Fonction', value: val.responsableFonction ?? '—' },
-          { label: 'Date', value: val.dateValidation ?? '—' },
+          { label: 'Responsable', value: val.responsableNom ?? 'â€”' },
+          { label: 'Fonction', value: val.responsableFonction ?? 'â€”' },
+          { label: 'Date', value: val.dateValidation ?? 'â€”' },
         ],
         columns: [
           { key: 'label', label: 'Rubrique' },
@@ -880,15 +884,15 @@ export class AdminReportsController {
       // Section : synthese
       const syn = d.synthese ?? {};
       sections.push({
-        title: 'Synthèse de fin d\'année',
+        title: 'SynthÃ¨se de fin d\'annÃ©e',
         rows: [
-          { label: 'Effectif début d\'année', value: syn.effectifDebut ?? 0 },
-          { label: 'Effectif évalué (fin)', value: syn.totalEvaluated ?? 0 },
-          { label: 'Admis en classe supérieure', value: syn.passed ?? 0 },
+          { label: 'Effectif dÃ©but d\'annÃ©e', value: syn.effectifDebut ?? 0 },
+          { label: 'Effectif Ã©valuÃ© (fin)', value: syn.totalEvaluated ?? 0 },
+          { label: 'Admis en classe supÃ©rieure', value: syn.passed ?? 0 },
           { label: 'Redoublants', value: syn.repeated ?? 0 },
           { label: 'Exclus', value: syn.excluded ?? 0 },
-          { label: 'Transférés', value: syn.transferred ?? 0 },
-          { label: 'En attente de décision', value: syn.undecided ?? 0 },
+          { label: 'TransfÃ©rÃ©s', value: syn.transferred ?? 0 },
+          { label: 'En attente de dÃ©cision', value: syn.undecided ?? 0 },
         ],
         columns: [
           { key: 'label', label: 'Rubrique' },
@@ -901,10 +905,10 @@ export class AdminReportsController {
       sections.push({
         title: 'Taux',
         rows: [
-          { label: 'Taux de réussite', value: (taux.tauxReussite ?? '—') + (taux.tauxReussite != null ? ' %' : '') },
-          { label: 'Taux de redoublement', value: (taux.tauxRedoublement ?? '—') + (taux.tauxRedoublement != null ? ' %' : '') },
-          { label: 'Taux d\'exclusion', value: (taux.tauxExclusion ?? '—') + (taux.tauxExclusion != null ? ' %' : '') },
-          { label: 'Taux de transfert', value: (taux.tauxTransfert ?? '—') + (taux.tauxTransfert != null ? ' %' : '') },
+          { label: 'Taux de rÃ©ussite', value: (taux.tauxReussite ?? 'â€”') + (taux.tauxReussite != null ? ' %' : '') },
+          { label: 'Taux de redoublement', value: (taux.tauxRedoublement ?? 'â€”') + (taux.tauxRedoublement != null ? ' %' : '') },
+          { label: 'Taux d\'exclusion', value: (taux.tauxExclusion ?? 'â€”') + (taux.tauxExclusion != null ? ' %' : '') },
+          { label: 'Taux de transfert', value: (taux.tauxTransfert ?? 'â€”') + (taux.tauxTransfert != null ? ' %' : '') },
         ],
         columns: [
           { key: 'label', label: 'Indicateur' },
@@ -915,7 +919,7 @@ export class AdminReportsController {
       // Section : resultats par classe
       if (Array.isArray(d.resultatsParClasse) && d.resultatsParClasse.length > 0) {
         sections.push({
-          title: 'Résultats par classe',
+          title: 'RÃ©sultats par classe',
           rows: d.resultatsParClasse.map((c: any) => ({
             classe: c.className,
             total: c.total,
@@ -930,7 +934,7 @@ export class AdminReportsController {
             { key: 'admis', label: 'Admis', align: 'right' },
             { key: 'redoublants', label: 'Redouble', align: 'right' },
             { key: 'exclus', label: 'Exclus', align: 'right' },
-            { key: 'transferes', label: 'Transférés', align: 'right' },
+            { key: 'transferes', label: 'TransfÃ©rÃ©s', align: 'right' },
           ],
         });
       }

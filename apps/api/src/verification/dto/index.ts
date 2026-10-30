@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 export const SignDocumentSchema = z.object({
   type: z.enum([
@@ -10,7 +10,7 @@ export const SignDocumentSchema = z.object({
     "CERTIFICATE",
   ]),
   referenceId: z.string().uuid(),
-  meta: z.record(z.any()).optional(),
+  meta: z.record(z.string(), z.any()).optional(),
   expiresAt: z.coerce.date().optional(),
 });
 

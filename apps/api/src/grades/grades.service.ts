@@ -61,7 +61,7 @@ export class GradesService {
       where: { assessmentId },
     });
 
-    const gradesByStudent = new Map(grades.map((g) => [g.studentId, g]));
+    const gradesByStudent = new Map(grades.map((g: any) => [g.studentId, g]));
 
     return {
       assessment,
@@ -106,16 +106,16 @@ export class GradesService {
     }
 
     // Recuperer les anciennes notes AVANT le upsert (pour audit)
-    const studentIds = dto.grades.map((g) => g.studentId);
+    const studentIds = dto.grades.map((g: any) => g.studentId);
     const existingGrades = await this.prisma.grade.findMany({
       where: { assessmentId: dto.assessmentId, studentId: { in: studentIds } },
       select: { id: true, studentId: true, value: true },
     });
-    const oldByStudent = new Map(existingGrades.map((g) => [g.studentId, g]));
+    const oldByStudent = new Map(existingGrades.map((g: any) => [g.studentId, g]));
 
     // Upsert toutes les notes
     const results = await this.prisma.$transaction(
-      dto.grades.map((g) =>
+      dto.grades.map((g: any) =>
         this.prisma.grade.upsert({
           where: {
             assessmentId_studentId: {
@@ -333,7 +333,7 @@ export class GradesService {
       return { count: 0, average: null, min: null, max: null };
     }
 
-    const values = grades.map((g) => Number(g.value));
+    const values = grades.map((g: any) => Number(g.value));
     const sum = values.reduce((a, b) => a + b, 0);
 
     return {

@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
+﻿import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { randomBytes } from "crypto";
 import * as QRCode from "qrcode";
 import { generateTransferCertificate } from "./utils/transfer-certificate.util";
+import { PdfGeneratorService } from '../common/pdf';
 
 @Injectable()
 export class TransfersService {
   private readonly logger = new Logger(TransfersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfGenerator: PdfGeneratorService,
+  ) {}
 
   /**
    * Genere un code de verification unique (8 caracteres alphanumeriques).
@@ -440,7 +444,7 @@ export class TransfersService {
       verificationCode: transfer.verificationCode,
       verifyUrl,
       issuedAt: new Date(),
-    });
+    }, this.pdfGenerator);
   }
 
 }

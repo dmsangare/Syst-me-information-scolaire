@@ -1,14 +1,14 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 import QRCode from "qrcode";
 
 interface TransferCertificateData {
-  // Élève
+  // Ã‰lÃ¨ve
   studentName: string;
   studentMatricule: string;
   studentGender: string;
   studentBirthDate: Date;
   studentBirthPlace?: string | null;
-  // École
+  // Ã‰cole
   schoolName: string;
   schoolAddress?: string | null;
   schoolPhone?: string | null;
@@ -26,7 +26,7 @@ interface TransferCertificateData {
   previousClassLevel?: string | null;
   previousAverage?: number | null;
   decision?: string | null;
-  // Vérification
+  // VÃ©rification
   verificationCode: string;
   verifyUrl: string;
   issuedAt: Date;
@@ -42,8 +42,9 @@ const REASON_LABELS: Record<string, string> = {
 
 export async function generateTransferCertificate(
   data: TransferCertificateData,
+  pdfGenerator: PdfGeneratorService,
 ): Promise<Buffer> {
-  // 1. Générer le QR code
+  // 1. Generer le QR code
   const qrDataUrl = await QRCode.toDataURL(data.verifyUrl, {
     width: 200,
     margin: 1,
@@ -53,32 +54,12 @@ export async function generateTransferCertificate(
   // 2. Construire le HTML
   const html = buildCertificateHTML(data, qrDataUrl);
 
-  // 3. Générer le PDF via Puppeteer
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ],
+  // 3. Generer le PDF via Playwright
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "10mm", right: "12mm", bottom: "12mm", left: "12mm" },
   });
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "10mm", right: "12mm", bottom: "12mm", left: "12mm" },
-    });
-
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function buildCertificateHTML(
@@ -233,7 +214,7 @@ function buildCertificateHTML(
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">${isOutbound ? "Ecole d accueil" : "Ecole quittee"}</span>
-                <span class="info-value">${escapeHtml(isOutbound ? data.toSchool || "—" : data.fromSchool || "—")}</span>
+                <span class="info-value">${escapeHtml(isOutbound ? data.toSchool || "â€”" : data.fromSchool || "â€”")}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Date effective</span>
@@ -289,7 +270,7 @@ function buildCertificateHTML(
         </div>
 
         <div class="footer">
-          Document genere automatiquement par SIS-MALI le ${formatDate(data.issuedAt)} — Toute reproduction non autorisee est interdite.
+          Document genere automatiquement par SIS-MALI le ${formatDate(data.issuedAt)} â€” Toute reproduction non autorisee est interdite.
         </div>
       </body>
     </html>

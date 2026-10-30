@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Res,
   HttpCode, HttpStatus, UseGuards,
 } from "@nestjs/common";
@@ -6,6 +6,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { Response } from "express";
 import { AssessmentsService } from "./assessments.service";
 import { generateAssessmentPDF, generateAssessmentExcel, generateAssessmentCSV } from "./utils/assessment-export.util";
+import { PdfGeneratorService } from '../common/pdf';
 import { AssessmentCreateSchema, AssessmentUpdateSchema } from "./dto";
 import { ZodValidationPipe } from "../common/pipes";
 import { RequirePermissions, CurrentUser, CurrentUserPayload } from "../common/decorators";
@@ -16,7 +17,10 @@ import { SchoolScopeGuard } from "../common/guards";
 @Controller("assessments")
 @UseGuards(SchoolScopeGuard)
 export class AssessmentsController {
-  constructor(private readonly service: AssessmentsService) {}
+  constructor(
+    private readonly service: AssessmentsService,
+    private readonly pdfGenerator: PdfGeneratorService,
+  ) {}
 
   /**
    * Renvoie le schoolId effectif pour filtrer (null pour SUPER_ADMIN = pas de filtre).
@@ -46,7 +50,7 @@ export class AssessmentsController {
       termId: query.termId,
       teacherId: query.teacherId,
       status: query.status,
-      type: query.type, // ✅ Ajout du filtre type
+      type: query.type, // âœ… Ajout du filtre type
     }, user);
   }
 
@@ -136,7 +140,7 @@ export class AssessmentsController {
     @Res() res: Response,
   ) {
     const data = await this.service.getExportData(id, this.getSchoolScope(user));
-    const buffer = await generateAssessmentPDF(data);
+    const buffer = await generateAssessmentPDF(data, this.pdfGenerator);
     const filename = `fiche-notes-${data.assessmentTitle.replace(/[^a-z0-9]/gi, "-")}.pdf`;
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Res,
   HttpCode, HttpStatus, UseGuards, NotFoundException,
 } from "@nestjs/common";
@@ -7,6 +7,7 @@ import { Response } from "express";
 import { ReportCardsService } from "./report-cards.service";
 import { generateReportCardPDF } from './utils/report-card-pdf.util';
 import { generateAnnualReportCardPDF } from './utils/annual-report-card-pdf.util';
+import { PdfGeneratorService } from '../common/pdf';
 import { ReportCardGenerateSchema, ReportCardUpdateSchema, ReportCardReopenSchema } from "./dto";
 import { ZodValidationPipe } from "../common/pipes";
 import { RequirePermissions, CurrentUser, CurrentUserPayload } from "../common/decorators";
@@ -18,7 +19,10 @@ import { PaginationDto } from "../common/dto/pagination.dto";
 @Controller("report-cards")
 @UseGuards(SchoolScopeGuard)
 export class ReportCardsController {
-  constructor(private readonly service: ReportCardsService) {}
+  constructor(
+    private readonly service: ReportCardsService,
+    private readonly pdfGenerator: PdfGeneratorService,
+  ) {}
 
   @Get()
   @RequirePermissions("report_card:view")
@@ -115,7 +119,7 @@ export class ReportCardsController {
     @Res() res: Response,
   ) {
     const data = await this.service.getAnnualExportData(id, user);
-    const buffer = await generateAnnualReportCardPDF(data as any);
+    const buffer = await generateAnnualReportCardPDF(data as any, this.pdfGenerator);
     const safeName = data.studentName.replace(/[^a-z0-9]/gi, "-").toLowerCase().slice(0, 40);
     const filename = `bulletin-annuel-${safeName}-${data.academicYear.replace(/\s+/g, "-")}.pdf`;
     res.setHeader("Content-Type", "application/pdf");
@@ -132,7 +136,7 @@ export class ReportCardsController {
     @Res() res: Response,
   ) {
     const data = await this.service.getExportData(id, user);
-    const buffer = await generateReportCardPDF(data as any);
+    const buffer = await generateReportCardPDF(data as any, this.pdfGenerator);
 
     const safeName = data.studentName
       .replace(/[^a-z0-9]/gi, "-")
@@ -154,7 +158,7 @@ export class ReportCardsController {
 
   @Patch(":id/clear-absences")
   @RequirePermissions("report_card:update")
-  @ApiOperation({ summary: "Marquer l'absence comme traitée (débloque le bulletin)" })
+  @ApiOperation({ summary: "Marquer l'absence comme traitÃ©e (dÃ©bloque le bulletin)" })
   async clearAbsences(
     @Param("id") id: string,
     @Body() body: { motive: string },

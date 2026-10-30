@@ -1,4 +1,4 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 
 interface Movement {
   time: string;
@@ -35,31 +35,14 @@ interface CashSessionReportData {
 
 export async function generateCashSessionPDF(
   data: CashSessionReportData,
+  pdfGenerator: PdfGeneratorService,
 ): Promise<Buffer> {
   const html = buildHTML(data);
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ],
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
   });
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
-    });
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function fmtMoney(n: number): string {
@@ -67,7 +50,7 @@ function fmtMoney(n: number): string {
 }
 
 function fmtDateTime(d: Date | string | null | undefined): string {
-  if (!d) return "—";
+  if (!d) return "â€”";
   return new Date(d).toLocaleString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
@@ -78,7 +61,7 @@ function fmtDateTime(d: Date | string | null | undefined): string {
 }
 
 function fmtTime(d: Date | string | null | undefined): string {
-  if (!d) return "—";
+  if (!d) return "â€”";
   return new Date(d).toLocaleTimeString("fr-FR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -101,7 +84,7 @@ function buildHTML(data: CashSessionReportData): string {
               <td class="time-cell">${m.time}</td>
               <td>${badge}</td>
               <td>${m.label}${m.detail ? `<div class="detail">${m.detail}</div>` : ""}</td>
-              <td class="method-cell">${m.method || "—"}</td>
+              <td class="method-cell">${m.method || "â€”"}</td>
               <td class="amount-cell" style="color:${color}">${sign}${fmtMoney(m.amount)}</td>
             </tr>`;
           })
@@ -232,6 +215,6 @@ table.movements td.empty { text-align: center; color: #9CA3AF; padding: 20px; fo
     <div class="signature-label">Le Directeur / Comptable</div>
   </div>
 </div>
-<div class="footer">Rapport de caisse genere automatiquement par SIS-MALI — Conservez ce document pour vos archives comptables.</div>
+<div class="footer">Rapport de caisse genere automatiquement par SIS-MALI â€” Conservez ce document pour vos archives comptables.</div>
 </body></html>`;
 }

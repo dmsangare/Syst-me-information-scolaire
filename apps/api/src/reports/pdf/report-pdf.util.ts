@@ -1,4 +1,4 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 
 interface PDFOptions {
   title: string;
@@ -14,28 +14,20 @@ interface PDFOptions {
   summary?: Array<{ label: string; value: string | number }>;
 }
 
-export async function generateReportPDF(opts: PDFOptions): Promise<Buffer> {
+export async function generateReportPDF(
+  opts: PDFOptions,
+  pdfGenerator: PdfGeneratorService,
+): Promise<Buffer> {
   const html = buildHTML(opts);
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "15mm", bottom: "15mm", left: "12mm", right: "12mm" },
   });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'load' });
-    const pdf = await page.pdf({
-      format: 'A4',
-      margin: { top: '15mm', bottom: '15mm', left: '12mm', right: '12mm' },
-      printBackground: true,
-    });
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function formatValue(v: any, format?: string): string {
-  if (v === null || v === undefined || v === '') return '—';
+  if (v === null || v === undefined || v === '') return 'â€”';
   if (format === 'currency') {
     return new Intl.NumberFormat('fr-FR').format(Number(v)) + ' FCFA';
   }
@@ -68,7 +60,7 @@ function buildHTML(opts: PDFOptions): string {
       return `
         <div class="section">
           <h3>${sec.title}</h3>
-          <p class="empty">Aucune donnée</p>
+          <p class="empty">Aucune donnÃ©e</p>
         </div>
       `;
     }
@@ -237,13 +229,13 @@ function buildHTML(opts: PDFOptions): string {
   <div class="header">
     <div class="school-info">
       <h1>${opts.schoolName}</h1>
-      <p>Système d'Information Scolaire — SIS-MALI</p>
+      <p>SystÃ¨me d'Information Scolaire â€” SIS-MALI</p>
     </div>
     <div class="report-meta">
       <div class="report-title">${opts.title}</div>
       ${opts.subtitle ? `<div>${opts.subtitle}</div>` : ''}
-      ${opts.period ? `<div>Période : ${opts.period}</div>` : ''}
-      <div>Édité le ${date}</div>
+      ${opts.period ? `<div>PÃ©riode : ${opts.period}</div>` : ''}
+      <div>Ã‰ditÃ© le ${date}</div>
       <div>Par ${opts.user}</div>
     </div>
   </div>
@@ -254,7 +246,7 @@ function buildHTML(opts: PDFOptions): string {
   ${sectionsHTML}
 
   <div class="footer">
-    Document généré automatiquement par SIS-MALI · ${date}
+    Document gÃ©nÃ©rÃ© automatiquement par SIS-MALI Â· ${date}
   </div>
 </body>
 </html>`;

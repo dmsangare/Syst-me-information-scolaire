@@ -29,7 +29,6 @@
   },
   pdf: {
     locale: process.env.PDF_LOCALE || 'fr-FR',
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
   },
   defaults: {
     country: process.env.DEFAULT_COUNTRY || 'ML',

@@ -1,4 +1,4 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 import * as ExcelJS from "exceljs";
 
 interface GradeRow {
@@ -43,32 +43,14 @@ interface AssessmentExportData {
 // ============================================================
 export async function generateAssessmentPDF(
   data: AssessmentExportData,
+  pdfGenerator: PdfGeneratorService,
 ): Promise<Buffer> {
   const html = buildHTML(data);
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ],
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "10mm", right: "10mm", bottom: "12mm", left: "10mm" },
   });
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "10mm", right: "10mm", bottom: "12mm", left: "10mm" },
-    });
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function buildHTML(data: AssessmentExportData): string {
@@ -88,17 +70,17 @@ function buildHTML(data: AssessmentExportData): string {
         ? '<span style="color:#F59E0B;font-weight:600">ABSENT</span>'
         : g.value !== null
           ? `<strong>${g.value.toFixed(2)}</strong>`
-          : '<span style="color:#9CA3AF">—</span>';
+          : '<span style="color:#9CA3AF">â€”</span>';
 
       const rank = g.rank
         ? g.rank === 1
-          ? `<span style="color:#EAB308;font-weight:700">🥇 ${g.rank}</span>`
+          ? `<span style="color:#EAB308;font-weight:700">ðŸ¥‡ ${g.rank}</span>`
           : g.rank === 2
-            ? `<span style="color:#6B7280;font-weight:700">🥈 ${g.rank}</span>`
+            ? `<span style="color:#6B7280;font-weight:700">ðŸ¥ˆ ${g.rank}</span>`
             : g.rank === 3
-              ? `<span style="color:#EA580C;font-weight:700">🥉 ${g.rank}</span>`
+              ? `<span style="color:#EA580C;font-weight:700">ðŸ¥‰ ${g.rank}</span>`
               : g.rank
-        : '<span style="color:#9CA3AF">—</span>';
+        : '<span style="color:#9CA3AF">â€”</span>';
 
       return `
         <tr>
@@ -108,7 +90,7 @@ function buildHTML(data: AssessmentExportData): string {
           <td style="text-align:center">${g.gender === "M" ? "M" : "F"}</td>
           <td style="text-align:center;font-size:13px">${note}</td>
           <td style="text-align:center">${rank}</td>
-          <td style="font-size:9px;color:#6B7280">${g.observation || "—"}</td>
+          <td style="font-size:9px;color:#6B7280">${g.observation || "â€”"}</td>
         </tr>
       `;
     })
@@ -166,8 +148,8 @@ function buildHTML(data: AssessmentExportData): string {
 </div>
 
 <div class="title-block">
-  <div class="title">FICHE DE NOTES — ${data.assessmentTitle.toUpperCase()}</div>
-  <div class="subtitle">${data.assessmentType} · ${formatDate(data.assessmentDate)}</div>
+  <div class="title">FICHE DE NOTES â€” ${data.assessmentTitle.toUpperCase()}</div>
+  <div class="subtitle">${data.assessmentType} Â· ${formatDate(data.assessmentDate)}</div>
 </div>
 
 <div class="info-grid">
@@ -193,7 +175,7 @@ function buildHTML(data: AssessmentExportData): string {
   </div>
   <div class="info-item">
     <span class="info-label">Enseignant</span>
-    <span class="info-value">${data.teacherName || "—"}</span>
+    <span class="info-value">${data.teacherName || "â€”"}</span>
   </div>
 </div>
 
@@ -220,7 +202,7 @@ function buildHTML(data: AssessmentExportData): string {
 <table>
   <thead>
     <tr>
-      <th style="width:30px;text-align:center">N°</th>
+      <th style="width:30px;text-align:center">NÂ°</th>
       <th style="width:90px">Matricule</th>
       <th>Nom & Prenom</th>
       <th style="width:30px;text-align:center">Sexe</th>
@@ -246,7 +228,7 @@ function buildHTML(data: AssessmentExportData): string {
 </div>
 
 <div class="footer">
-  Document genere automatiquement par SIS-MALI le ${formatDate(new Date().toISOString())} — Annee scolaire ${data.academicYear}
+  Document genere automatiquement par SIS-MALI le ${formatDate(new Date().toISOString())} â€” Annee scolaire ${data.academicYear}
 </div>
 
 </body>
@@ -269,9 +251,9 @@ export async function generateAssessmentExcel(
 
   // Largeurs de colonnes
   sheet.columns = [
-    { header: "N°", key: "index", width: 6 },
+    { header: "NÂ°", key: "index", width: 6 },
     { header: "Matricule", key: "matricule", width: 18 },
-    { header: "Nom & Prénom", key: "name", width: 30 },
+    { header: "Nom & PrÃ©nom", key: "name", width: 30 },
     { header: "Sexe", key: "gender", width: 8 },
     { header: `Note /${data.maxScore}`, key: "value", width: 12 },
     { header: "Rang", key: "rank", width: 8 },
@@ -281,7 +263,7 @@ export async function generateAssessmentExcel(
   // Titre
   sheet.mergeCells("A1:G1");
   const titleCell = sheet.getCell("A1");
-  titleCell.value = `FICHE DE NOTES — ${data.assessmentTitle}`;
+  titleCell.value = `FICHE DE NOTES â€” ${data.assessmentTitle}`;
   titleCell.font = { size: 14, bold: true, color: { argb: "FF1E40AF" } };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF6FF" } };
@@ -290,18 +272,18 @@ export async function generateAssessmentExcel(
   // Sous-titre
   sheet.mergeCells("A2:G2");
   const subCell = sheet.getCell("A2");
-  subCell.value = `${data.schoolName} · ${data.className} · ${data.subjectName} · ${data.termName} · ${data.assessmentDate}`;
+  subCell.value = `${data.schoolName} Â· ${data.className} Â· ${data.subjectName} Â· ${data.termName} Â· ${data.assessmentDate}`;
   subCell.font = { size: 10, italic: true, color: { argb: "FF6B7280" } };
   subCell.alignment = { horizontal: "center" };
 
   // Ligne vide
   sheet.addRow([]);
 
-  // En-têtes
+  // En-tÃªtes
   const headerRow = sheet.addRow([
-    "N°",
+    "NÂ°",
     "Matricule",
-    "Nom & Prénom",
+    "Nom & PrÃ©nom",
     "Sexe",
     `Note /${data.maxScore}`,
     "Rang",
@@ -319,8 +301,8 @@ export async function generateAssessmentExcel(
       matricule: g.matricule,
       name: `${g.lastName} ${g.firstName}`,
       gender: g.gender,
-      value: g.isAbsent ? "ABSENT" : g.value !== null ? g.value : "—",
-      rank: g.rank || "—",
+      value: g.isAbsent ? "ABSENT" : g.value !== null ? g.value : "â€”",
+      rank: g.rank || "â€”",
       observation: g.observation || "",
     });
 
@@ -347,7 +329,7 @@ export async function generateAssessmentExcel(
   // Pied de page
   sheet.addRow([]);
   const footerCell = sheet.addRow([
-    `Document genere par SIS-MALI · ${new Date().toLocaleDateString("fr-FR")}`,
+    `Document genere par SIS-MALI Â· ${new Date().toLocaleDateString("fr-FR")}`,
   ]);
   footerCell.font = { size: 9, italic: true, color: { argb: "FF9CA3AF" } };
 
@@ -375,7 +357,7 @@ export function generateAssessmentCSV(data: AssessmentExportData): string {
   // Entete
   lines.push(
     [
-      "N°",
+      "NÂ°",
       "Matricule",
       "Nom & Prenom",
       "Sexe",

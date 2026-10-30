@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,6 +6,7 @@ import * as fsSync from 'fs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { generateReportCardPDF } from '../utils/report-card-pdf.util';
 import { generateAnnualReportCardPDF } from '../utils/annual-report-card-pdf.util';
+import { PdfGeneratorService } from '../../common/pdf';
 
 type JobStatus = 'pending' | 'processing' | 'done' | 'failed';
 interface Job {
@@ -23,7 +24,10 @@ export class ClassPdfService {
   private readonly jobs = new Map<string, Job>();
   private readonly jobsDir = '/app/storage/generated';
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfGenerator: PdfGeneratorService,
+  ) {
     if (!fs.existsSync(this.jobsDir)) {
       fs.mkdirSync(this.jobsDir, { recursive: true });
     }
@@ -78,7 +82,7 @@ export class ClassPdfService {
     let processed = 0;
     for (const report of reports) {
       try {
-        // C4 : charger le nom réel de l'école
+        // C4 : charger le nom rÃ©el de l'Ã©cole
         const school = await this.prisma.school.findUnique({
           where: { id: report.student.schoolId },
           select: { name: true, address: true, phone: true, motto: true, logoUrl: true, stampUrl: true, academy: true, cap: true },
@@ -86,7 +90,7 @@ export class ClassPdfService {
         const schoolName = school?.name ?? 'SIS-MALI';
 
         const data: any = {
-          // C4 : nom réel de l'école
+          // C4 : nom rÃ©el de l'Ã©cole
           schoolName,
           schoolAddress: school?.address ?? null,
           schoolPhone: school?.phone ?? null,
@@ -133,7 +137,7 @@ export class ClassPdfService {
           decisionLabel: undefined,
         };
 
-        // C1 : si annuel, charger les périodes
+        // C1 : si annuel, charger les pÃ©riodes
         if (kind === 'ANNUEL' || report.kind === 'ANNUEL') {
           const cycle = data.cycle;
           const terms = await this.prisma.term.findMany({
@@ -179,17 +183,17 @@ export class ClassPdfService {
             : null;
 
           const decisionMap: Record<string, string> = {
-            ADMIS: 'Admis en classe supérieure',
-            PASSE: 'Admis en classe supérieure',
+            ADMIS: 'Admis en classe supÃ©rieure',
+            PASSE: 'Admis en classe supÃ©rieure',
             REDOUBLE: 'Redouble',
             EXCLU: 'Exclu',
-            A_DETERMINER: 'À déterminer',
+            A_DETERMINER: 'Ã€ dÃ©terminer',
           };
-          data.decisionLabel = decisionMap[report.decision ?? 'A_DETERMINER'] ?? 'À déterminer';
+          data.decisionLabel = decisionMap[report.decision ?? 'A_DETERMINER'] ?? 'Ã€ dÃ©terminer';
         }
         const buffer = kind === 'ANNUEL' || report.kind === 'ANNUEL'
-          ? await generateAnnualReportCardPDF(data)
-          : await generateReportCardPDF(data);
+          ? await generateAnnualReportCardPDF(data, this.pdfGenerator)
+          : await generateReportCardPDF(data, this.pdfGenerator);
         const safeName = `${report.student.lastName}-${report.student.firstName}`.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         archive.append(buffer, { name: `bulletin-${safeName}.pdf` });
       } catch (err: any) {

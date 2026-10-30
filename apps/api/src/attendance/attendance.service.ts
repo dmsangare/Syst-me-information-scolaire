@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+﻿import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AttendanceSessionCreateDto, AttendanceBulkUpdateDto, AttendanceRecordDto } from "./dto";
 
@@ -92,7 +92,7 @@ export class AttendanceService {
         startTime: new Date(`1970-01-01T${dto.startTime}:00Z`),
         endTime: new Date(`1970-01-01T${dto.endTime}:00Z`),
         records: {
-          create: dto.records.map((r) => ({
+          create: dto.records.map((r: any) => ({
             studentId: r.studentId,
             status: r.status as any,
             justification: r.justification,
@@ -114,7 +114,7 @@ export class AttendanceService {
     await this.prisma.attendanceRecord.deleteMany({ where: { sessionId } });
 
     await this.prisma.attendanceRecord.createMany({
-      data: dto.records.map((r) => ({
+      data: dto.records.map((r: any) => ({
         sessionId,
         studentId: r.studentId,
         status: r.status as any,
@@ -231,7 +231,7 @@ export class AttendanceService {
     });
 
     return sessions.flatMap((s) =>
-      s.records.map((r) => ({
+      s.records.map((r: any) => ({
         ...r,
         class: s.class,
         sessionDate: s.date,

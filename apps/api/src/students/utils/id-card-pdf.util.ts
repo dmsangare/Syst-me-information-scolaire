@@ -1,7 +1,7 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 
 /**
- * BLOC B — Generation PDF des cartes scolaires.
+ * BLOC B â€” Generation PDF des cartes scolaires.
  *
  * Format A4 : 8 cartes par page (2 colonnes x 4 lignes), format PVC 85.6 x 54 mm.
  * Chaque carte porte un QR code pointant vers /v/{shortCode}/{token}.
@@ -240,36 +240,18 @@ export function buildIdCardsHTML(
 </html>`;
 }
 
-/** Genere un PDF de cartes via Puppeteer. */
+/** Genere un PDF de cartes via Playwright. */
 export async function generateIdCardsPDF(
   cards: IdCardData[],
   options: IdCardBatchOptions = { format: "A4", includeVerso: false },
+  pdfGenerator: PdfGeneratorService,
 ): Promise<Buffer> {
   const html = buildIdCardsHTML(cards, options);
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ],
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "8mm", right: "8mm", bottom: "8mm", left: "8mm" },
   });
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load", timeout: 60_000 });
-    const pdf = await page.pdf({
-      format: options.format === "PVC" ? "A4" : "A4",
-      printBackground: true,
-      margin: { top: "8mm", right: "8mm", bottom: "8mm", left: "8mm" },
-    });
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function escapeHtml(s: string): string {

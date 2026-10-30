@@ -16,7 +16,7 @@ export const DocumentGenerateSchema = z.object({
   templateId: z.string().uuid(),
   studentId: z.string().uuid().optional().nullable(),
   reference: z.string().optional(),
-  data: z.record(z.any()).optional(),
+  data: z.record(z.string(), z.any()).optional(),
 });
 
 export type DocumentTemplateCreateDto = z.infer<typeof DocumentTemplateCreateSchema>;

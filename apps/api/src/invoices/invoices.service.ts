@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
+﻿import { Injectable, NotFoundException, BadRequestException, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { SettingsService } from "../settings/settings.service";
 import { InvoiceCreateDto, InvoiceCancelDto } from "./dto";
@@ -74,7 +74,7 @@ export class InvoicesService {
   async create(dto: InvoiceCreateDto) {
     // Calculer le total
     const totalAmount = dto.items.reduce(
-      (sum, item) => sum + item.quantity * item.unitAmount,
+      (sum: any, item: any) => sum + item.quantity * item.unitAmount,
       0,
     );
 
@@ -93,7 +93,7 @@ export class InvoicesService {
         balance: totalAmount,
         status: "UNPAID",
         items: {
-          create: dto.items.map((item) => ({
+          create: dto.items.map((item: any) => ({
             feeTypeId: item.feeTypeId,
             description: item.description,
             quantity: item.quantity,

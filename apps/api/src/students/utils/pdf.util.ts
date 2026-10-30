@@ -1,4 +1,4 @@
-import * as puppeteer from "puppeteer-core";
+﻿import { PdfGeneratorService } from "../../common/pdf";
 
 export interface PDFColumn {
   header: string;
@@ -17,42 +17,24 @@ export interface PDFOptions {
   footerNote?: string;
 }
 
-export async function generatePDF(options: PDFOptions): Promise<Buffer> {
+export async function generatePDF(
+  options: PDFOptions,
+  pdfGenerator: PdfGeneratorService,
+): Promise<Buffer> {
   const html = buildHTML(options);
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=none",
-    ],
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "15mm", right: "10mm", bottom: "15mm", left: "10mm" },
+    displayHeaderFooter: true,
+    headerTemplate: "<div></div>",
+    footerTemplate: `
+      <div style="font-size: 8px; color: #9CA3AF; text-align: center; width: 100%; padding: 5px 0;">
+        Page <span class="pageNumber"></span> / <span class="totalPages"></span> —
+        SIS-MALI — Genere le ${new Date().toLocaleDateString("fr-FR")}
+      </div>
+    `,
   });
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "15mm", right: "10mm", bottom: "15mm", left: "10mm" },
-      displayHeaderFooter: true,
-      headerTemplate: "<div></div>",
-      footerTemplate: `
-        <div style="font-size: 8px; color: #9CA3AF; text-align: center; width: 100%; padding: 5px 0;">
-          Page <span class="pageNumber"></span> / <span class="totalPages"></span> —
-          SIS-MALI — Genere le ${new Date().toLocaleDateString("fr-FR")}
-        </div>
-      `,
-    });
-
-    return Buffer.from(pdf);
-  } finally {
-    await browser.close();
-  }
 }
 
 function buildHTML(options: PDFOptions): string {

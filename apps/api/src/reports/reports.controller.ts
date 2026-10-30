@@ -1,13 +1,17 @@
-import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ReportsService } from './reports.service';
 import { generateReportPDF } from './pdf/report-pdf.util';
+import { PdfGeneratorService } from '../common/pdf';
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
 export class ReportsController {
-  constructor(private service: ReportsService) {}
+  constructor(
+    private service: ReportsService,
+    private pdfGenerator: PdfGeneratorService,
+  ) {}
 
   private sid(req: any) {
     return req.user.schoolId;
@@ -54,22 +58,22 @@ export class ReportsController {
   }
 
   // ============================================================
-  // PDF — FINANCIER
+  // PDF â€” FINANCIER
   // ============================================================
   @Get('pdf/financial')
   async pdfFinancial(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getFinancial(this.sid(req))).data;
-    const schoolName = req.user.schoolName ?? 'École';
+    const schoolName = req.user.schoolName ?? 'Ã‰cole';
 
     const pdf = await generateReportPDF({
       title: 'Rapport financier',
       schoolName,
-      subtitle: 'Situation des recettes et impayés',
+      subtitle: 'Situation des recettes et impayÃ©s',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
-        { label: 'Total facturé', value: new Intl.NumberFormat('fr-FR').format(data.totalBilled) + ' FCFA' },
-        { label: 'Encaissé', value: new Intl.NumberFormat('fr-FR').format(data.totalPaid) + ' FCFA' },
-        { label: 'Impayés', value: new Intl.NumberFormat('fr-FR').format(data.totalUnpaid) + ' FCFA' },
+        { label: 'Total facturÃ©', value: new Intl.NumberFormat('fr-FR').format(data.totalBilled) + ' FCFA' },
+        { label: 'EncaissÃ©', value: new Intl.NumberFormat('fr-FR').format(data.totalPaid) + ' FCFA' },
+        { label: 'ImpayÃ©s', value: new Intl.NumberFormat('fr-FR').format(data.totalUnpaid) + ' FCFA' },
         { label: 'Taux recouvrement', value: data.recoveryRate.toFixed(1) + ' %' },
       ],
       sections: [
@@ -82,24 +86,24 @@ export class ReportsController {
           ],
         },
         {
-          title: 'Recettes par catégorie',
+          title: 'Recettes par catÃ©gorie',
           rows: data.byCategory,
           columns: [
-            { key: 'category', label: 'Catégorie' },
+            { key: 'category', label: 'CatÃ©gorie' },
             { key: 'amount', label: 'Montant', align: 'right', format: 'currency' },
           ],
         },
         {
-          title: 'Recettes par méthode de paiement',
+          title: 'Recettes par mÃ©thode de paiement',
           rows: data.byMethod,
           columns: [
-            { key: 'method', label: 'Méthode' },
+            { key: 'method', label: 'MÃ©thode' },
             { key: 'count', label: 'Nombre', align: 'right' },
             { key: 'total', label: 'Total', align: 'right', format: 'currency' },
           ],
         },
       ],
-    });
+    }, this.pdfGenerator);
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -110,25 +114,25 @@ export class ReportsController {
   }
 
   // ============================================================
-  // PDF — IMPAYÉS
+  // PDF â€” IMPAYÃ‰S
   // ============================================================
   @Get('pdf/unpaid')
   async pdfUnpaid(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getUnpaid(this.sid(req))).data;
-    const schoolName = req.user.schoolName ?? 'École';
+    const schoolName = req.user.schoolName ?? 'Ã‰cole';
 
     const pdf = await generateReportPDF({
-      title: 'Rapport des impayés',
+      title: 'Rapport des impayÃ©s',
       schoolName,
-      subtitle: `${data.count} facture(s) non soldée(s)`,
+      subtitle: `${data.count} facture(s) non soldÃ©e(s)`,
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
-        { label: 'Total impayés', value: new Intl.NumberFormat('fr-FR').format(data.totalOutstanding) + ' FCFA' },
+        { label: 'Total impayÃ©s', value: new Intl.NumberFormat('fr-FR').format(data.totalOutstanding) + ' FCFA' },
         { label: 'Factures', value: data.count },
       ],
       sections: [
         {
-          title: 'Impayés par classe',
+          title: 'ImpayÃ©s par classe',
           rows: data.byClass,
           columns: [
             { key: 'className', label: 'Classe' },
@@ -137,7 +141,7 @@ export class ReportsController {
           ],
         },
         {
-          title: 'Détail des impayés',
+          title: 'DÃ©tail des impayÃ©s',
           rows: data.items.map((i: any) => ({
             number: i.number,
             studentName: i.studentName,
@@ -148,15 +152,15 @@ export class ReportsController {
           })),
           columns: [
             { key: 'number', label: 'Facture' },
-            { key: 'studentName', label: 'Élève' },
+            { key: 'studentName', label: 'Ã‰lÃ¨ve' },
             { key: 'className', label: 'Classe' },
             { key: 'totalAmount', label: 'Total', align: 'right', format: 'currency' },
-            { key: 'paidAmount', label: 'Payé', align: 'right', format: 'currency' },
+            { key: 'paidAmount', label: 'PayÃ©', align: 'right', format: 'currency' },
             { key: 'balance', label: 'Reste', align: 'right', format: 'currency' },
           ],
         },
       ],
-    });
+    }, this.pdfGenerator);
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -167,21 +171,21 @@ export class ReportsController {
   }
 
   // ============================================================
-  // PDF — EFFECTIFS
+  // PDF â€” EFFECTIFS
   // ============================================================
   @Get('pdf/students')
   async pdfStudents(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getStudents(this.sid(req))).data;
-    const schoolName = req.user.schoolName ?? 'École';
+    const schoolName = req.user.schoolName ?? 'Ã‰cole';
 
     const pdf = await generateReportPDF({
       title: 'Rapport des effectifs',
       schoolName,
-      subtitle: 'Répartition des élèves',
+      subtitle: 'RÃ©partition des Ã©lÃ¨ves',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
-        { label: 'Total élèves', value: data.total },
-        { label: 'Garçons', value: data.boys },
+        { label: 'Total Ã©lÃ¨ves', value: data.total },
+        { label: 'GarÃ§ons', value: data.boys },
         { label: 'Filles', value: data.girls },
       ],
       sections: [
@@ -192,7 +196,7 @@ export class ReportsController {
             { key: 'code', label: 'Code' },
             { key: 'name', label: 'Niveau' },
             { key: 'count', label: 'Total', align: 'right' },
-            { key: 'boys', label: 'Garçons', align: 'right' },
+            { key: 'boys', label: 'GarÃ§ons', align: 'right' },
             { key: 'girls', label: 'Filles', align: 'right' },
           ],
         },
@@ -203,12 +207,12 @@ export class ReportsController {
             { key: 'className', label: 'Classe' },
             { key: 'levelName', label: 'Niveau' },
             { key: 'count', label: 'Total', align: 'right' },
-            { key: 'boys', label: 'Garçons', align: 'right' },
+            { key: 'boys', label: 'GarÃ§ons', align: 'right' },
             { key: 'girls', label: 'Filles', align: 'right' },
           ],
         },
       ],
-    });
+    }, this.pdfGenerator);
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -219,25 +223,25 @@ export class ReportsController {
   }
 
   // ============================================================
-  // PDF — PÉDAGOGIQUE
+  // PDF â€” PÃ‰DAGOGIQUE
   // ============================================================
   @Get('pdf/pedagogical')
   async pdfPedagogical(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getPedagogicalStats(this.sid(req))).data;
-    const schoolName = req.user.schoolName ?? 'École';
+    const schoolName = req.user.schoolName ?? 'Ã‰cole';
 
     const pdf = await generateReportPDF({
-      title: 'Rapport pédagogique',
+      title: 'Rapport pÃ©dagogique',
       schoolName,
-      subtitle: 'Moyennes et résultats',
+      subtitle: 'Moyennes et rÃ©sultats',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
         { label: 'Notes saisies', value: data.totalGrades },
-        { label: 'Taux de réussite', value: data.successRate.toFixed(1) + ' %' },
+        { label: 'Taux de rÃ©ussite', value: data.successRate.toFixed(1) + ' %' },
       ],
       sections: [
         {
-          title: 'Moyennes par matière',
+          title: 'Moyennes par matiÃ¨re',
           rows: data.bySubject.map((s: any) => ({
             subject: s.subject,
             count: s.count,
@@ -246,7 +250,7 @@ export class ReportsController {
             maxPct: s.maxPct,
           })),
           columns: [
-            { key: 'subject', label: 'Matière' },
+            { key: 'subject', label: 'MatiÃ¨re' },
             { key: 'count', label: 'Notes', align: 'right' },
             { key: 'avgPct', label: 'Moyenne', align: 'right', format: 'percent' },
             { key: 'minPct', label: 'Min', align: 'right', format: 'percent' },
@@ -267,7 +271,7 @@ export class ReportsController {
           ],
         },
       ],
-    });
+    }, this.pdfGenerator);
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -278,27 +282,27 @@ export class ReportsController {
   }
 
   // ============================================================
-  // PDF — PRÉSENCES
+  // PDF â€” PRÃ‰SENCES
   // ============================================================
   @Get('pdf/attendance')
   async pdfAttendance(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getAttendance(this.sid(req))).data;
-    const schoolName = req.user.schoolName ?? 'École';
+    const schoolName = req.user.schoolName ?? 'Ã‰cole';
 
     const pdf = await generateReportPDF({
-      title: 'Rapport des présences',
+      title: 'Rapport des prÃ©sences',
       schoolName,
-      subtitle: 'Assiduité et absences',
+      subtitle: 'AssiduitÃ© et absences',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
         { label: 'Sessions', value: data.sessionsCount },
-        { label: 'Taux de présence', value: data.presenceRate + ' %' },
-        { label: 'Présents', value: data.present },
+        { label: 'Taux de prÃ©sence', value: data.presenceRate + ' %' },
+        { label: 'PrÃ©sents', value: data.present },
         { label: 'Absents', value: data.absent },
       ],
       sections: [
         {
-          title: 'Présences par classe',
+          title: 'PrÃ©sences par classe',
           rows: data.byClass.map((c: any) => ({
             className: c.className,
             sessionsCount: c.sessionsCount,
@@ -310,14 +314,14 @@ export class ReportsController {
           columns: [
             { key: 'className', label: 'Classe' },
             { key: 'sessionsCount', label: 'Sessions', align: 'right' },
-            { key: 'present', label: 'Présents', align: 'right' },
+            { key: 'present', label: 'PrÃ©sents', align: 'right' },
             { key: 'absent', label: 'Absents', align: 'right' },
             { key: 'late', label: 'Retards', align: 'right' },
             { key: 'presenceRate', label: 'Taux', align: 'right', format: 'percent' },
           ],
         },
       ],
-    });
+    }, this.pdfGenerator);
 
     res.set({
       'Content-Type': 'application/pdf',

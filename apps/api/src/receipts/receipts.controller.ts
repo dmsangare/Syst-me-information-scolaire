@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Param,
@@ -15,6 +15,7 @@ import { RequirePermissions, CurrentUser, CurrentUserPayload } from "../common/d
 import { SchoolScopeGuard } from "../common/guards";
 import { PaginationDto } from "../common/dto/pagination.dto";
 import { generateReceiptPDF } from "../payments/utils/receipt-pdf.util";
+import { PdfGeneratorService } from '../common/pdf';
 import { loadLogoAsBase64 } from "../common/utils/load-logo.util";
 import { fileToBase64 } from "../common/utils/file-to-base64.util";
 
@@ -23,7 +24,10 @@ import { fileToBase64 } from "../common/utils/file-to-base64.util";
 @Controller("receipts")
 @UseGuards(SchoolScopeGuard)
 export class ReceiptsController {
-  constructor(private readonly service: ReceiptsService) {}
+  constructor(
+    private readonly service: ReceiptsService,
+    private readonly pdfGenerator: PdfGeneratorService,
+  ) {}
 
   @Get()
   @RequirePermissions("payment:view")
@@ -69,12 +73,12 @@ export class ReceiptsController {
       schoolAddress: school.address,
       schoolPhone: school.phone,
       schoolMotto: school.motto,
-      receiptNumber: (receipt as any).number || "—",
+      receiptNumber: (receipt as any).number || "â€”",
       issuedAt: (receipt as any).issuedAt || payment.paidAt,
-      studentName: `${student.firstName || ""} ${student.lastName || ""}`.trim() || "—",
-      studentMatricule: student.matricule || "—",
+      studentName: `${student.firstName || ""} ${student.lastName || ""}`.trim() || "â€”",
+      studentMatricule: student.matricule || "â€”",
       studentClass: null, // TODO : recuperer la classe via enrollment
-      invoiceNumber: invoice.number || "—",
+      invoiceNumber: invoice.number || "â€”",
       invoiceItems: Array.isArray((invoice as any).items)
         ? (invoice as any).items.map((it: any) => ({
             label: it.feeType?.name || it.description || "Frais",
@@ -91,7 +95,7 @@ export class ReceiptsController {
       paymentReference: payment.reference || null,
       cashierName: `${cashier.firstName || ""} ${cashier.lastName || ""}`.trim() || null,
       verifyUrl: undefined, // TODO : URL de verification publique
-    });
+    }, this.pdfGenerator);
 
     const filename = `recu-${(receipt as any).number || id}.pdf`;
     res.set({

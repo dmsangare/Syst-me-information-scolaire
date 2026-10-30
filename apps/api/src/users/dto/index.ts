@@ -11,8 +11,7 @@
  * - Pas de mustChangePassword : c'est le systeme qui le gere.
  * - strict() : rejette les champs inconnus.
  */
-export const UpdateUserSchema = z
-  .object({
+export const UpdateUserSchema = z.strictObject({
     firstName: z.string().min(1).max(100).optional(),
     lastName: z.string().min(1).max(100).optional(),
     email: z.string().email().optional(),
@@ -24,7 +23,6 @@ export const UpdateUserSchema = z
       .enum(["ACTIVE", "INACTIVE", "SUSPENDED", "LOCKED"])
       .optional(),
     roleIds: z.array(z.string().uuid()).min(1).optional(),
-  })
-  .strict();
+  });
 
 export type UpdateUserDto = z.infer<typeof UpdateUserSchema>;
