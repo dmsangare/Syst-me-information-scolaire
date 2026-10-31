@@ -1,5 +1,5 @@
-/**
- * SIS-MALI — Schémas Zod partagés (validation API + formulaires)
+﻿/**
+ * SIS-MALI â€” SchÃ©mas Zod partagÃ©s (validation API + formulaires)
  */
 
 import { z } from 'zod';
@@ -43,7 +43,7 @@ const uuid = z.string().uuid('Identifiant UUID invalide');
 const dateISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format AAAA-MM-JJ requis');
 const phoneML = z
   .string()
-  .regex(/^(\+223)?[2-9]\d{7}$/, 'Numéro malien invalide (ex: +223 70 00 00 00)');
+  .regex(/^(\+223)?[2-9]\d{7}$/, 'NumÃ©ro malien invalide (ex: +223 70 00 00 00)');
 const nonEmptyString = (min = 1, message = 'Champ obligatoire') =>
   z.string().min(min, message);
 
@@ -65,8 +65,8 @@ export type PaginationInput = z.infer<typeof PaginationSchema>;
 // ============================================================
 
 export const LoginSchema = z.object({
-  identifier: nonEmptyString(3, 'Email ou téléphone requis'),
-  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
+  identifier: nonEmptyString(3, 'Email ou tÃ©lÃ©phone requis'),
+  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractÃ¨res'),
 });
 
 export const RefreshTokenSchema = z.object({
@@ -78,11 +78,11 @@ export const ChangePasswordSchema = z
     currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
     newPassword: z
       .string()
-      .min(12, 'Le nouveau mot de passe doit contenir au moins 12 caractères')
+      .min(12, 'Le nouveau mot de passe doit contenir au moins 12 caractÃ¨res')
       .regex(/[A-Z]/, 'Doit contenir une majuscule')
       .regex(/[a-z]/, 'Doit contenir une minuscule')
       .regex(/\d/, 'Doit contenir un chiffre')
-      .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractère spécial'),
+      .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractÃ¨re spÃ©cial'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -129,21 +129,24 @@ export type SchoolUpdateInput = z.infer<typeof SchoolUpdateSchema>;
 // ACADEMIC YEAR
 // ============================================================
 
-export const AcademicYearCreateSchema = z
-  .object({
-    schoolId: uuid,
-    label: z.string().regex(/^\d{4}-\d{4}$/, 'Format AAAA-AAAA requis (ex: 2026-2027)'),
-    startDate: dateISO,
-    endDate: dateISO,
-    status: z.nativeEnum(AcademicYearStatus).default(AcademicYearStatus.PREPARATION),
-    isCurrent: z.boolean().default(false),
-  })
-  .refine((data) => new Date(data.endDate) > new Date(data.startDate), {
-    message: 'La date de fin doit être postérieure à la date de début',
-    path: ['endDate'],
-  });
+const AcademicYearCreateBaseSchema = z.object({
+  schoolId: uuid,
+  label: z.string().regex(/^\d{4}-\d{4}$/, 'Format AAAA-AAAA requis (ex: 2026-2027)'),
+  startDate: dateISO,
+  endDate: dateISO,
+  status: z.nativeEnum(AcademicYearStatus).default(AcademicYearStatus.PREPARATION),
+  isCurrent: z.boolean().default(false),
+});
 
-export const AcademicYearUpdateSchema = AcademicYearCreateSchema.innerType().partial();
+export const AcademicYearCreateSchema = AcademicYearCreateBaseSchema.refine(
+  (data) => new Date(data.endDate) > new Date(data.startDate),
+  {
+    message: 'La date de fin doit etre posterieure a la date de debut',
+    path: ['endDate'],
+  },
+);
+
+export const AcademicYearUpdateSchema = AcademicYearCreateBaseSchema.partial();
 
 export type AcademicYearCreateInput = z.infer<typeof AcademicYearCreateSchema>;
 export type AcademicYearUpdateInput = z.infer<typeof AcademicYearUpdateSchema>;
@@ -195,7 +198,7 @@ export const RoomCreateSchema = z.object({
   type: z.nativeEnum(RoomType),
   capacity: z.coerce.number().int().positive().max(1000).optional(),
   location: z.string().max(120).optional(),
-  equipment: z.record(z.any()).optional(),
+  equipment: z.record(z.string(), z.any()).optional(),
   isAvailable: z.boolean().default(true),
 });
 
@@ -231,8 +234,8 @@ export type ClassUpdateInput = z.infer<typeof ClassUpdateSchema>;
 
 export const StudentCreateSchema = z.object({
   schoolId: uuid,
-  firstName: nonEmptyString(2, 'Le prénom est requis (min. 2 caractères)').max(100),
-  lastName: nonEmptyString(2, 'Le nom de famille est requis (min. 2 caractères)').max(100),
+  firstName: nonEmptyString(2, 'Le prÃ©nom est requis (min. 2 caractÃ¨res)').max(100),
+  lastName: nonEmptyString(2, 'Le nom de famille est requis (min. 2 caractÃ¨res)').max(100),
   gender: z.nativeEnum(Gender),
   birthDate: dateISO,
   birthPlace: z.string().max(150).optional(),
@@ -368,25 +371,28 @@ export type TeacherAssignmentCreateInput = z.infer<typeof TeacherAssignmentCreat
 // TIMETABLE SLOT
 // ============================================================
 
-export const TimetableSlotCreateSchema = z
-  .object({
-    schoolId: uuid.optional(),
-    academicYearId: uuid,
-    classId: uuid,
-    subjectId: uuid,
-    teacherId: uuid,
-    roomId: uuid.optional().nullable(),
-    dayOfWeek: z.coerce.number().int().min(1).max(6),
-    startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM requis'),
-    endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM requis'),
-    weekPattern: z.coerce.number().int().min(0).max(3).default(0),
-  })
-  .refine((data) => data.endTime > data.startTime, {
-    message: "L'heure de fin doit être postérieure à l'heure de début",
-    path: ['endTime'],
-  });
+const TimetableSlotCreateBaseSchema = z.object({
+  schoolId: uuid.optional(),
+  academicYearId: uuid,
+  classId: uuid,
+  subjectId: uuid,
+  teacherId: uuid,
+  roomId: uuid.optional().nullable(),
+  dayOfWeek: z.coerce.number().int().min(1).max(6),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM requis'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM requis'),
+  weekPattern: z.coerce.number().int().min(0).max(3).default(0),
+});
 
-export const TimetableSlotUpdateSchema = TimetableSlotCreateSchema.innerType().partial();
+export const TimetableSlotCreateSchema = TimetableSlotCreateBaseSchema.refine(
+  (data) => data.endTime > data.startTime,
+  {
+    message: "L'heure de fin doit etre posterieure a l'heure de debut",
+    path: ['endTime'],
+  },
+);
+
+export const TimetableSlotUpdateSchema = TimetableSlotCreateBaseSchema.partial();
 
 export type TimetableSlotCreateInput = z.infer<typeof TimetableSlotCreateSchema>;
 export type TimetableSlotUpdateInput = z.infer<typeof TimetableSlotUpdateSchema>;
@@ -433,7 +439,7 @@ export const AssessmentCreateSchema = z.object({
   subjectId: uuid,
   teacherId: uuid,
   type: z.nativeEnum(AssessmentType),
-  title: nonEmptyString(3, 'Titre requis (ex: Devoir n°1)').max(150),
+  title: nonEmptyString(3, 'Titre requis (ex: Devoir nÂ°1)').max(150),
   date: dateISO,
   maxScore: z.coerce.number().positive().max(100).default(20),
   coefficient: z.coerce.number().positive().max(10).default(1),
@@ -502,7 +508,7 @@ export type ReportCardGenerateInput = z.infer<typeof ReportCardGenerateSchema>;
 export type ReportCardUpdateInput = z.infer<typeof ReportCardUpdateSchema>;
 
 export const ReportCardReopenSchema = z.object({
-  motive: z.string().min(5, 'Motif obligatoire (min 5 caractères)').max(500),
+  motive: z.string().min(5, 'Motif obligatoire (min 5 caractÃ¨res)').max(500),
 });
 export type ReportCardReopenInput = z.infer<typeof ReportCardReopenSchema>;
 
@@ -510,23 +516,26 @@ export type ReportCardReopenInput = z.infer<typeof ReportCardReopenSchema>;
 // EXAM
 // ============================================================
 
-export const ExamCreateSchema = z
-  .object({
-    schoolId: uuid,
-    academicYearId: uuid,
-    termId: uuid.optional().nullable(),
-    type: z.nativeEnum(ExamType),
-    name: nonEmptyString(3).max(150),
-    startDate: dateISO,
-    endDate: dateISO,
-    status: z.nativeEnum(ExamStatus).default(ExamStatus.PLANNED),
-  })
-  .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
-    message: 'La date de fin doit être postérieure ou égale à la date de début',
-    path: ['endDate'],
-  });
+const ExamCreateBaseSchema = z.object({
+  schoolId: uuid,
+  academicYearId: uuid,
+  termId: uuid.optional().nullable(),
+  type: z.nativeEnum(ExamType),
+  name: nonEmptyString(3).max(150),
+  startDate: dateISO,
+  endDate: dateISO,
+  status: z.nativeEnum(ExamStatus).default(ExamStatus.PLANNED),
+});
 
-export const ExamUpdateSchema = ExamCreateSchema.innerType().partial();
+export const ExamCreateSchema = ExamCreateBaseSchema.refine(
+  (data) => new Date(data.endDate) >= new Date(data.startDate),
+  {
+    message: 'La date de fin doit etre posterieure ou egale a la date de debut',
+    path: ['endDate'],
+  },
+);
+
+export const ExamUpdateSchema = ExamCreateBaseSchema.partial();
 
 export const ExamSessionCreateSchema = z.object({
   examId: uuid,
@@ -604,7 +613,7 @@ export const PaymentCreateSchema = z.object({
   schoolId: uuid.optional(),
   invoiceId: uuid,
   studentId: uuid,
-  amount: z.coerce.number().positive('Le montant doit être supérieur à 0'),
+  amount: z.coerce.number().positive('Le montant doit Ãªtre supÃ©rieur Ã  0'),
   method: z.nativeEnum(PaymentMethod).default(PaymentMethod.CASH),
   reference: z.string().max(80).optional(),
   cashierId: uuid.optional(),
@@ -626,7 +635,7 @@ export const PaymentCancelSchema = z.object({
  */
 export const PaymentFamilySchema = z.object({
   guardianId: uuid,
-  amount: z.coerce.number().positive('Le montant doit être supérieur à 0'),
+  amount: z.coerce.number().positive('Le montant doit Ãªtre supÃ©rieur Ã  0'),
   method: z.nativeEnum(PaymentMethod).default(PaymentMethod.CASH),
   reference: z.string().max(80).optional(),
   idempotencyKey: z.string().max(80).optional(),
@@ -667,7 +676,7 @@ export const NotificationCreateSchema = z.object({
   body: nonEmptyString(2),
   channel: z.nativeEnum(NotificationChannel).default(NotificationChannel.INTERNAL),
   status: z.nativeEnum(NotificationStatus).default(NotificationStatus.PENDING),
-  payload: z.record(z.any()).optional(),
+  payload: z.record(z.string(), z.any()).optional(),
 });
 
 export const NotificationBulkSchema = z.object({
@@ -703,14 +712,14 @@ export const UserCreateSchema = z.object({
   phone: phoneML.optional().or(z.literal('')),
   password: z
     .string()
-    .min(12, 'Au moins 12 caractères')
+    .min(12, 'Au moins 12 caractÃ¨res')
     .regex(/[A-Z]/, 'Doit contenir une majuscule')
     .regex(/[a-z]/, 'Doit contenir une minuscule')
     .regex(/\d/, 'Doit contenir un chiffre')
-    .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractère spécial'),
+    .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractÃ¨re spÃ©cial'),
   firstName: nonEmptyString(2).max(100),
   lastName: nonEmptyString(2).max(100),
-  roleIds: z.array(uuid).min(1, 'Au moins un rôle requis'),
+  roleIds: z.array(uuid).min(1, 'Au moins un rÃ´le requis'),
 });
 
 export const UserUpdateSchema = z.object({
@@ -730,13 +739,13 @@ export type UserUpdateInput = z.infer<typeof UserUpdateSchema>;
 // ============================================================
 
 export const GlobalSearchSchema = z.object({
-  q: z.string().min(2, 'Au moins 2 caractères'),
+  q: z.string().min(2, 'Au moins 2 caractÃ¨res'),
   limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
 export type GlobalSearchInput = z.infer<typeof GlobalSearchSchema>;
 // ============================================================
-// BACKUP — Configuration sauvegarde automatique
+// BACKUP â€” Configuration sauvegarde automatique
 // ============================================================
 
 export const BackupRetentionSchema = z.object({
@@ -755,7 +764,7 @@ export const BackupSettingsSchema = z.object({
     )
     .default("0 23 * * *"),
   includeFiles: z.boolean().default(true),
-  retention: BackupRetentionSchema.default({}),
+  retention: BackupRetentionSchema.default({ daily: 7, weekly: 4, monthly: 12 }),
   lastRun: z.string().datetime().nullable().optional(),
   lastStatus: z.enum(["SUCCESS", "FAILED", "IN_PROGRESS"]).nullable().optional(),
   nextRun: z.string().datetime().nullable().optional(),
@@ -770,4 +779,3 @@ export const BackupSettingsUpdateSchema = BackupSettingsSchema.partial().omit({
 export type BackupSettings = z.infer<typeof BackupSettingsSchema>;
 export type BackupSettingsUpdate = z.infer<typeof BackupSettingsUpdateSchema>;
 export type BackupRetention = z.infer<typeof BackupRetentionSchema>;
-
