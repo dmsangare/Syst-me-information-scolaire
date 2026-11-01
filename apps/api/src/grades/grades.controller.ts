@@ -1,7 +1,7 @@
-﻿import {
+import {
   Controller, Get, Post, Patch, Delete, Body, Param,
-  HttpCode, HttpStatus, UseGuards,
-} from "@nestjs/common";
+  HttpCode, HttpStatus, UseGuards, Query} from "@nestjs/common";
+import { BatchMatrixSchema } from "@sis-mali/shared";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { GradesService } from "./grades.service";
 import { GradesBulkSchema, GradeUpdateSchema } from "./dto";
@@ -66,5 +66,26 @@ export class GradesController {
   @RequirePermissions("grade:delete")
   async remove(@Param("id") id: string, @CurrentUser() user: any) {
     await this.service.remove(id, user);
+  }
+
+  @Get("matrix")
+  @RequirePermissions("grade:view")
+  @ApiOperation({ summary: "Matrice eleves x matieres pour saisie groupee" })
+  async getMatrix(
+    @Query("classId") classId: string,
+    @Query("termId") termId: string,
+    @Query("assessmentType") assessmentType: string,
+  ) {
+    return this.service.getMatrix(classId, termId, assessmentType);
+  }
+
+  @Post("batch-matrix")
+  @RequirePermissions("grade:create")
+  @ApiOperation({ summary: "Enregistrer plusieurs notes en une transaction atomique" })
+  async saveBatchMatrix(
+    @CurrentUser() user: any,
+    @Body(new ZodValidationPipe(BatchMatrixSchema)) dto: any,
+  ) {
+    return this.service.saveBatchMatrix(dto, user);
   }
 }

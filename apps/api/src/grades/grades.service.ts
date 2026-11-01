@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReportCardsService } from "../report-cards/report-cards.service";
 import { GradesBulkDto, GradeUpdateDto } from "./dto";
@@ -420,5 +420,281 @@ export class GradesService {
         "Vous n'etes pas assigne a cette classe/matiere pour cette annee",
       );
     }
+  }
+
+  // ============================================================
+  // SAISIE GROUPEE (MATRICE ELEVES x MATIERES)
+  // ============================================================
+
+  async getMatrix(classId: string, termId: string, assessmentType: string) {
+    const cls = await this.prisma.class.findUnique({
+      where: { id: classId },
+      include: { level: true, academicYear: true },
+    });
+    if (!cls) throw new NotFoundException("Classe introuvable");
+
+    const term = await this.prisma.term.findUnique({ where: { id: termId } });
+    if (!term) throw new NotFoundException("Periode introuvable");
+    if (term.academicYearId !== cls.academicYearId) {
+      throw new BadRequestException("La periode n'appartient pas a l'annee de la classe");
+    }
+
+    const isFirstCycle = cls.level.cycle === "PREMIER_CYCLE";
+    const scale = isFirstCycle ? 10 : 20;
+
+    const classSubjects = await this.prisma.classSubject.findMany({
+      where: { classId, academicYearId: cls.academicYearId, isActive: true },
+      include: { subject: { select: { id: true, code: true, name: true } } },
+      orderBy: { displayOrder: "asc" },
+    });
+    if (classSubjects.length === 0) {
+      throw new BadRequestException("Aucune matiere affectee a cette classe. Utilisez POST /class-subjects.");
+    }
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { classId, academicYearId: cls.academicYearId, status: "VALIDATED" },
+      include: {
+        student: { select: { id: true, matricule: true, firstName: true, lastName: true, gender: true } },
+      },
+      orderBy: { student: { lastName: "asc" } },
+    });
+
+    const assessments = await this.prisma.assessment.findMany({
+      where: { classId, termId, type: assessmentType as any, academicYearId: cls.academicYearId },
+      select: { id: true, subjectId: true },
+    });
+    const assessmentBySubject = new Map<string, string>(assessments.map((a) => [a.subjectId, a.id]));
+
+    const assessmentIds = assessments.map((a) => a.id);
+    const grades = assessmentIds.length > 0
+      ? await this.prisma.grade.findMany({ where: { assessmentId: { in: assessmentIds } } })
+      : [];
+
+    const subjects = classSubjects.map((cs) => ({
+      id: cs.subject.id,
+      code: cs.subject.code,
+      name: cs.subject.name,
+      scale: cs.scale,
+      displayOrder: cs.displayOrder,
+      isMandatory: cs.isMandatory,
+    }));
+
+    const matrix = enrollments.map((enr) => {
+      const cells = subjects.map((subj) => {
+        const assessmentId = assessmentBySubject.get(subj.id);
+        const grade = assessmentId
+          ? grades.find((g) => g.assessmentId === assessmentId && g.studentId === enr.student.id)
+          : null;
+        return {
+          subjectId: subj.id,
+          assessmentId: assessmentId ?? null,
+          value: grade?.value !== null && grade?.value !== undefined ? Number(grade.value) : null,
+          isAbsent: grade?.isAbsent ?? false,
+          isExempt: grade?.isExempt ?? false,
+          observation: grade?.observation ?? null,
+        };
+      });
+      return {
+        studentId: enr.student.id,
+        matricule: enr.student.matricule,
+        firstName: enr.student.firstName,
+        lastName: enr.student.lastName,
+        gender: enr.student.gender,
+        cells,
+      };
+    });
+
+    return {
+      class: { id: cls.id, code: cls.code, name: cls.name },
+      term: { id: term.id, name: term.name, type: term.type, isLocked: term.isLocked },
+      academicYear: { id: cls.academicYear.id, label: cls.academicYear.label },
+      cycle: cls.level.cycle,
+      scale,
+      assessmentType,
+      subjects,
+      students: enrollments.map((e) => ({
+        id: e.student.id,
+        matricule: e.student.matricule,
+        firstName: e.student.firstName,
+        lastName: e.student.lastName,
+      })),
+      matrix,
+      stats: {
+        totalStudents: enrollments.length,
+        totalSubjects: subjects.length,
+        totalCells: enrollments.length * subjects.length,
+      },
+    };
+  }
+
+  // ============================================================
+  // SAISIE GROUPEE - ENREGISTREMENT (TRANSACTION ATOMIQUE)
+  // ============================================================
+
+  async saveBatchMatrix(
+    dto: {
+      classId: string;
+      termId: string;
+      assessmentType: string;
+      entries: Array<{
+        studentId: string;
+        subjectId: string;
+        value: number | null;
+        isAbsent: boolean;
+        isExempt: boolean;
+        observation?: string | null;
+      }>;
+      overwrite: boolean;
+    },
+    user: { id: string; roles: string[]; schoolId?: string | null },
+  ) {
+    const cls = await this.prisma.class.findUnique({
+      where: { id: dto.classId },
+      include: { level: true },
+    });
+    if (!cls) throw new NotFoundException("Classe introuvable");
+
+    const term = await this.prisma.term.findUnique({ where: { id: dto.termId } });
+    if (!term) throw new NotFoundException("Periode introuvable");
+    if (term.academicYearId !== cls.academicYearId) {
+      throw new BadRequestException("La periode n'appartient pas a l'annee de la classe");
+    }
+    if (term.isLocked) {
+      throw new BadRequestException("Cette periode est verrouillee. Saisie interdite.");
+    }
+
+    const scale = cls.level.cycle === "PREMIER_CYCLE" ? 10 : 20;
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { classId: dto.classId, academicYearId: cls.academicYearId, status: "VALIDATED" },
+      select: { studentId: true },
+    });
+    const validStudentIds = new Set(enrollments.map((e) => e.studentId));
+
+    const classSubjects = await this.prisma.classSubject.findMany({
+      where: { classId: dto.classId, academicYearId: cls.academicYearId, isActive: true },
+      select: { subjectId: true, scale: true },
+    });
+    const validSubjectIds = new Set(classSubjects.map((cs) => cs.subjectId));
+
+    const invalidEntries: string[] = [];
+    for (const entry of dto.entries) {
+      if (!validStudentIds.has(entry.studentId)) {
+        invalidEntries.push("Eleve " + entry.studentId + " non inscrit dans la classe");
+        continue;
+      }
+      if (!validSubjectIds.has(entry.subjectId)) {
+        invalidEntries.push("Matiere " + entry.subjectId + " non affectee a la classe");
+        continue;
+      }
+      if (entry.value !== null && (entry.value < 0 || entry.value > scale)) {
+        invalidEntries.push("Note " + entry.value + " hors plage (0-" + scale + ") pour eleve " + entry.studentId);
+      }
+    }
+    if (invalidEntries.length > 0) {
+      throw new BadRequestException({ message: "Entrees invalides", errors: invalidEntries });
+    }
+
+    const subjectIds = Array.from(new Set(dto.entries.map((e) => e.subjectId)));
+    const existingAssessments = await this.prisma.assessment.findMany({
+      where: {
+        classId: dto.classId,
+        termId: dto.termId,
+        type: dto.assessmentType as any,
+        academicYearId: cls.academicYearId,
+        subjectId: { in: subjectIds },
+      },
+      select: { id: true, subjectId: true },
+    });
+    const assessmentBySubject = new Map<string, { id: string; subjectId: string }>(
+      existingAssessments.map((a) => [a.subjectId, { id: a.id, subjectId: a.subjectId }]),
+    );
+
+    const now = new Date();
+    for (const subjectId of subjectIds) {
+      if (!assessmentBySubject.has(subjectId)) {
+        const newAssessment = await this.prisma.assessment.create({
+          data: {
+            schoolId: cls.schoolId,
+            academicYearId: cls.academicYearId,
+            termId: dto.termId,
+            classId: dto.classId,
+            subjectId,
+            teacherId: user.id,
+            type: dto.assessmentType as any,
+            title: "Saisie groupee " + dto.assessmentType + " - " + term.name,
+            date: now,
+            maxScore: scale,
+            coefficient: 1,
+            status: "DRAFT",
+          },
+        });
+        assessmentBySubject.set(subjectId, { id: newAssessment.id, subjectId });
+      }
+    }
+
+    const existingGrades = await this.prisma.grade.findMany({
+      where: {
+        assessmentId: { in: existingAssessments.map((a) => a.id) },
+        studentId: { in: dto.entries.map((e) => e.studentId) },
+      },
+      select: { id: true, assessmentId: true, studentId: true, value: true },
+    });
+    const existingMap = new Map<string, { id: string; value: any }>(
+      existingGrades.map((g) => [g.assessmentId + ":" + g.studentId, { id: g.id, value: g.value }]),
+    );
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    const conflicts: Array<{ studentId: string; subjectId: string; currentValue: number }> = [];
+    const operations: any[] = [];
+
+    for (const entry of dto.entries) {
+      const assessment = assessmentBySubject.get(entry.subjectId);
+      if (!assessment) continue;
+      const key = assessment.id + ":" + entry.studentId;
+      const existing = existingMap.get(key);
+
+      if (existing && !dto.overwrite) {
+        conflicts.push({ studentId: entry.studentId, subjectId: entry.subjectId, currentValue: Number(existing.value) });
+        skipped++;
+        continue;
+      }
+
+      const status = entry.isExempt ? "EXEMPT" : entry.isAbsent ? "ABSENT" : "PRESENT";
+      const updateData: any = {
+        value: entry.value,
+        isAbsent: entry.isAbsent,
+        isExempt: entry.isExempt,
+        status,
+        observation: entry.observation ?? null,
+        enteredBy: user.id,
+      };
+
+      if (existing) {
+        operations.push(this.prisma.grade.update({ where: { id: existing.id }, data: updateData }));
+        updated++;
+      } else {
+        operations.push(this.prisma.grade.create({
+          data: { assessmentId: assessment.id, studentId: entry.studentId, ...updateData },
+        }));
+        created++;
+      }
+    }
+
+    if (operations.length > 0) {
+      await this.prisma.$transaction(operations);
+    }
+
+    return {
+      created,
+      updated,
+      skipped,
+      conflicts,
+      totalProcessed: created + updated + skipped,
+      termName: term.name,
+      scale,
+    };
   }
 }
