@@ -1,4 +1,4 @@
-﻿export type AssessmentType =
+export type AssessmentType =
   | "INTERROGATION"
   | "DEVOIR"
   | "CONTROLE"
@@ -118,4 +118,110 @@ export interface ReportCard {
     teacherComment?: string | null;
     subject: { id: string; code: string; name: string };
   }>;
+}
+
+// ============================================================
+// SAISIE GROUPEE (MATRICE ELEVES x MATIERES)
+// ============================================================
+
+export interface MatrixSubject {
+  id: string;
+  code: string;
+  name: string;
+  scale: number;
+  displayOrder: number;
+  isMandatory: boolean;
+}
+
+export interface MatrixCell {
+  subjectId: string;
+  assessmentId: string | null;
+  value: number | null;
+  isAbsent: boolean;
+  isExempt: boolean;
+  observation: string | null;
+}
+
+export interface MatrixStudent {
+  studentId: string;
+  matricule: string;
+  firstName: string;
+  lastName: string;
+  gender: "M" | "F";
+  cells: MatrixCell[];
+}
+
+export interface MatrixClassInfo {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface MatrixTermInfo {
+  id: string;
+  name: string;
+  type: string;
+  isLocked: boolean;
+}
+
+export interface MatrixAcademicYearInfo {
+  id: string;
+  label: string;
+}
+
+export interface MatrixStats {
+  totalStudents: number;
+  totalSubjects: number;
+  totalCells: number;
+}
+
+export interface MatrixResponse {
+  class: MatrixClassInfo;
+  term: MatrixTermInfo;
+  academicYear: MatrixAcademicYearInfo;
+  cycle: string;
+  scale: number;
+  assessmentType: string;
+  subjects: MatrixSubject[];
+  students: Array<{
+    id: string;
+    matricule: string;
+    firstName: string;
+    lastName: string;
+  }>;
+  matrix: MatrixStudent[];
+  stats: MatrixStats;
+}
+
+export interface BatchMatrixEntry {
+  studentId: string;
+  subjectId: string;
+  value: number | null;
+  isAbsent: boolean;
+  isExempt: boolean;
+  observation?: string | null;
+}
+
+export interface BatchMatrixPayload {
+  classId: string;
+  termId: string;
+  assessmentType: string;
+  entries: BatchMatrixEntry[];
+  overwrite: boolean;
+}
+
+export interface BatchMatrixConflict {
+  studentId: string;
+  subjectId: string;
+  currentValue: number;
+}
+
+export interface BatchMatrixResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  conflicts: BatchMatrixConflict[];
+  totalProcessed: number;
+  termName: string;
+  scale: number;
 }

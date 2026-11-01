@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -32,7 +32,7 @@ import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
 import { ReportCardsListPage, ReportCardDetailPage } from "@/pages/report-cards";
 import { CalculationPage } from "@/pages/report-cards/CalculationPage";
 import { AnnualResultsPage } from "@/pages/report-cards/AnnualResultsPage";
-import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // ✅ NOUVEL IMPORT
+import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // âœ… NOUVEL IMPORT
 import {
   InvoicesListPage,
   InvoiceDetailPage,
@@ -58,6 +58,7 @@ import { IdCardsPage } from "@/pages/id-cards/IdCardsPage";
 import { AcademicYearsPage } from "@/pages/academic-years/AcademicYearsPage";
 import { YearRolloverPage } from "@/pages/year-rollover/YearRolloverPage";
 import { StateExamsPage } from "@/pages/state-exams/StateExamsPage";
+import { BatchGradesEntryPage } from "@/pages/grades/BatchGradesEntryPage";
 import TimetablePage from '@/pages/timetable/TimetablePage';
 import { PublicVerificationPage } from '@/pages/public/PublicVerificationPage';
 
@@ -82,7 +83,7 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/honor-roll" element={<HonorRollPage />} />
 
-          {/* Élèves */}
+          {/* Ã‰lÃ¨ves */}
           <Route
             path="/students"
             element={
@@ -176,7 +177,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* Matières */}
+          {/* MatiÃ¨res */}
           <Route
             path="/subjects"
             element={
@@ -212,7 +213,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* Présences */}
+          {/* PrÃ©sences */}
           <Route
             path="/attendance"
             element={
@@ -274,7 +275,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* ✅ Décisions annuelles */}
+          {/* âœ… DÃ©cisions annuelles */}
           <Route
             path="/annual-decisions"
             element={
@@ -452,7 +453,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* Paramètres */}
+          {/* ParamÃ¨tres */}
           <Route
             path="/settings"
             element={
@@ -574,7 +575,8 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
-      </Route>
+              <Route path="/grades/batch" element={<BatchGradesEntryPage />} />
+</Route>
 
       <Route path="/v/:shortCode" element={<PublicVerificationPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />

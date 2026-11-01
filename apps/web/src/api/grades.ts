@@ -25,4 +25,43 @@ export const gradesApi = {
   async remove(id: string): Promise<void> {
     await api.delete(`/grades/${id}`);
   },
+  // ============================================================
+  // SAISIE GROUPEE (MATRICE)
+  // ============================================================
+
+  async getMatrix(
+    classId: string,
+    termId: string,
+    assessmentType: string,
+  ): Promise<any> {
+    const params = new URLSearchParams({ classId, termId, assessmentType });
+    const { data } = await api.get("/grades/matrix?" + params.toString());
+    return data.data || data;
+  },
+
+  async saveBatchMatrix(payload: {
+    classId: string;
+    termId: string;
+    assessmentType: string;
+    entries: Array<{
+      studentId: string;
+      subjectId: string;
+      value: number | null;
+      isAbsent: boolean;
+      isExempt: boolean;
+      observation?: string | null;
+    }>;
+    overwrite: boolean;
+  }): Promise<{
+    created: number;
+    updated: number;
+    skipped: number;
+    conflicts: Array<{ studentId: string; subjectId: string; currentValue: number }>;
+    totalProcessed: number;
+    termName: string;
+    scale: number;
+  }> {
+    const { data } = await api.post("/grades/batch-matrix", payload);
+    return data.data || data;
+  },
 };
