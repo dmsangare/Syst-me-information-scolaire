@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Res,
   HttpCode, HttpStatus, UseGuards,
 } from "@nestjs/common";
@@ -67,8 +67,7 @@ export class AssessmentsController {
     @Body(new ZodValidationPipe(AssessmentCreateSchema)) rawDto: any,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    const dto = { ...rawDto, schoolId: user.schoolId };
-    return this.service.create(dto);
+    return this.service.create(rawDto, this.getSchoolScope(user));
   }
 
   @Patch(":id")

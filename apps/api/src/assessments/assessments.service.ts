@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AssessmentCreateDto, AssessmentUpdateDto } from "./dto";
 
@@ -28,7 +28,7 @@ export class AssessmentsService {
     schoolId: string | null,
     page = 1,
     limit = 20,
-    filters: { classId?: string; subjectId?: string; termId?: string; teacherId?: string; status?: string; type?: string } = {}, // ✅ type ajouté
+    filters: { classId?: string; subjectId?: string; termId?: string; teacherId?: string; status?: string; type?: string } = {}, // Ã¢Å“â€¦ type ajoutÃƒÂ©
     user?: { id: string; roles: string[] },
   ) {
     const where: any = {};
@@ -38,7 +38,7 @@ export class AssessmentsService {
     if (filters.termId) where.termId = filters.termId;
     if (filters.teacherId) where.teacherId = filters.teacherId;
     if (filters.status) where.status = filters.status;
-    if (filters.type) where.type = filters.type; // ✅ Filtre type appliqué
+    if (filters.type) where.type = filters.type; // Ã¢Å“â€¦ Filtre type appliquÃƒÂ©
 
     // FILTRE TEACHER : forcer le teacherId si TEACHER connecte
     const isTeacherOnly =
@@ -110,7 +110,73 @@ export class AssessmentsService {
   // ECRITURE
   // ============================================================
 
-  async create(dto: AssessmentCreateDto) {
+  async create(dto: AssessmentCreateDto, schoolId?: string | null) {
+    // 1. Charger la classe, la matiere et la periode
+    const [cls, subject, term] = await Promise.all([
+      this.prisma.class.findUnique({
+        where: { id: dto.classId },
+        select: { id: true, schoolId: true, academicYearId: true },
+      }),
+      this.prisma.subject.findUnique({
+        where: { id: dto.subjectId },
+        select: { id: true, schoolId: true, isActive: true },
+      }),
+      this.prisma.term.findUnique({
+        where: { id: dto.termId },
+        select: { id: true, academicYearId: true },
+      }),
+    ]);
+
+    if (!cls) throw new NotFoundException("Classe introuvable");
+    if (!subject) throw new NotFoundException("Matiere introuvable");
+    if (!term) throw new NotFoundException("Periode introuvable");
+
+    // 2. Cloisonnement schoolId
+    if (schoolId && cls.schoolId !== schoolId) {
+      throw new ForbiddenException("Acces refuse a cette classe");
+    }
+    if (cls.schoolId !== subject.schoolId) {
+      throw new ForbiddenException(
+        "La classe et la matiere appartiennent a des etablissements differents",
+      );
+    }
+
+    // 3. Matiere active
+    if (!subject.isActive) {
+      throw new BadRequestException(
+        "Cette matiere est desactivee. Reactivez-la avant de creer une evaluation.",
+      );
+    }
+
+    // 4. Coherence annee scolaire
+    if (cls.academicYearId !== dto.academicYearId) {
+      throw new BadRequestException(
+        "L'annee scolaire de l'evaluation doit correspondre a celle de la classe",
+      );
+    }
+    if (term.academicYearId !== dto.academicYearId) {
+      throw new BadRequestException(
+        "La periode selectionnee n'appartient pas a l'annee scolaire de l'evaluation",
+      );
+    }
+
+    // 5. Verifier que la matiere est affectee a la classe pour cette annee
+    const classSubject = await this.prisma.classSubject.findFirst({
+      where: {
+        classId: dto.classId,
+        subjectId: dto.subjectId,
+        academicYearId: dto.academicYearId,
+        isActive: true,
+      },
+    });
+    if (!classSubject) {
+      throw new BadRequestException(
+        "Cette matiere n'est pas affectee a cette classe pour l'annee scolaire. " +
+        "Utilisez POST /class-subjects pour l'affecter avant de creer une evaluation.",
+      );
+    }
+
+    // 6. Creation
     return this.prisma.assessment.create({
       data: {
         ...dto,
@@ -141,7 +207,7 @@ export class AssessmentsService {
       const hasCritical = criticalFields.some((f) => (dto as any)[f] !== undefined);
       if (hasCritical) {
         throw new BadRequestException(
-          "Cette evaluation est validee. Les champs structurels (classe, periode, matiere, barème) ne peuvent plus etre modifies.",
+          "Cette evaluation est validee. Les champs structurels (classe, periode, matiere, barÃƒÂ¨me) ne peuvent plus etre modifies.",
         );
       }
     }
@@ -249,7 +315,7 @@ export class AssessmentsService {
     });
     if (!existing) throw new NotFoundException("Evaluation introuvable");
     if (existing.status !== "VALIDATED" && existing.status !== "LOCKED" && existing.status !== "SUBMITTED") {
-      throw new BadRequestException("Cette evaluation n'est pas validée, elle n'a pas besoin d'être réouverte.");
+      throw new BadRequestException("Cette evaluation n'est pas validÃƒÂ©e, elle n'a pas besoin d'ÃƒÂªtre rÃƒÂ©ouverte.");
     }
 
     // Debloquer toutes les notes
