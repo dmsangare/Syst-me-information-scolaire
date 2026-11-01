@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SIS-MALI â€” SchÃ©mas Zod partagÃ©s (validation API + formulaires)
  */
 
@@ -328,6 +328,8 @@ export const SubjectCreateSchema = z.object({
   schoolId: uuid.optional(),
   code: nonEmptyString(1).max(20),
   name: nonEmptyString(2).max(120),
+  description: z.string().max(500).optional().nullable(),
+  subjectDomainId: uuid.optional().nullable(),
   type: z.nativeEnum(SubjectType).default(SubjectType.CORE),
   isActive: z.boolean().default(true),
 });

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
   HttpCode, HttpStatus, UseGuards,
 } from "@nestjs/common";
@@ -58,19 +58,34 @@ export class SubjectsController {
 
   @Post(":id/coefficients")
   @RequirePermissions("subject:update")
-  @ApiOperation({ summary: "Definir un coefficient pour un niveau" })
+  @ApiOperation({ summary: "Definir un coefficient pour un niveau et une annee scolaire" })
   async setCoefficient(
     @Param("id") subjectId: string,
-    @Body() body: { levelId: string; coefficient: number; weeklyHours?: number },
+    @Body() body: {
+      levelId: string;
+      academicYearId: string;
+      coefficient: number;
+      weeklyHours?: number;
+    },
   ) {
-    return this.service.setCoefficient(subjectId, body.levelId, body.coefficient, body.weeklyHours);
+    return this.service.setCoefficient(
+      subjectId,
+      body.levelId,
+      body.academicYearId,
+      body.coefficient,
+      body.weeklyHours,
+    );
   }
 
   @Delete(":id/coefficients/:levelId")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermissions("subject:update")
-  async removeCoefficient(@Param("id") subjectId: string, @Param("levelId") levelId: string) {
-    await this.service.removeCoefficient(subjectId, levelId);
+  async removeCoefficient(
+    @Param("id") subjectId: string,
+    @Param("levelId") levelId: string,
+    @Query("academicYearId") academicYearId: string,
+  ) {
+    await this.service.removeCoefficient(subjectId, levelId, academicYearId);
   }
 
   @Delete(":id")
@@ -78,5 +93,12 @@ export class SubjectsController {
   @RequirePermissions("subject:delete")
   async remove(@Param("id") id: string) {
     await this.service.remove(id);
+  }
+
+  @Patch(":id/reactivate")
+  @RequirePermissions("subject:update")
+  @ApiOperation({ summary: "Reactiver une matiere desactivee" })
+  async reactivate(@Param("id") id: string) {
+    return this.service.reactivate(id);
   }
 }
