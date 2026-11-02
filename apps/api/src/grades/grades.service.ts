@@ -176,14 +176,14 @@ export class GradesService {
       await this.prisma.gradeAudit.createMany({ data: auditsToCreate });
     }
 
-    // L8 : recalculer isComplete après modification
+    // L8 : recalculer isComplete aprÃ¨s modification
     try {
       await this.reportCards.recomputeIsCompleteForAssessment(dto.assessmentId);
     } catch (err) {
       // Silencieux : le recalcul ne doit pas bloquer la saisie
     }
 
-    // DEC-9 : marquer les bulletins comme "à recalculer" (non publiés uniquement)
+    // DEC-9 : marquer les bulletins comme "Ã  recalculer" (non publiÃ©s uniquement)
     try {
       const assessment = await this.prisma.assessment.findUnique({
         where: { id: dto.assessmentId },
@@ -247,7 +247,7 @@ export class GradesService {
       },
     });
 
-    // Journal GradeAudit si value a changé
+    // Journal GradeAudit si value a changÃ©
     const valueChanged =
       dto.value !== undefined &&
       (oldValue === null || updated.value === null
@@ -265,14 +265,14 @@ export class GradesService {
       });
     }
 
-    // L8 : recalculer isComplete après modification
+    // L8 : recalculer isComplete aprÃ¨s modification
     try {
       await this.reportCards.recomputeIsCompleteForAssessment(grade.assessmentId);
     } catch (err) {
       // Silencieux
     }
 
-    // DEC-9 : marquer les bulletins comme "à recalculer" (non publiés uniquement)
+    // DEC-9 : marquer les bulletins comme "Ã  recalculer" (non publiÃ©s uniquement)
     try {
       await this.prisma.reportCard.updateMany({
         where: {
@@ -611,6 +611,14 @@ export class GradesService {
     );
 
     const now = new Date();
+    const teacher = await this.prisma.teacher.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    if (!teacher) {
+      throw new BadRequestException("Aucun profil enseignant associe a cet utilisateur");
+    }
+
     for (const subjectId of subjectIds) {
       if (!assessmentBySubject.has(subjectId)) {
         const newAssessment = await this.prisma.assessment.create({
@@ -620,7 +628,7 @@ export class GradesService {
             termId: dto.termId,
             classId: dto.classId,
             subjectId,
-            teacherId: user.id,
+            teacherId: teacher.id,
             type: dto.assessmentType as any,
             title: "Saisie groupee " + dto.assessmentType + " - " + term.name,
             date: now,
