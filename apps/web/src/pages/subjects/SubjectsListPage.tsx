@@ -1,8 +1,12 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Plus, Search, Trash2, Hash } from "lucide-react";
-import { useSubjects, useDeleteSubject } from "@/hooks/subjects";
+import { BookOpen, Plus, Search, Eye, Power, PowerOff } from "lucide-react";
+import { useSubjects } from "@/hooks/subjects";
+import { useSubjectDomains } from "@/hooks/subject-domains";
 import { useAuth } from "@/contexts/AuthContext";
+import { subjectsApi } from "@/api/subjects";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Button,
   Input,
@@ -10,8 +14,8 @@ import {
   CardContent,
   PageLoader,
   EmptyState,
+  StatusBadge,
 } from "@/components/ui";
-import { cn } from "@/lib/utils";
 
 const TYPE_LABELS: Record<string, string> = {
   CORE: "Obligatoire",
@@ -20,178 +24,112 @@ const TYPE_LABELS: Record<string, string> = {
   ART: "Art",
 };
 
-type BadgeVariant = "success" | "warning" | "danger" | "info" | "neutral";
-
-function getTypeVariant(type: string): BadgeVariant {
-  switch (type) {
-    case "CORE":
-      return "brand" as any; // fallback
-    case "OPTIONAL":
-      return "info";
-    case "SPORT":
-      return "success";
-    case "ART":
-      return "warning";
-    default:
-      return "neutral";
-  }
-}
-
 export function SubjectsListPage() {
   const { hasPermission } = useAuth();
   const canCreate = hasPermission("subject:create");
-  const canDelete = hasPermission("subject:delete");
+  const canUpdate = hasPermission("subject:update");
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
-
+  const [domainFilter, setDomainFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
   const filters = useMemo(() => ({ q: q || undefined }), [q]);
   const { data: subjects, isLoading } = useSubjects(filters);
-  const deleteMutation = useDeleteSubject();
-
+  const { data: domains } = useSubjectDomains();
+  const filtered = useMemo(() => {
+    const list = Array.isArray(subjects) ? subjects : [];
+    return list.filter((s) => {
+      if (domainFilter && s.subjectDomainId !== domainFilter) return false;
+      if (statusFilter === "active" && !s.isActive) return false;
+      if (statusFilter === "inactive" && s.isActive) return false;
+      return true;
+    });
+  }, [subjects, domainFilter, statusFilter]);
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setQ(searchInput);
   };
-
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Supprimer la matière ${name} ?`)) {
-      deleteMutation.mutate(id);
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    try {
+      await subjectsApi.update(id, { isActive: !currentActive });
+      toast.success(currentActive ? "Matiere desactivee" : "Matiere reactivee");
+      qc.invalidateQueries({ queryKey: ["subjects"] });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Erreur");
     }
   };
-
+  if (isLoading) return <PageLoader />;
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* HEADER */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-sis-md bg-sis-brand-50 text-sis-brand mt-0.5 dark:bg-sis-brand-900/30 dark:text-sis-brand-300">
-            <BookOpen className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Matières</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {subjects?.length || 0} matière(s)
-            </p>
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-blue-600" />
+            Matieres
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">{filtered.length} matiere(s)</p>
         </div>
         {canCreate && (
-          <Button asChild>
-            <Link to="/subjects/new">
+          <Link to="/subjects/new">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Nouvelle matière
-            </Link>
-          </Button>
+              Nouvelle matiere
+            </Button>
+          </Link>
         )}
       </div>
-
-      {/* SEARCH */}
-      <div className="rounded-sis-lg border border-sis-neutral-200 bg-card p-4 dark:border-sis-neutral-800">
-        <form onSubmit={handleSearch} className="flex flex-wrap gap-3">
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom ou code..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-9 rounded-sis-md border-sis-neutral-200 focus:ring-sis-brand/30 focus:border-sis-brand dark:border-sis-neutral-700"
-            />
-          </div>
-          <Button type="submit" variant="secondary">
-            Rechercher
-          </Button>
-        </form>
-      </div>
-
-      {/* CONTENU */}
-      {isLoading ? (
-        <PageLoader label="Chargement des matières..." />
-      ) : !subjects || subjects.length === 0 ? (
-        <EmptyState
-          icon={<BookOpen className="h-7 w-7" />}
-          title="Aucune matière"
-          description="Commencez par ajouter votre première matière."
-          action={
-            canCreate ? (
-              <Button asChild>
-                <Link to="/subjects/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle matière
-                </Link>
-              </Button>
-            ) : undefined
-          }
-        />
+      <Card>
+        <CardContent className="p-4">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Rechercher par nom ou code..." className="pl-10" />
+            </div>
+            <select value={domainFilter} onChange={(e) => setDomainFilter(e.target.value)} className="h-10 px-3 rounded-md border border-gray-300 bg-white text-sm">
+              <option value="">Tous les domaines</option>
+              {(domains || []).map((d) => (<option key={d.id} value={d.id}>{d.name}</option>))}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="h-10 px-3 rounded-md border border-gray-300 bg-white text-sm">
+              <option value="">Tous statuts</option>
+              <option value="active">Actives</option>
+              <option value="inactive">Inactives</option>
+            </select>
+            <Button type="submit" variant="outline">Rechercher</Button>
+          </form>
+        </CardContent>
+      </Card>
+      {filtered.length === 0 ? (
+        <EmptyState title="Aucune matiere trouvee" description="Modifiez vos filtres ou creez une nouvelle matiere." />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((subject) => {
-            const typeVariant = getTypeVariant(subject.type);
-            const typeClass =
-              typeVariant === "info"
-                ? "bg-sis-info-bg text-sis-info border-sis-info-border"
-                : typeVariant === "success"
-                  ? "bg-sis-success-bg text-sis-success border-sis-success-border"
-                  : typeVariant === "warning"
-                    ? "bg-sis-warning-bg text-sis-warning border-sis-warning-border"
-                    : "bg-sis-brand-50 text-sis-brand border-sis-brand/30";
-
-            return (
-              <Card
-                key={subject.id}
-                className="rounded-sis-lg border-sis-neutral-200 shadow-sis-sm transition-all hover:shadow-sis-md dark:border-sis-neutral-800"
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-base font-bold">{subject.name}</h3>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5 flex items-center gap-1">
-                        <Hash className="h-3 w-3" />
-                        {subject.code}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "text-xs px-2 py-1 rounded-full border font-medium",
-                        typeClass,
-                      )}
-                    >
-                      {TYPE_LABELS[subject.type] || subject.type}
-                    </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((s) => (
+            <Card key={s.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">{s.name}</h3>
+                    <p className="text-xs text-gray-500"># {s.code}</p>
                   </div>
-
-                  {subject.coefficients && subject.coefficients.length > 0 && (
-                    <div className="mt-4 space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Coefficients :
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {subject.coefficients.slice(0, 5).map((c) => (
-                          <span
-                            key={c.id}
-                            className="text-xs bg-sis-neutral-100 text-sis-neutral-700 px-2 py-0.5 rounded dark:bg-sis-neutral-800 dark:text-sis-neutral-300"
-                          >
-                            {c.level.code}: {c.coefficient}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                  <StatusBadge variant={s.isActive ? "success" : "neutral"}>{s.isActive ? "Active" : "Inactive"}</StatusBadge>
+                </div>
+                {s.description && (<p className="text-xs text-gray-600 line-clamp-2">{s.description}</p>)}
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">{TYPE_LABELS[s.type] || s.type}</span>
+                  {s._count && (<span className="text-[10px] text-gray-500">{s._count.assignments} affectation(s)</span>)}
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                  <Link to={"/subjects/" + s.id} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full"><Eye className="h-3 w-3 mr-1" />Voir fiche</Button>
+                  </Link>
+                  {canUpdate && (
+                    <Button variant="outline" size="sm" onClick={() => handleToggleActive(s.id, s.isActive)}>
+                      {s.isActive ? <PowerOff className="h-3 w-3" /> : <Power className="h-3 w-3" />}
+                    </Button>
                   )}
-
-                  {canDelete && (
-                    <div className="mt-4 flex justify-end">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(subject.id, subject.name)}
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
