@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
 import {
   PieChart,
   LayoutDashboard,
@@ -42,32 +42,33 @@ interface NavSection {
 
 const SECTIONS: NavSection[] = [
   {
-    title: "Général",
+    title: "GÃ©nÃ©ral",
     items: [
       { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
       { label: "Tableau d'honneur", to: "/honor-roll", icon: Trophy },
     ],
   },
   {
-    title: "Scolarité",
+    title: "ScolaritÃ©",
     items: [
-      { label: "Élèves", to: "/students", icon: Users, permission: "student:view" },
+      { label: "Ã‰lÃ¨ves", to: "/students", icon: Users, permission: "student:view" },
       { label: "Niveaux", to: "/levels", icon: Layers, permission: "level:view" },
       { label: "Classes", to: "/classes", icon: School, permission: "class:view" },
       { label: "Enseignants", to: "/teachers", icon: UsersRound, permission: "teacher:view" },
-      { label: "Matières", to: "/subjects", icon: BookOpen, permission: "subject:view" },
+      { label: "MatiÃ¨res", to: "/subjects", icon: BookOpen, permission: "subject:view" },
+      { label: "Affectation matieres", to: "/class-subjects", icon: Layers, permission: "subject:view" },
     ],
   },
   {
-    title: "Pédagogie",
+    title: "PÃ©dagogie",
     items: [
       { label: "Emploi du temps", to: "/timetable", icon: Calendar, permission: "timetable:view" },
-      { label: "Présences", to: "/attendance", icon: ClipboardCheck, permission: "attendance:view" },
+      { label: "PrÃ©sences", to: "/attendance", icon: ClipboardCheck, permission: "attendance:view" },
       { label: "Notes", to: "/assessments", icon: FileText, permission: "grade:view" },
       { label: "Saisie groupee", to: "/grades/batch", icon: ClipboardCheck, permission: "grade:create" },
       { label: "Bulletins", to: "/report-cards", icon: Award, permission: "report_card:view" },
-      { label: "Résultats annuels", to: "/annual-results", icon: TrendingUp, permission: "report_card:view" },
-      { label: "Décisions annuelles", to: "/annual-decisions", icon: CheckCircle2, permission: "report_card:view" },
+      { label: "RÃ©sultats annuels", to: "/annual-results", icon: TrendingUp, permission: "report_card:view" },
+      { label: "DÃ©cisions annuelles", to: "/annual-decisions", icon: CheckCircle2, permission: "report_card:view" },
     ],
   },
   {
@@ -83,7 +84,7 @@ const SECTIONS: NavSection[] = [
       { label: "Facturation", to: "/finance/facturation", icon: Receipt, permission: "invoice:view" },
       { label: "Encaissement", to: "/finance/encaissement", icon: Wallet, permission: "payment:view" },
       { label: "Recouvrement", to: "/finance/recouvrement", icon: AlertTriangle, permission: "invoice:view" },
-      { label: "Dépenses", to: "/expenses", icon: TrendingDown, permission: "expense:view" },
+      { label: "DÃ©penses", to: "/expenses", icon: TrendingDown, permission: "expense:view" },
       { label: "Configuration", to: "/finance/configuration", icon: Settings, permission: "fee:view" },
     ],
   },
@@ -94,14 +95,14 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Système",
+    title: "SystÃ¨me",
     items: [
-      { label: "Années scolaires", to: "/academic-years", icon: Calendar, permission: "academic_year:view" },
-      { label: "Passage d'année", to: "/year-rollover", icon: GraduationCap, permission: "academic_year:create" },
-      { label: "Examens d'État", to: "/state-exams", icon: Award, permission: "academic_year:view" },
+      { label: "AnnÃ©es scolaires", to: "/academic-years", icon: Calendar, permission: "academic_year:view" },
+      { label: "Passage d'annÃ©e", to: "/year-rollover", icon: GraduationCap, permission: "academic_year:create" },
+      { label: "Examens d'Ã‰tat", to: "/state-exams", icon: Award, permission: "academic_year:view" },
       { label: "Rapports administratifs", to: "/admin-reports", icon: FileText, permission: "report_card:view" },
       { label: "Rapports", to: "/reports", icon: BarChart3, permission: "report:view" },
-      { label: "Paramètres", to: "/settings", icon: Settings, permission: "settings:view" },
+      { label: "ParamÃ¨tres", to: "/settings", icon: Settings, permission: "settings:view" },
     ],
   },
 ];

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+﻿import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -26,13 +26,14 @@ import { ImportStudentsPage } from "@/pages/students/ImportStudentsPage";
 import { ClassesListPage, ClassDetailPage } from "@/pages/classes";
 import { TeachersListPage, TeacherFormPage, TeacherDetailPage } from "@/pages/teachers";
 import { SubjectsListPage, SubjectFormPage } from "@/pages/subjects";
+import ClassSubjectsPage from "@/pages/class-subjects/ClassSubjectsPage";
 import { LevelsListPage } from "@/pages/levels/LevelsListPage";
 import { AttendanceListPage, AttendanceDetailPage } from "@/pages/attendance";
 import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
 import { ReportCardsListPage, ReportCardDetailPage } from "@/pages/report-cards";
 import { CalculationPage } from "@/pages/report-cards/CalculationPage";
 import { AnnualResultsPage } from "@/pages/report-cards/AnnualResultsPage";
-import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // âœ… NOUVEL IMPORT
+import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // Ã¢Å“â€¦ NOUVEL IMPORT
 import {
   InvoicesListPage,
   InvoiceDetailPage,
@@ -83,7 +84,7 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/honor-roll" element={<HonorRollPage />} />
 
-          {/* Ã‰lÃ¨ves */}
+          {/* Ãƒâ€°lÃƒÂ¨ves */}
           <Route
             path="/students"
             element={
@@ -177,7 +178,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* MatiÃ¨res */}
+          {/* MatiÃƒÂ¨res */}
           <Route
             path="/subjects"
             element={
@@ -213,7 +214,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* PrÃ©sences */}
+          {/* PrÃƒÂ©sences */}
           <Route
             path="/attendance"
             element={
@@ -275,7 +276,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* âœ… DÃ©cisions annuelles */}
+          {/* Ã¢Å“â€¦ DÃƒÂ©cisions annuelles */}
           <Route
             path="/annual-decisions"
             element={
@@ -453,7 +454,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* ParamÃ¨tres */}
+          {/* ParamÃƒÂ¨tres */}
           <Route
             path="/settings"
             element={
@@ -463,6 +464,15 @@ export function AppRoutes() {
             }
           />
         </Route>
+
+            <Route
+              path="/class-subjects"
+              element={
+                <ProtectedRoute requiredPermission="subject:view">
+                  <ClassSubjectsPage />
+                </ProtectedRoute>
+              }
+            />
         <Route
           path="/report-cards/calculation"
           element={
