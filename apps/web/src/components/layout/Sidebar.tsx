@@ -1,4 +1,4 @@
-﻿import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   PieChart,
   LayoutDashboard,
@@ -64,6 +64,7 @@ const SECTIONS: NavSection[] = [
       { label: "Emploi du temps", to: "/timetable", icon: Calendar, permission: "timetable:view" },
       { label: "Présences", to: "/attendance", icon: ClipboardCheck, permission: "attendance:view" },
       { label: "Notes", to: "/assessments", icon: FileText, permission: "grade:view" },
+      { label: "Saisie groupee", to: "/grades/batch", icon: ClipboardCheck, permission: "grade:create" },
       { label: "Bulletins", to: "/report-cards", icon: Award, permission: "report_card:view" },
       { label: "Résultats annuels", to: "/annual-results", icon: TrendingUp, permission: "report_card:view" },
       { label: "Décisions annuelles", to: "/annual-decisions", icon: CheckCircle2, permission: "report_card:view" },
