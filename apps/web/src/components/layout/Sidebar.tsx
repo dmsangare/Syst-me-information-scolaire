@@ -6,6 +6,7 @@ import {
   Users,
   GraduationCap,
   BookOpen,
+  Percent,
   Calendar,
   ClipboardCheck,
   FileText,
@@ -57,6 +58,7 @@ const SECTIONS: NavSection[] = [
       { label: "Enseignants", to: "/teachers", icon: UsersRound, permission: "teacher:view" },
       { label: "MatiÃ¨res", to: "/subjects", icon: BookOpen, permission: "subject:view" },
       { label: "Affectation matieres", to: "/class-subjects", icon: Layers, permission: "subject:view" },
+      { label: "Coefficients", to: "/coefficients", icon: Percent, permission: "subject:view" },
     ],
   },
   {

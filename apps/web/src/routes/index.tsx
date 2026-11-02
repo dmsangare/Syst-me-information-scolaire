@@ -27,6 +27,7 @@ import { ClassesListPage, ClassDetailPage } from "@/pages/classes";
 import { TeachersListPage, TeacherFormPage, TeacherDetailPage } from "@/pages/teachers";
 import { SubjectsListPage, SubjectFormPage } from "@/pages/subjects";
 import ClassSubjectsPage from "@/pages/class-subjects/ClassSubjectsPage";
+import CoefficientsPage from "@/pages/coefficients/CoefficientsPage";
 import { LevelsListPage } from "@/pages/levels/LevelsListPage";
 import { AttendanceListPage, AttendanceDetailPage } from "@/pages/attendance";
 import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
@@ -470,6 +471,15 @@ export function AppRoutes() {
               element={
                 <ProtectedRoute requiredPermission="subject:view">
                   <ClassSubjectsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/coefficients"
+              element={
+                <ProtectedRoute requiredPermission="subject:view">
+                  <CoefficientsPage />
                 </ProtectedRoute>
               }
             />
