@@ -35,10 +35,21 @@ export class SubjectsController {
   }
 
   @Get(":id/coefficients")
-  @RequirePermissions("subject:view")
+  @RequirePermissions("coefficient:view")
   @ApiOperation({ summary: "Coefficients de la matiere par niveau" })
   async getCoefficients(@Param("id") id: string) {
     return this.service.getCoefficients(id);
+  }
+
+  @Get(":id/coefficients/audits")
+  @RequirePermissions("coefficient:view")
+  @ApiOperation({ summary: "Historique des modifications de coefficients" })
+  async getCoefficientAudits(
+    @Param("id") subjectId: string,
+    @Query("levelId") levelId?: string,
+    @Query("academicYearId") academicYearId?: string,
+  ) {
+    return this.service.getCoefficientAudits(subjectId, levelId, academicYearId);
   }
 
   @Post()
@@ -57,7 +68,7 @@ export class SubjectsController {
   }
 
   @Post(":id/coefficients")
-  @RequirePermissions("subject:update")
+  @RequirePermissions("coefficient:edit")
   @ApiOperation({ summary: "Definir un coefficient pour un niveau et une annee scolaire" })
   async setCoefficient(
     @Param("id") subjectId: string,
@@ -67,6 +78,7 @@ export class SubjectsController {
       coefficient: number;
       weeklyHours?: number;
     },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.service.setCoefficient(
       subjectId,
@@ -74,18 +86,20 @@ export class SubjectsController {
       body.academicYearId,
       body.coefficient,
       body.weeklyHours,
+      user.id,
     );
   }
 
   @Delete(":id/coefficients/:levelId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePermissions("subject:update")
+  @RequirePermissions("coefficient:manage")
   async removeCoefficient(
     @Param("id") subjectId: string,
     @Param("levelId") levelId: string,
     @Query("academicYearId") academicYearId: string,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    await this.service.removeCoefficient(subjectId, levelId, academicYearId);
+    await this.service.removeCoefficient(subjectId, levelId, academicYearId, user.id);
   }
 
   @Delete(":id")

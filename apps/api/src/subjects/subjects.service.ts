@@ -142,6 +142,7 @@ export class SubjectsService {
     academicYearId: string,
     coefficient: number,
     weeklyHours?: number,
+    userId?: string,
   ) {
     await this.findOne(subjectId);
 
@@ -154,29 +155,117 @@ export class SubjectsService {
       );
     }
 
-    return this.prisma.subjectCoefficient.upsert({
+    // Chercher l'ancien coefficient (pour audit)
+    const old = await this.prisma.subjectCoefficient.findUnique({
       where: {
-        subjectId_levelId_academicYearId: {
-          subjectId,
-          levelId,
-          academicYearId,
-        },
+        subjectId_levelId_academicYearId: { subjectId, levelId, academicYearId },
       },
-      update: { coefficient, weeklyHours },
-      create: { subjectId, levelId, academicYearId, coefficient, weeklyHours },
+    });
+
+    // Determiner si un changement reel a eu lieu
+    const oldCoef = old ? Number(old.coefficient) : null;
+    const oldHours = old?.weeklyHours !== null && old?.weeklyHours !== undefined ? Number(old.weeklyHours) : null;
+    const hasChanged = !old || oldCoef !== coefficient || oldHours !== (weeklyHours ?? null);
+
+    // Transaction : upsert + audit atomiques
+    return this.prisma.$transaction(async (tx) => {
+      const upserted = await tx.subjectCoefficient.upsert({
+        where: {
+          subjectId_levelId_academicYearId: {
+            subjectId,
+            levelId,
+            academicYearId,
+          },
+        },
+        update: { coefficient, weeklyHours },
+        create: { subjectId, levelId, academicYearId, coefficient, weeklyHours },
+      });
+
+      if (hasChanged && userId) {
+        await tx.subjectCoefficientAudit.create({
+          data: {
+            coefficientId: upserted.id,
+            subjectId,
+            levelId,
+            academicYearId,
+            oldValue: oldCoef,
+            newValue: coefficient,
+            oldWeeklyHours: oldHours,
+            newWeeklyHours: weeklyHours ?? null,
+            operationType: old ? "UPDATE" : "CREATE",
+            userId,
+            motive: null,
+          },
+        });
+      }
+
+      return upserted;
     });
   }
 
-  async removeCoefficient(subjectId: string, levelId: string, academicYearId: string) {
+  async removeCoefficient(
+    subjectId: string,
+
+    levelId: string,
+    academicYearId: string,
+    userId?: string,
+  ) {
     await this.findOne(subjectId);
-    return this.prisma.subjectCoefficient.delete({
+
+    const old = await this.prisma.subjectCoefficient.findUnique({
       where: {
-        subjectId_levelId_academicYearId: {
-          subjectId,
-          levelId,
-          academicYearId,
-        },
+        subjectId_levelId_academicYearId: { subjectId, levelId, academicYearId },
       },
+    });
+
+    if (!old) {
+      throw new NotFoundException("Coefficient introuvable");
+    }
+
+    // Transaction : audit AVANT suppression (l'audit survit grace a onDelete: SetNull)
+    await this.prisma.$transaction(async (tx) => {
+      if (userId) {
+        await tx.subjectCoefficientAudit.create({
+          data: {
+            coefficientId: old.id,
+            subjectId,
+            levelId,
+            academicYearId,
+            oldValue: Number(old.coefficient),
+            newValue: null,
+            oldWeeklyHours: old.weeklyHours !== null && old.weeklyHours !== undefined ? Number(old.weeklyHours) : null,
+            newWeeklyHours: null,
+            operationType: "DELETE",
+            userId,
+            motive: null,
+          },
+        });
+      }
+
+      await tx.subjectCoefficient.delete({
+        where: {
+          subjectId_levelId_academicYearId: { subjectId, levelId, academicYearId },
+        },
+      });
+    });
+  }
+
+  async getCoefficientAudits(
+    subjectId: string,
+    levelId?: string,
+    academicYearId?: string,
+  ) {
+    const where: any = { subjectId };
+    if (levelId) where.levelId = levelId;
+    if (academicYearId) where.academicYearId = academicYearId;
+
+    return this.prisma.subjectCoefficientAudit.findMany({
+      where,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
     });
   }
 

@@ -1,4 +1,4 @@
-﻿export interface SubjectCoefficient {
+export interface SubjectCoefficient {
   id: string;
   subjectId: string;
   levelId: string;
@@ -38,4 +38,36 @@ export interface SubjectCoefficientMatrixRow {
   coefficient: number | null;
   weeklyHours: number | null;
   existingId: string | null;
+}
+
+// === Historique (D2) ===
+export type CoefficientOperationType = "CREATE" | "UPDATE" | "DELETE";
+
+export interface CoefficientAuditUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+}
+
+export interface CoefficientAudit {
+  id: string;
+  coefficientId: string | null;
+  subjectId: string;
+  levelId: string;
+  academicYearId: string;
+  oldValue: number | string | null;
+  newValue: number | string | null;
+  oldWeeklyHours: number | string | null;
+  newWeeklyHours: number | string | null;
+  operationType: CoefficientOperationType;
+  userId: string;
+  motive: string | null;
+  createdAt: string;
+  user: CoefficientAuditUser;
+}
+
+export interface CoefficientAuditFilters {
+  levelId?: string;
+  academicYearId?: string;
 }

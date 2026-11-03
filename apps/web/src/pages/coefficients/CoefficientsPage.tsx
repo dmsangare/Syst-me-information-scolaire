@@ -1,5 +1,5 @@
-﻿import { useMemo, useState } from "react";
-import { Save, Loader2, BookOpen, AlertCircle, Info, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Save, Loader2, BookOpen, AlertCircle, Info, Trash2, History, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -13,6 +13,7 @@ import {
   useSetCoefficient,
   useRemoveCoefficient,
 } from "@/hooks/subject-coefficients/useSubjectCoefficients";
+import { useCoefficientAudits } from "@/hooks/subject-coefficients/useSubjectCoefficients";
 import { useAcademicYears, useClasses, useLevels } from "@/hooks/classes/useClasses";
 import { useClassSubjects } from "@/hooks/class-subjects/useClassSubjects";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ export default function CoefficientsPage() {
   const [academicYearId, setAcademicYearId] = useState<string>("");
   const [levelId, setLevelId] = useState<string>("");
   const [draftBySubject, setDraftBySubject] = useState<Record<string, { coefficient: string; weeklyHours: string }>>({});
+  const [expandedSubjectId, setExpandedSubjectId] = useState<string | null>(null);
 
   const { data: years } = useAcademicYears();
   const { data: levels } = useLevels();
@@ -368,15 +370,24 @@ export default function CoefficientsPage() {
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {row.existingId && (
+                    <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => handleDelete(row.subjectId, row.subjectCode)}
-                        className="p-1 rounded hover:bg-red-50 text-red-600"
-                        title="Supprimer le coefficient"
+                        onClick={() => setExpandedSubjectId(expandedSubjectId === row.subjectId ? null : row.subjectId)}
+                        className="p-1 rounded hover:bg-blue-50 text-blue-600"
+                        title="Voir l'historique"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <History className="h-4 w-4" />
                       </button>
-                    )}
+                      {row.existingId && (
+                        <button
+                          onClick={() => handleDelete(row.subjectId, row.subjectCode)}
+                          className="p-1 rounded hover:bg-red-50 text-red-600"
+                          title="Supprimer le coefficient"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -385,8 +396,107 @@ export default function CoefficientsPage() {
           <div className="px-4 py-3 bg-muted/30 border-t text-xs text-muted-foreground">
             * Champ obligatoire pour enregistrer. Decimales acceptees (ex: 2.5, 3.75).
           </div>
+
+          {expandedSubjectId && (
+            <AuditPanel
+              subjectId={expandedSubjectId}
+              levelId={levelId}
+              academicYearId={currentYearId}
+              onClose={() => setExpandedSubjectId(null)}
+            />
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// Composant interne : panneau d'historique des modifications
+// ============================================================
+interface AuditPanelProps {
+  subjectId: string;
+  levelId: string;
+  academicYearId: string;
+  onClose: () => void;
+}
+
+function AuditPanel({ subjectId, levelId, academicYearId, onClose }: AuditPanelProps) {
+  const { data: audits, isLoading } = useCoefficientAudits(
+    subjectId,
+    { levelId, academicYearId },
+    Boolean(levelId && academicYearId),
+  );
+
+  const opBadge = (op: string) => {
+    if (op === "CREATE") return "bg-green-100 text-green-800";
+    if (op === "UPDATE") return "bg-blue-100 text-blue-800";
+    if (op === "DELETE") return "bg-red-100 text-red-800";
+    return "bg-gray-100 text-gray-800";
+  };
+
+  const fmt = (v: number | string | null) => (v === null || v === undefined ? "—" : String(v));
+
+  return (
+    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-blue-200">
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4 text-blue-700" />
+          <h3 className="font-semibold text-blue-900 text-sm">Historique des modifications</h3>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-blue-700 hover:text-blue-900 text-sm font-medium"
+        >
+          Fermer
+        </button>
+      </div>
+      <div className="p-4">
+        {isLoading && (
+          <div className="text-center py-4">
+            <Loader2 className="h-6 w-6 mx-auto text-blue-600 animate-spin" />
+            <p className="text-xs text-blue-700 mt-2">Chargement de l'historique...</p>
+          </div>
+        )}
+        {!isLoading && (!audits || audits.length === 0) && (
+          <p className="text-sm text-blue-800 text-center py-4">
+            Aucune modification enregistree pour cette matiere sur ce niveau et cette annee.
+          </p>
+        )}
+        {!isLoading && audits && audits.length > 0 && (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {audits.map((a) => (
+              <div key={a.id} className="bg-white rounded border border-blue-200 p-3 text-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={"px-2 py-0.5 rounded font-medium " + opBadge(a.operationType)}>
+                    {a.operationType}
+                  </span>
+                  <span className="text-gray-500">
+                    {new Date(a.createdAt).toLocaleString("fr-FR")}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-gray-700">
+                  <div>
+                    <span className="text-gray-500">Coefficient : </span>
+                    <span className="font-mono">
+                      {fmt(a.oldValue)} → {fmt(a.newValue)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Heures/sem. : </span>
+                    <span className="font-mono">
+                      {fmt(a.oldWeeklyHours)} → {fmt(a.newWeeklyHours)}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-1 text-gray-500">
+                  Par {a.user.firstName} {a.user.lastName} ({a.user.email})
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -73,6 +73,11 @@ const ROLE_MATRIX: Record<string, { modules: string[]; actions: string[]; extras
   DIRECTOR: {
     modules: MODULES.filter((m) => m !== 'backup'),
     actions: [...ACTIONS],
+    extras: [
+      'coefficient:view',
+      'coefficient:edit',
+      'coefficient:manage',
+    ],
   },
   SECRETARY: {
     modules: ['student', 'parent', 'enrollment', 'document'],
@@ -81,6 +86,9 @@ const ROLE_MATRIX: Record<string, { modules: string[]; actions: string[]; extras
   TEACHER: {
     modules: ['student', 'assessment', 'grade', 'attendance', 'report_card', 'school', 'level', 'class', 'subject', 'timetable'],
     actions: ['view', 'create', 'update'],
+    extras: [
+      'coefficient:view',
+    ],
   },
   ACCOUNTANT: {
     // Perimetre strict caissier / comptable :
@@ -106,6 +114,10 @@ const ROLE_MATRIX: Record<string, { modules: string[]; actions: string[]; extras
   SUPERVISOR: {
     modules: ['student', 'attendance'],
     actions: ['view', 'create'],
+    extras: [
+      'coefficient:view',
+      'coefficient:edit',
+    ],
   },
   PARENT: {
     modules: ['student', 'grade', 'report_card', 'attendance', 'invoice', 'payment'],
@@ -170,6 +182,26 @@ async function main() {
       });
       permissions[code] = perm;
     }
+  }
+
+
+  // --- 2bis. Permissions DEDIEES (hors croisement module x action) ---
+  // Ces permissions sont volontairement hors MODULES/ACTIONS pour ne pas
+  // elargir les droits des roles existants. Elles sont assignees via un
+  // script one-shot (scripts/assign-coefficient-perms.ts) + ROLE_MATRIX extras.
+  console.log('[DEDICATED] Creating dedicated coefficient permissions...');
+  const dedicatedPermissions: Array<{ code: string; module: string; action: string; description: string }> = [
+    { code: 'coefficient:view',   module: 'coefficient', action: 'view',   description: 'Consulter les coefficients' },
+    { code: 'coefficient:edit',   module: 'coefficient', action: 'edit',   description: 'Modifier les coefficients (creation/mise a jour)' },
+    { code: 'coefficient:manage', module: 'coefficient', action: 'manage', description: 'Gerer les coefficients (suppression + delegation)' },
+  ];
+  for (const def of dedicatedPermissions) {
+    const perm = await prisma.permission.upsert({
+      where: { code: def.code },
+      update: {},
+      create: def,
+    });
+    permissions[def.code] = perm;
   }
 
   // --- 3. Role-Permission matrix (IDEMPOTENT + PROTEGE) ---

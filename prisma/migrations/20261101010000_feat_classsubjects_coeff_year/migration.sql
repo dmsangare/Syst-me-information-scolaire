@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- MIGRATION MATIERES - PRODUCTION V3
 -- Contenu strictement limite au perimetre du chantier.
 -- Aucune modification des tables historiques (admin_reports,

@@ -1,5 +1,10 @@
-﻿import { api } from "@/lib/axios";
-import type { SubjectCoefficient, SetCoefficientInput } from "@/types/subject-coefficient";
+import { api } from "@/lib/axios";
+import type {
+  SubjectCoefficient,
+  SetCoefficientInput,
+  CoefficientAudit,
+  CoefficientAuditFilters,
+} from "@/types/subject-coefficient";
 
 export const subjectCoefficientsApi = {
   async listBySubject(subjectId: string): Promise<SubjectCoefficient[]> {
@@ -16,5 +21,15 @@ export const subjectCoefficientsApi = {
     await api.delete("/subjects/" + subjectId + "/coefficients/" + levelId, {
       params: { academicYearId },
     });
+  },
+
+  async listAudits(
+    subjectId: string,
+    filters: CoefficientAuditFilters = {},
+  ): Promise<CoefficientAudit[]> {
+    const { data } = await api.get("/subjects/" + subjectId + "/coefficients/audits", {
+      params: filters,
+    });
+    return data.data || data;
   },
 };

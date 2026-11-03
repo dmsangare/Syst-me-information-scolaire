@@ -2070,18 +2070,26 @@ model ClassSubject {
 }
 
 model SubjectCoefficientAudit {
-  id            String   @id @default(uuid()) @db.Uuid
-  coefficientId String   @map("coefficient_id") @db.Uuid
-  oldValue      Decimal? @map("old_value") @db.Decimal(4, 2)
-  newValue      Decimal? @map("new_value") @db.Decimal(4, 2)
-  userId        String   @map("user_id") @db.Uuid
-  motive        String?  @db.VarChar(255)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id             String   @id @default(uuid()) @db.Uuid
+  coefficientId  String?  @map("coefficient_id") @db.Uuid
+  subjectId      String   @map("subject_id") @db.Uuid
+  levelId        String   @map("level_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  oldValue       Decimal? @map("old_value") @db.Decimal(4, 2)
+  newValue       Decimal? @map("new_value") @db.Decimal(4, 2)
+  oldWeeklyHours Decimal? @map("old_weekly_hours") @db.Decimal(4, 1)
+  newWeeklyHours Decimal? @map("new_weekly_hours") @db.Decimal(4, 1)
+  operationType  String   @map("operation_type") @db.VarChar(20)
+  userId         String   @map("user_id") @db.Uuid
+  motive         String?  @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  coefficient SubjectCoefficient @relation(fields: [coefficientId], references: [id], onDelete: Cascade)
+  coefficient SubjectCoefficient? @relation(fields: [coefficientId], references: [id], onDelete: SetNull)
   user        User               @relation(fields: [userId], references: [id])
 
   @@index([coefficientId])
+  @@index([subjectId, levelId, academicYearId])
   @@index([createdAt])
+  @@index([operationType])
   @@map("subject_coefficient_audits")
 }
