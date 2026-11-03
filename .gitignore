@@ -75,3 +75,6 @@ backups/db_*.sql.gz
 backups/documents_*.tar.gz
 *.safety-*
 *.safety2-*
+
+# Playwright test artifacts
+playwright_screenshots/
