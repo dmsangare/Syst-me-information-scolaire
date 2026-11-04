@@ -34,7 +34,7 @@ import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
 import { ReportCardsListPage, ReportCardDetailPage } from "@/pages/report-cards";
 import { CalculationPage } from "@/pages/report-cards/CalculationPage";
 import { AnnualResultsPage } from "@/pages/report-cards/AnnualResultsPage";
-import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // Ã¢Å“â€¦ NOUVEL IMPORT
+import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // ✅ NOUVEL IMPORT
 import {
   InvoicesListPage,
   InvoiceDetailPage,
@@ -82,10 +82,17 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requiredPermission="dashboard:view">
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/honor-roll" element={<HonorRollPage />} />
 
-          {/* Ãƒâ€°lÃƒÂ¨ves */}
+          {/* Éâ€°lÉÂ¨ves */}
           <Route
             path="/students"
             element={
@@ -179,7 +186,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* MatiÃƒÂ¨res */}
+          {/* MatiÉÂ¨res */}
           <Route
             path="/subjects"
             element={
@@ -215,11 +222,11 @@ export function AppRoutes() {
             }
           />
 
-          {/* PrÃƒÂ©sences */}
+          {/* PrÉÂ©sences */}
           <Route
             path="/attendance"
             element={
-              <ProtectedRoute requiredPermission="attendance:view">
+              <ProtectedRoute requiredPermission="student:view">
                 <AttendanceListPage />
               </ProtectedRoute>
             }
@@ -237,7 +244,7 @@ export function AppRoutes() {
           <Route
             path="/assessments"
             element={
-              <ProtectedRoute requiredPermission="grade:view">
+              <ProtectedRoute requiredPermission="student:view">
                 <AssessmentsListPage />
               </ProtectedRoute>
             }
@@ -271,17 +278,17 @@ export function AppRoutes() {
           <Route
             path="/annual-results"
             element={
-              <ProtectedRoute requiredPermission="report_card:view">
+              <ProtectedRoute requiredPermission="student:view">
                 <AnnualResultsPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Ã¢Å“â€¦ DÃƒÂ©cisions annuelles */}
+          {/* ✅ DÉÂ©cisions annuelles */}
           <Route
             path="/annual-decisions"
             element={
-              <ProtectedRoute requiredPermission="report_card:view">
+              <ProtectedRoute requiredPermission="student:view">
                 <AnnualDecisionsPage />
               </ProtectedRoute>
             }
@@ -455,7 +462,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* ParamÃƒÂ¨tres */}
+          {/* ParamÉÂ¨tres */}
           <Route
             path="/settings"
             element={
@@ -526,7 +533,7 @@ export function AppRoutes() {
         <Route
           path="/admin-reports"
           element={
-            <ProtectedRoute requiredPermission="report_card:view">
+            <ProtectedRoute requiredPermission="student:view">
               <AdminReportsPage />
             </ProtectedRoute>
           }
@@ -595,7 +602,14 @@ export function AppRoutes() {
             </ProtectedRoute>
           }
         />
-              <Route path="/grades/batch" element={<BatchGradesEntryPage />} />
+        <Route
+          path="/grades/batch"
+          element={
+            <ProtectedRoute requiredPermission="grade:view">
+              <BatchGradesEntryPage />
+            </ProtectedRoute>
+          }
+        />
 </Route>
 
       <Route path="/v/:shortCode" element={<PublicVerificationPage />} />
@@ -604,3 +618,9 @@ export function AppRoutes() {
     </Routes>
   );
 }
+
+
+
+
+
+

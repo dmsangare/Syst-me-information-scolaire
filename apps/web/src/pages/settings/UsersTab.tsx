@@ -7,7 +7,8 @@ import {
   useUsers, useRoles, useCreateUser, useDeleteUser, useUpdateUser,
 } from "@/hooks/users";
 import { useAvailableTeachers } from "@/hooks/teachers";
-import { useAvailableGuardians } from "@/hooks/guardians";
+import { useAvailableGuardians } from '@/hooks/guardians';
+import { useAvailableStudents } from "@/hooks/students";
 import { useSchool } from "@/hooks/users";
 import { formatDateTime, initials } from "@/lib/formatters";
 import {
@@ -210,12 +211,14 @@ function CreateUserModal({
   const [password, setPassword] = useState("généré automatiquement");
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [selectedGuardianId, setSelectedGuardianId] = useState("");
   const [createdResult, setCreatedResult] = useState<{ email: string; password: string } | null>(null);
   const createMutation = useCreateUser();
 
   const { data: availableTeachers = [] } = useAvailableTeachers();
   const { data: availableGuardians = [] } = useAvailableGuardians();
+  const { data: availableStudents = [] } = useAvailableStudents();
 
   // Detection des roles par code
   const selectedRoleCodes = useMemo(() => {
@@ -226,6 +229,7 @@ function CreateUserModal({
 
   const hasTeacherRole = selectedRoleCodes.includes("TEACHER");
   const hasParentRole = selectedRoleCodes.includes("PARENT");
+  const hasStudentRole = selectedRoleCodes.includes("STUDENT");
 
   const emailDomain = schoolSigle ? `@${schoolSigle.toLowerCase()}.ml` : "@sis-mali.local";
   const fullEmail = emailLocal ? `${emailLocal}${emailDomain}` : "";
@@ -246,6 +250,7 @@ function CreateUserModal({
       roleIds: selectedRoles,
       teacherId: hasTeacherRole && selectedTeacherId ? selectedTeacherId : undefined,
       guardianId: hasParentRole && selectedGuardianId ? selectedGuardianId : undefined,
+      studentId: hasStudentRole && selectedStudentId ? selectedStudentId : undefined,
     } as any);
     setCreatedResult({
       email: fullEmail,
@@ -456,6 +461,28 @@ function CreateUserModal({
               </div>
             )}
 
+            {/* Dropdown Fiche Eleve (si role STUDENT selectionne) */}
+            {hasStudentRole && (
+              <div className="space-y-2 border-l-4 border-green-400/40 pl-4 bg-green-50/30 rounded-md p-3">
+                <Label>Fiche eleve a lier</Label>
+                <select
+                  value={selectedStudentId}
+                  onChange={(e) => setSelectedStudentId(e.target.value)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">-- Aucune fiche liee --</option>
+                  {availableStudents.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.matricule} - {s.lastName} {s.firstName}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  {availableStudents.length} fiche(s) eleve disponible(s)
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={onClose}>
                 Annuler
@@ -510,6 +537,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
   const { data: roles = [] } = useRoles();
   const { data: availableTeachers = [] } = useAvailableTeachers();
   const { data: availableGuardians = [] } = useAvailableGuardians();
+  const { data: availableStudents = [] } = useAvailableStudents();
   const { data: school } = useSchool();
 
   const updateMutation = useUpdateUser();
@@ -524,6 +552,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 
   const hasTeacherRole = selectedRoleCodes.includes("TEACHER");
   const hasParentRole = selectedRoleCodes.includes("PARENT");
+  const hasStudentRole = selectedRoleCodes.includes("STUDENT");
 
   const emailDomain = school?.sigle
     ? `@${school.sigle.toLowerCase()}.ml`

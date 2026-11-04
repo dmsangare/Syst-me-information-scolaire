@@ -5,7 +5,8 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   // Charge le .env à la racine du monorepo
   const env = loadEnv(mode, path.resolve(__dirname, "../.."), "");
-  const apiTarget = env.VITE_API_TARGET || "http://192.168.0.150";
+  // Utilise localhost par défaut (au lieu de l'IP 192.168.0.150)
+  const apiTarget = env.VITE_API_TARGET || "http://localhost:3000";
 
   return {
     plugins: [
@@ -41,6 +42,11 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       host: true,
+      // Ajout pour ngrok
+      allowedHosts: [
+        "budget-boastful-amiss.ngrok-free.dev",
+        ".ngrok-free.dev", // autorise tous les sous-domaines ngrok gratuits
+      ],
       proxy: {
         "/api": {
           target: apiTarget,

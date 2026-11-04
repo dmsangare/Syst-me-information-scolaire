@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { studentsApi } from "@/api/students";
+import { api } from "@/lib/axios";
 import { getErrorMessage } from "@/lib/axios";
 import type { StudentListFilters, CreateStudentInput } from "@/types/student";
 
@@ -95,5 +96,21 @@ export function useExportStudents() {
     onError: (error) => {
       toast.error(`Erreur export : ${getErrorMessage(error)}`);
     },
+  });
+}
+
+export function useAvailableStudents() {
+  return useQuery({
+    queryKey: ["students", "available"],
+    queryFn: async () => {
+      const { data } = await api.get("/students/available");
+      return (data.data || data) as Array<{
+        id: string;
+        matricule: string;
+        firstName: string;
+        lastName: string;
+      }>;
+    },
+    staleTime: 60_000,
   });
 }

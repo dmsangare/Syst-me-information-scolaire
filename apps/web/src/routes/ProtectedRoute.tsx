@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+﻿import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingScreen } from "@/components/layout/LoadingScreen";
 import type { ReactNode } from "react";
@@ -49,6 +49,9 @@ export function ProtectedRoute({
   }
 
   if (requiredPermission && !hasPermission(requiredPermission)) {
+    if (location.pathname === "/dashboard" && (hasRole("STUDENT") || hasRole("PARENT"))) {
+      return <Navigate to="/report-cards" replace />;
+    }
     return <Navigate to="/forbidden" replace />;
   }
 
@@ -64,3 +67,5 @@ export function ProtectedRoute({
 
   return <Outlet />;
 }
+
+

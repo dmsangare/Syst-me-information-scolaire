@@ -604,6 +604,7 @@ model User {
   refreshTokens      RefreshToken[]
   authLogs           AuthLog[]
   guardian           Guardian?
+  studentProfile     Student?
   teacher            Teacher?
   paymentsCashier    Payment[]           @relation("PaymentCashier")
   gradesEntered      Grade[]             @relation("GradeEnteredBy")
@@ -722,11 +723,13 @@ model Student {
   address           String?
   specialSituation  String?       @map("special_situation")
   status            StudentStatus @default(ACTIVE)
+  userId            String?       @unique @map("user_id") @db.Uuid
   deletedAt         DateTime?     @map("deleted_at") @db.Timestamptz
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
 
   school             School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   guardians          StudentGuardian[]
   documents          StudentDocument[]
   enrollments        Enrollment[]

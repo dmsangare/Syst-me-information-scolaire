@@ -54,6 +54,31 @@ export class ReportCardsService {
     if (classId) where.classId = classId;
     if (studentId) where.studentId = studentId;
 
+    // FILTRE STRICT ELEVE
+    if (user && user.roles.includes("STUDENT")) {
+      const student = await this.prisma.student.findFirst({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (!student) {
+        throw new ForbiddenException("Aucune fiche eleve nest associee a votre compte.");
+      }
+      where.studentId = student.id;
+    }
+
+    // FILTRE STRICT PARENT
+    if (user && user.roles.includes("PARENT")) {
+      const parent = await this.prisma.guardian.findFirst({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (parent) {
+        where.student = { ...where.student, studentGuardians: { some: { guardianId: parent.id } } };
+      } else {
+        where.studentId = "00000000-0000-0000-0000-000000000000";
+      }
+    }
+
     // FILTRE TEACHER : ne voir que les bulletins de ses classes
     const isTeacherOnly =
       user &&
@@ -1175,3 +1200,4 @@ export class ReportCardsService {
     };
   }
 }
+

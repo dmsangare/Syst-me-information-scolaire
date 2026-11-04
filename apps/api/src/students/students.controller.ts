@@ -28,6 +28,29 @@ export class StudentsController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @Get("available")
+  @RequirePermissions("student:view")
+  @ApiOperation({ summary: "Eleves sans compte utilisateur (pour lier)" })
+  async findAvailable(@CurrentUser() user: CurrentUserPayload) {
+    const schoolId = user.roles?.includes("SUPER_ADMIN") ? undefined : user.schoolId;
+    return this.prisma.student.findMany({
+      where: {
+        userId: null,
+        ...(schoolId ? { schoolId } : {}),
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        matricule: true,
+        firstName: true,
+        lastName: true,
+      },
+      orderBy: { lastName: "asc" },
+      take: 500,
+    });
+  }
+
+
   @Get()
   @RequirePermissions("student:view")
   @ApiOperation({ summary: "Liste des eleves avec filtres avances" })
