@@ -6,7 +6,7 @@ import { teachersApi } from "@/api/teachers";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button, Input, Card, CardContent } from "@/components/ui";
-import type { CreateTeacherInput } from "@/types/teacher";
+import type { CreateTeacherInput, TeacherType } from "@/types/teacher";
 
 export function TeacherFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,9 +18,9 @@ export function TeacherFormPage() {
   const createMutation = useCreateTeacher();
 
   const [form, setForm] = useState<CreateTeacherInput>({
-    schoolId: "",
     firstName: "",
     lastName: "",
+    teacherType: "GENERALIST",
     gender: undefined,
     phone: "",
     email: "",
@@ -36,9 +36,9 @@ export function TeacherFormPage() {
     if (teacherData) {
       const t: any = teacherData;
       setForm({
-        schoolId: t.schoolId,
         firstName: t.firstName || "",
         lastName: t.lastName || "",
+        teacherType: t.teacherType || "GENERALIST",
         gender: t.gender || undefined,
         phone: t.phone || "",
         email: t.email || "",
@@ -52,21 +52,30 @@ export function TeacherFormPage() {
     }
   }, [teacherData]);
 
+  const isGeneralist = form.teacherType === "GENERALIST";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.firstName || !form.lastName) {
-      toast.error("Nom et prénom obligatoires");
+      toast.error("Nom et prenom obligatoires");
+      return;
+    }
+    if (form.teacherType === "SPECIALIST" && !form.specialty) {
+      toast.error("Un specialiste doit avoir une specialite");
       return;
     }
 
     try {
+      const payload: any = { ...form };
+      if (isGeneralist) payload.specialty = "Généraliste";
+
       if (isEdit) {
-        await teachersApi.update(id!, form);
-        toast.success("Enseignant mis à jour");
+        await teachersApi.update(id!, payload);
+        toast.success("Enseignant mis a jour");
         qc.invalidateQueries({ queryKey: ["teachers"] });
         navigate("/teachers");
       } else {
-        await createMutation.mutateAsync(form);
+        await createMutation.mutateAsync(payload);
         navigate("/teachers");
       }
     } catch (err: any) {
@@ -90,9 +99,26 @@ export function TeacherFormPage() {
       <Card>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm text-muted-foreground">Profil pedagogique *</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm mt-1"
+                value={form.teacherType || "GENERALIST"}
+                onChange={(e) => setForm({ ...form, teacherType: e.target.value as TeacherType })}
+              >
+                <option value="GENERALIST">Generaliste (1er cycle - toutes matieres d'une classe)</option>
+                <option value="SPECIALIST">Specialiste (2e cycle - 1 ou plusieurs matieres)</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isGeneralist
+                  ? "Un generaliste enseigne toutes les matieres de sa classe (1ere a 6eme annee)."
+                  : "Un specialiste enseigne une ou plusieurs matieres specifiques (7eme a 9eme annee)."}
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-muted-foreground">Prénom *</label>
+                <label className="text-sm text-muted-foreground">Prenom *</label>
                 <Input
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
@@ -112,17 +138,15 @@ export function TeacherFormPage() {
                 <select
                   className="w-full border rounded px-3 py-2 text-sm"
                   value={form.gender || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, gender: (e.target.value || undefined) as any })
-                  }
+                  onChange={(e) => setForm({ ...form, gender: (e.target.value || undefined) as any })}
                 >
                   <option value="">—</option>
                   <option value="M">Masculin</option>
-                  <option value="F">Féminin</option>
+                  <option value="F">Feminin</option>
                 </select>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Téléphone</label>
+                <label className="text-sm text-muted-foreground">Telephone</label>
                 <Input
                   value={form.phone || ""}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -145,20 +169,33 @@ export function TeacherFormPage() {
                   onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground">Spécialité</label>
+
+              {/* Specialite conditionnelle */}
+              <div className="col-span-2">
+                <label className="text-sm text-muted-foreground">
+                  Specialite {isGeneralist ? "(auto)" : "*"}
+                </label>
                 <Input
-                  value={form.specialty || ""}
+                  value={isGeneralist ? "Generaliste" : (form.specialty || "")}
                   onChange={(e) => setForm({ ...form, specialty: e.target.value })}
-                  placeholder="Mathématiques"
+                  placeholder={isGeneralist ? "Generaliste" : "Mathematiques"}
+                  disabled={isGeneralist}
+                  className={isGeneralist ? "bg-muted" : ""}
                 />
+                {isGeneralist && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Un generaliste est automatiquement marque comme "Generaliste".
+                    Ses matieres sont definies par les ClassSubject de sa classe.
+                  </p>
+                )}
               </div>
+
               <div>
-                <label className="text-sm text-muted-foreground">Diplôme</label>
+                <label className="text-sm text-muted-foreground">Diplome</label>
                 <Input
                   value={form.diploma || ""}
                   onChange={(e) => setForm({ ...form, diploma: e.target.value })}
-                  placeholder="Master, Licence…"
+                  placeholder="IFM, ENSup, Master, Licence..."
                 />
               </div>
               <div>
@@ -171,7 +208,7 @@ export function TeacherFormPage() {
                   <option value="PERMANENT">Permanent</option>
                   <option value="CONTRACT">Contractuel</option>
                   <option value="TEMPORARY">Temporaire</option>
-                  <option value="VOLUNTEER">Bénévole</option>
+                  <option value="VOLUNTEER">Benevole</option>
                 </select>
               </div>
               <div>
@@ -201,7 +238,7 @@ export function TeacherFormPage() {
               </Link>
               <Button type="submit" disabled={createMutation.isPending}>
                 <Save className="h-4 w-4" />
-                {isEdit ? "Enregistrer" : "Créer"}
+                {isEdit ? "Enregistrer" : "Creer"}
               </Button>
             </div>
           </form>

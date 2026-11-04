@@ -1,4 +1,4 @@
-﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { teachersApi, TeacherListFilters } from "@/api/teachers";
 import { api } from "@/lib/axios";
@@ -56,9 +56,36 @@ export function useAvailableTeachers() {
         matricule: string;
         firstName: string;
         lastName: string;
+        teacherType?: "GENERALIST" | "SPECIALIST";
         specialty?: string | null;
       }>;
     },
     staleTime: 60_000,
+  });
+}
+
+export function useAddSpecialty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { teacherId: string; subjectId: string }) =>
+      teachersApi.addSpecialty(args.teacherId, args.subjectId),
+    onSuccess: (_, vars) => {
+      toast.success("Specialite ajoutee");
+      qc.invalidateQueries({ queryKey: [KEY, "detail", vars.teacherId] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useRemoveSpecialty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { teacherId: string; specialtyId: string }) =>
+      teachersApi.removeSpecialty(args.teacherId, args.specialtyId),
+    onSuccess: (_, vars) => {
+      toast.success("Specialite retiree");
+      qc.invalidateQueries({ queryKey: [KEY, "detail", vars.teacherId] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
 }

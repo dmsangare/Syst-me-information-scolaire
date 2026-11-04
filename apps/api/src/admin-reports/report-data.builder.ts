@@ -179,7 +179,7 @@ export class ReportDataBuilder {
       diploma: t.diploma,
       contractType: t.contractType,
       hireDate: t.hireDate,
-      subjects: t.assignments.map((a) => a.subject.name).filter((v, i, arr) => arr.indexOf(v) === i),
+      subjects: t.assignments.map((a) => a.subject?.name).filter((v): v is string => !!v).filter((v, i, arr) => arr.indexOf(v) === i),
       assignmentsCount: t.assignments.length,
     }));
 
@@ -187,7 +187,9 @@ export class ReportDataBuilder {
     const bySubject: Record<string, number> = {};
     for (const t of teachers) {
       for (const a of t.assignments) {
-        bySubject[a.subject.name] = (bySubject[a.subject.name] ?? 0) + 1;
+        const name = a.subject?.name;
+        if (!name) continue;
+        bySubject[name] = (bySubject[name] ?? 0) + 1;
       }
     }
 

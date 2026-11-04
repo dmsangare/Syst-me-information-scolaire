@@ -427,7 +427,7 @@ export class DashboardService {
     // 4. Matieres uniques
     const subjectsMap = new Map<string, any>();
     for (const a of assignments) {
-      if (!subjectsMap.has(a.subjectId)) {
+      if (a.subjectId && a.subject && !subjectsMap.has(a.subjectId)) {
         subjectsMap.set(a.subjectId, a.subject);
       }
     }

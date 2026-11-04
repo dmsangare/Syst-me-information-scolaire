@@ -1,25 +1,24 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Users, Plus, Search, Loader2, Mail, Phone } from "lucide-react";
+import { Users, Plus, Search, Loader2, Mail, Phone, GraduationCap, BookOpen } from "lucide-react";
 import { useTeachers } from "@/hooks/teachers";
-import { initials, formatDate } from "@/lib/formatters";
-import {
-  Button,
-  Input,
-  Card,
-  CardContent,
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui";
+import { initials } from "@/lib/formatters";
+import { Button, Input, Card, CardContent, Avatar, AvatarFallback } from "@/components/ui";
 
 export function TeachersListPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [teacherType, setTeacherType] = useState<"" | "GENERALIST" | "SPECIALIST">("");
 
   const filters = useMemo(
-    () => ({ page, limit: 20, q: q || undefined }),
-    [page, q]
+    () => ({
+      page,
+      limit: 20,
+      q: q || undefined,
+      teacherType: teacherType || undefined,
+    }),
+    [page, q, teacherType]
   );
 
   const { data, isLoading } = useTeachers(filters);
@@ -62,6 +61,18 @@ export function TeachersListPage() {
                 className="pl-9"
               />
             </div>
+            <select
+              className="border rounded px-3 py-2 text-sm"
+              value={teacherType}
+              onChange={(e) => {
+                setTeacherType(e.target.value as any);
+                setPage(1);
+              }}
+            >
+              <option value="">Tous les profils</option>
+              <option value="GENERALIST">Generalistes (1er cycle)</option>
+              <option value="SPECIALIST">Specialistes (2e cycle)</option>
+            </select>
             <Button type="submit" variant="secondary">
               Rechercher
             </Button>
@@ -87,55 +98,72 @@ export function TeachersListPage() {
                   <tr className="text-left text-xs font-medium text-muted-foreground uppercase">
                     <th className="px-4 py-3">Enseignant</th>
                     <th className="px-4 py-3">Matricule</th>
-                    <th className="px-4 py-3">Specialite</th>
+                    <th className="px-4 py-3">Profil</th>
+                    <th className="px-4 py-3">Specialites</th>
                     <th className="px-4 py-3">Contact</th>
                     <th className="px-4 py-3">Classes</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.data.map((teacher) => (
-                    <tr key={teacher.id} className="border-b hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                              {initials(teacher.firstName, teacher.lastName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <Link
-                              to={`/teachers/${teacher.id}`}
-                              className="text-sm font-medium hover:underline"
-                            >
-                              {teacher.lastName} {teacher.firstName}
-                            </Link>
-                            <p className="text-xs text-muted-foreground">
-                              {teacher.email || "—"}
-                            </p>
+                  {data.data.map((teacher) => {
+                    const t = teacher as any;
+                    const isGeneralist = t.teacherType === "GENERALIST";
+                    const specialtiesList: string[] = (t.specialties || []).map((s: any) => s.subject?.code || s.subject?.name);
+                    return (
+                      <tr key={t.id} className="border-b hover:bg-muted/30">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {initials(t.firstName, t.lastName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <Link
+                                to={`/teachers/${t.id}`}
+                                className="text-sm font-medium hover:underline"
+                              >
+                                {t.lastName} {t.firstName}
+                              </Link>
+                              <p className="text-xs text-muted-foreground">{t.email || "—"}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                        {teacher.matricule}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {teacher.specialty || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex flex-col gap-1">
-                          {teacher.phone && (
+                        </td>
+                        <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
+                          {t.matricule}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={"px-2 py-0.5 text-xs rounded " + (isGeneralist ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700")}>
+                            {isGeneralist ? "Generaliste" : "Specialiste"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {specialtiesList.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {specialtiesList.slice(0, 3).map((s, i) => (
+                                <span key={i} className="px-1.5 py-0.5 text-xs bg-muted rounded">{s}</span>
+                              ))}
+                              {specialtiesList.length > 3 && (
+                                <span className="text-xs text-muted-foreground">+{specialtiesList.length - 3}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {t.phone && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {teacher.phone}
+                              <Phone className="h-3 w-3" /> {t.phone}
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {teacher._count?.mainTeacherClasses || 0}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {(t.assignments || []).length}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

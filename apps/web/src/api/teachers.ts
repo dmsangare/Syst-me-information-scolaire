@@ -1,10 +1,12 @@
 import { api } from "@/lib/axios";
-import type { Teacher, CreateTeacherInput } from "@/types/teacher";
+import type { Teacher, CreateTeacherInput, TeacherSpecialty } from "@/types/teacher";
 
 export interface TeacherListFilters {
   page?: number;
   limit?: number;
   q?: string;
+  teacherType?: "GENERALIST" | "SPECIALIST";
+  status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
 }
 
 export interface TeacherListResponse {
@@ -40,5 +42,25 @@ export const teachersApi = {
   removeAssignment: async (id: string, assignmentId: string) => {
     const res = await api.delete(`/teachers/${id}/assign/${assignmentId}`);
     return res.data?.data ?? res.data;
+  },
+  getSpecialties: async (id: string): Promise<TeacherSpecialty[]> => {
+    const res = await api.get(`/teachers/${id}/specialties`);
+    return res.data?.data ?? res.data ?? [];
+  },
+  addSpecialty: async (id: string, subjectId: string): Promise<TeacherSpecialty> => {
+    const res = await api.post(`/teachers/${id}/specialties`, { subjectId });
+    return res.data?.data ?? res.data;
+  },
+  removeSpecialty: async (id: string, specialtyId: string) => {
+    const res = await api.delete(`/teachers/${id}/specialties/${specialtyId}`);
+    return res.data?.data ?? res.data;
+  },
+  getAssigned: async (id: string, academicYearId?: string) => {
+    const res = await api.get(`/teachers/${id}/assigned`, { params: { academicYearId } });
+    return res.data?.data ?? res.data ?? [];
+  },
+  getAssignedSubjects: async (id: string, academicYearId?: string) => {
+    const res = await api.get(`/teachers/${id}/assigned-subjects`, { params: { academicYearId } });
+    return res.data;
   },
 };
