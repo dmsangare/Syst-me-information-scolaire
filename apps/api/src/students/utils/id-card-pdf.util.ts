@@ -1,7 +1,7 @@
 ﻿import { PdfGeneratorService } from "../../common/pdf";
 
 /**
- * BLOC B â€” Generation PDF des cartes scolaires.
+ * BLOC B — Generation PDF des cartes scolaires.
  *
  * Format A4 : 8 cartes par page (2 colonnes x 4 lignes), format PVC 85.6 x 54 mm.
  * Chaque carte porte un QR code pointant vers /v/{shortCode}/{token}.

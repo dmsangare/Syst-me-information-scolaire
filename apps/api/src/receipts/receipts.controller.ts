@@ -73,12 +73,12 @@ export class ReceiptsController {
       schoolAddress: school.address,
       schoolPhone: school.phone,
       schoolMotto: school.motto,
-      receiptNumber: (receipt as any).number || "â€”",
+      receiptNumber: (receipt as any).number || "—",
       issuedAt: (receipt as any).issuedAt || payment.paidAt,
-      studentName: `${student.firstName || ""} ${student.lastName || ""}`.trim() || "â€”",
-      studentMatricule: student.matricule || "â€”",
+      studentName: `${student.firstName || ""} ${student.lastName || ""}`.trim() || "—",
+      studentMatricule: student.matricule || "—",
       studentClass: null, // TODO : recuperer la classe via enrollment
-      invoiceNumber: invoice.number || "â€”",
+      invoiceNumber: invoice.number || "—",
       invoiceItems: Array.isArray((invoice as any).items)
         ? (invoice as any).items.map((it: any) => ({
             label: it.feeType?.name || it.description || "Frais",

@@ -2,13 +2,13 @@
 import QRCode from "qrcode";
 
 interface TransferCertificateData {
-  // Ã‰lÃ¨ve
+  // Élève
   studentName: string;
   studentMatricule: string;
   studentGender: string;
   studentBirthDate: Date;
   studentBirthPlace?: string | null;
-  // Ã‰cole
+  // École
   schoolName: string;
   schoolAddress?: string | null;
   schoolPhone?: string | null;
@@ -26,7 +26,7 @@ interface TransferCertificateData {
   previousClassLevel?: string | null;
   previousAverage?: number | null;
   decision?: string | null;
-  // VÃ©rification
+  // Vérification
   verificationCode: string;
   verifyUrl: string;
   issuedAt: Date;
@@ -214,7 +214,7 @@ function buildCertificateHTML(
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">${isOutbound ? "Ecole d accueil" : "Ecole quittee"}</span>
-                <span class="info-value">${escapeHtml(isOutbound ? data.toSchool || "â€”" : data.fromSchool || "â€”")}</span>
+                <span class="info-value">${escapeHtml(isOutbound ? data.toSchool || "—" : data.fromSchool || "—")}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Date effective</span>
@@ -270,7 +270,7 @@ function buildCertificateHTML(
         </div>
 
         <div class="footer">
-          Document genere automatiquement par SIS-MALI le ${formatDate(data.issuedAt)} â€” Toute reproduction non autorisee est interdite.
+          Document genere automatiquement par SIS-MALI le ${formatDate(data.issuedAt)} — Toute reproduction non autorisee est interdite.
         </div>
       </body>
     </html>

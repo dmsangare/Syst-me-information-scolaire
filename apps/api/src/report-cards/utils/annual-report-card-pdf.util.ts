@@ -66,10 +66,10 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
   const logoHTML = logo ? `<img src="${logo}" alt="Logo" style="width:60px;height:60px;object-fit:contain;" />` : "";
   const stamp = safeImage(data.schoolStampBase64);
 
-  const academyLine = data.schoolAcademy ? `<div>AcadÃ©mie d'Enseignement de ${escapeHtml(data.schoolAcademy)}</div>` : "";
+  const academyLine = data.schoolAcademy ? `<div>Académie d'Enseignement de ${escapeHtml(data.schoolAcademy)}</div>` : "";
   const capLine = data.schoolCap ? `<div>CAP de ${escapeHtml(data.schoolCap)}</div>` : "";
 
-  // Tableau des pÃ©riodes
+  // Tableau des périodes
   let periodsHTML = "";
   let periodsTitle = "";
   if (data.cycle === "DEUXIEME_CYCLE" && data.terms) {
@@ -91,7 +91,7 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
     `).join("");
   }
 
-  const decisionLabel = data.decisionLabel || data.decision || "â€”";
+  const decisionLabel = data.decisionLabel || data.decision || "—";
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -150,14 +150,14 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
 <table class="head">
   <tr>
     <td class="head-left">
-      <div>MinistÃ¨re de l'Ã‰ducation Nationale</div>
+      <div>Ministère de l'Éducation Nationale</div>
       ${academyLine}
       ${capLine}
     </td>
     <td class="head-center">${logoHTML}</td>
     <td class="head-right">
-      <div class="republic">RÃ©publique du Mali</div>
-      <div class="devise">Un Peuple â€“ Un But â€“ Une Foi</div>
+      <div class="republic">République du Mali</div>
+      <div class="devise">Un Peuple "“ Un But "“ Une Foi</div>
     </td>
   </tr>
 </table>
@@ -165,27 +165,27 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
 <div class="school-block">
   <div class="school-name">${escapeHtml(data.schoolName)}</div>
   ${data.schoolAddress ? `<div class="school-info">${escapeHtml(data.schoolAddress)}</div>` : ""}
-  ${data.schoolPhone ? `<div class="school-info">TÃ©l : ${escapeHtml(data.schoolPhone)}</div>` : ""}
+  ${data.schoolPhone ? `<div class="school-info">Tél : ${escapeHtml(data.schoolPhone)}</div>` : ""}
   ${data.schoolMotto ? `<div class="school-motto">Â« ${escapeHtml(data.schoolMotto)} Â»</div>` : ""}
 </div>
 
 <div class="title-block">
   <div class="title">BULLETIN ANNUEL</div>
-  <div class="subtitle">AnnÃ©e scolaire ${escapeHtml(data.academicYear)} â€” DÃ©cision de passage</div>
+  <div class="subtitle">Année scolaire ${escapeHtml(data.academicYear)} — Décision de passage</div>
 </div>
 
 <table class="student">
   <tr>
-    <td><span class="lbl">Ã‰lÃ¨ve : </span><span class="val">${escapeHtml(data.studentName)}</span></td>
+    <td><span class="lbl">Élève : </span><span class="val">${escapeHtml(data.studentName)}</span></td>
     <td><span class="lbl">Classe : </span><span class="val">${escapeHtml(data.className)}</span></td>
   </tr>
   <tr>
     <td><span class="lbl">Matricule : </span><span class="val" style="font-family:monospace;">${escapeHtml(data.studentMatricule)}</span></td>
-    <td><span class="lbl">Effectif : </span><span class="val">${escapeHtml(String(data.classSize))} Ã©lÃ¨ves</span></td>
+    <td><span class="lbl">Effectif : </span><span class="val">${escapeHtml(String(data.classSize))} élèves</span></td>
   </tr>
   <tr>
     <td><span class="lbl">Sexe : </span><span class="val">${genderLabel(data.studentGender)}</span></td>
-    <td><span class="lbl">NÃ©(e) le : </span><span class="val">${formatDate(data.studentBirthDate)}${data.studentBirthPlace ? ` Ã  ${escapeHtml(data.studentBirthPlace)}` : ""}</span></td>
+    <td><span class="lbl">Né(e) le : </span><span class="val">${formatDate(data.studentBirthDate)}${data.studentBirthPlace ? ` Ã  ${escapeHtml(data.studentBirthPlace)}` : ""}</span></td>
   </tr>
 </table>
 
@@ -193,7 +193,7 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
 <table class="notes">
   <thead>
     <tr>
-      <th class="l" style="width:50%;">PÃ©riode</th>
+      <th class="l" style="width:50%;">Période</th>
       <th style="width:30%;">Moyenne /${scale}</th>
       ${data.cycle === "DEUXIEME_CYCLE" ? '<th style="width:20%;">Rang</th>' : ""}
     </tr>
@@ -203,7 +203,7 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
     <tr class="total-row">
       <td class="l"><strong>TOTAL</strong></td>
       <td class="c strong">${fmt(data.annualSum)} / ${(data.cycle === "PREMIER_CYCLE" ? (data.compositions?.length ?? 9) : 3) * scale}</td>
-      ${data.cycle === "DEUXIEME_CYCLE" ? '<td class="c">â€”</td>' : ""}
+      ${data.cycle === "DEUXIEME_CYCLE" ? '<td class="c">—</td>' : ""}
     </tr>
   </tbody>
 </table>
@@ -216,7 +216,7 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
     </td>
     <td style="text-align:right;">
       <div class="average-label">Rang</div>
-      <div class="rank-value">${ordinal(data.rank)}${data.classSize ? ` sur ${escapeHtml(String(data.classSize))} Ã©lÃ¨ves` : ""}</div>
+      <div class="rank-value">${ordinal(data.rank)}${data.classSize ? ` sur ${escapeHtml(String(data.classSize))} élèves` : ""}</div>
     </td>
   </tr>
 </table>
@@ -229,25 +229,25 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
 </table>
 
 <div class="decision-box">
-  <div class="decision-label">DÃ©cision annuelle</div>
+  <div class="decision-label">Décision annuelle</div>
   <div class="decision-text">${escapeHtml(decisionLabel)}</div>
 </div>
 
-<div class="section-title">ApprÃ©ciation gÃ©nÃ©rale</div>
+<div class="section-title">Appréciation générale</div>
 <div class="appreciation-text">
-  ${data.appreciation ? escapeMultiline(data.appreciation) : "<em style='color:#6B7280;'>Aucune apprÃ©ciation saisie</em>"}
+  ${data.appreciation ? escapeMultiline(data.appreciation) : "<em style='color:#6B7280;'>Aucune appréciation saisie</em>"}
 </div>
 
 <table class="sign">
   <tr>
-    <td><div class="signature-line">Le MaÃ®tre ou la MaÃ®tresse / Le Titulaire de classe</div></td>
+    <td><div class="signature-line">Le Maître ou la Maîtresse / Le Titulaire de classe</div></td>
     <td>${stamp ? `<img src="${stamp}" alt="Cachet" style="height:70px;object-fit:contain;" />` : ""}<div class="signature-line">Le Directeur / La Directrice</div></td>
     <td><div class="signature-line">Visa du parent ou tuteur</div></td>
   </tr>
 </table>
 
 <div class="footer">
-  Document gÃ©nÃ©rÃ© par SIS-MALI le ${formatDate(new Date().toISOString())}
+  Document généré par SIS-MALI le ${formatDate(new Date().toISOString())}
 </div>
 
 </body>

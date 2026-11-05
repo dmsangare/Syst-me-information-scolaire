@@ -136,7 +136,7 @@ export function AssignStudentsModal({
 
           <div className="flex items-center justify-between gap-2 text-sm">
             <span className="text-muted-foreground">
-              {filtered.length} eleve(s) disponible(s) Â· {selected.size} selectionne(s)
+              {filtered.length} eleve(s) disponible(s) · {selected.size} selectionne(s)
             </span>
             <div className="flex gap-2">
               <Button

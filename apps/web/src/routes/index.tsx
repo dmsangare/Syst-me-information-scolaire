@@ -92,7 +92,7 @@ export function AppRoutes() {
           />
           <Route path="/honor-roll" element={<HonorRollPage />} />
 
-          {/* Éâ€°lÉÂ¨ves */}
+          {/* É"°lÉÂ¨ves */}
           <Route
             path="/students"
             element={

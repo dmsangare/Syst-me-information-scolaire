@@ -50,7 +50,7 @@ function fmtMoney(n: number): string {
 }
 
 function fmtDateTime(d: Date | string | null | undefined): string {
-  if (!d) return "â€”";
+  if (!d) return "—";
   return new Date(d).toLocaleString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
@@ -61,7 +61,7 @@ function fmtDateTime(d: Date | string | null | undefined): string {
 }
 
 function fmtTime(d: Date | string | null | undefined): string {
-  if (!d) return "â€”";
+  if (!d) return "—";
   return new Date(d).toLocaleTimeString("fr-FR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -84,7 +84,7 @@ function buildHTML(data: CashSessionReportData): string {
               <td class="time-cell">${m.time}</td>
               <td>${badge}</td>
               <td>${m.label}${m.detail ? `<div class="detail">${m.detail}</div>` : ""}</td>
-              <td class="method-cell">${m.method || "â€”"}</td>
+              <td class="method-cell">${m.method || "—"}</td>
               <td class="amount-cell" style="color:${color}">${sign}${fmtMoney(m.amount)}</td>
             </tr>`;
           })
@@ -215,6 +215,6 @@ table.movements td.empty { text-align: center; color: #9CA3AF; padding: 20px; fo
     <div class="signature-label">Le Directeur / Comptable</div>
   </div>
 </div>
-<div class="footer">Rapport de caisse genere automatiquement par SIS-MALI â€” Conservez ce document pour vos archives comptables.</div>
+<div class="footer">Rapport de caisse genere automatiquement par SIS-MALI — Conservez ce document pour vos archives comptables.</div>
 </body></html>`;
 }

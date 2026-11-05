@@ -372,7 +372,7 @@ export function CreateInvoiceModal({ onClose, preselectedStudent }: Props) {
           >
             <div className="p-6 border-b">
               <h2 className="text-lg font-semibold">
-                Grille tarifaire â€” {enrollment?.level?.name || "Niveau"}
+                Grille tarifaire — {enrollment?.level?.name || "Niveau"}
               </h2>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Ajoutez un frais ou tous les frais

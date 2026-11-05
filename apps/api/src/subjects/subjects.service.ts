@@ -46,7 +46,7 @@ export class SubjectsService {
 
   async create(dto: SubjectCreateDto) {
     if (!dto.schoolId) {
-      throw new ConflictException("schoolId requis pour crÃƒÂ©er une matiÃƒÂ¨re");
+      throw new ConflictException("schoolId requis pour créer une matière");
     }
     const existing = await this.prisma.subject.findUnique({
       where: { schoolId_code: { schoolId: dto.schoolId, code: dto.code } },

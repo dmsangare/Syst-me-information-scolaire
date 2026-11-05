@@ -428,7 +428,7 @@ function CreateUserModal({
                   <option value="">-- Aucune fiche liee --</option>
                   {availableTeachers.map((t: any) => (
                     <option key={t.id} value={t.id}>
-                      {t.matricule} Â· {t.lastName} {t.firstName}
+                      {t.matricule} · {t.lastName} {t.firstName}
                       {t.specialty ? ` (${t.specialty})` : ""}
                     </option>
                   ))}
@@ -451,7 +451,7 @@ function CreateUserModal({
                   <option value="">-- Aucune fiche liee --</option>
                   {availableGuardians.map((g: any) => (
                     <option key={g.id} value={g.id}>
-                      {g.lastName} {g.firstName} Â· {g.phone || "—"} ({g.relationType})
+                      {g.lastName} {g.firstName} · {g.phone || "—"} ({g.relationType})
                     </option>
                   ))}
                 </select>
@@ -725,7 +725,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
                 {!changeFiche && (
                   <p className="text-sm text-muted-foreground">
                     {user.teacher ? (
-                      <>Fiche actuelle : <strong>{user.teacher.matricule} Â· {user.teacher.lastName} {user.teacher.firstName}</strong></>
+                      <>Fiche actuelle : <strong>{user.teacher.matricule} · {user.teacher.lastName} {user.teacher.firstName}</strong></>
                     ) : (
                       "Aucune fiche liee"
                     )}
@@ -743,7 +743,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
                       <option value="">-- Aucune fiche liee --</option>
                       {availableTeachers.map((t: any) => (
                         <option key={t.id} value={t.id}>
-                          {t.matricule} Â· {t.lastName} {t.firstName}
+                          {t.matricule} · {t.lastName} {t.firstName}
                         </option>
                       ))}
                     </select>
@@ -764,7 +764,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
                       <option value="">-- Aucune fiche liee --</option>
                       {availableGuardians.map((g: any) => (
                         <option key={g.id} value={g.id}>
-                          {g.lastName} {g.firstName} Â· {g.phone || "—"}
+                          {g.lastName} {g.firstName} · {g.phone || "—"}
                         </option>
                       ))}
                     </select>

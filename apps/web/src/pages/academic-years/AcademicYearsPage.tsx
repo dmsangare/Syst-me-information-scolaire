@@ -204,7 +204,7 @@ function YearCard({
               </span>
               {year.isCurrent && (
                 <span className="text-xs text-green-700 font-medium">
-                  Â· Année courante
+                  · Année courante
                 </span>
               )}
             </div>
@@ -214,7 +214,7 @@ function YearCard({
             </p>
             {year._count && (
               <p className="text-xs text-muted-foreground mt-1">
-                {year._count.classes} classe(s) Â· {year._count.enrollments} eleve(s) Â·{" "}
+                {year._count.classes} classe(s) · {year._count.enrollments} eleve(s) ·{" "}
                 {year._count.terms} periode(s)
               </p>
             )}

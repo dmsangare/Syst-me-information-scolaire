@@ -28,7 +28,7 @@ export class AssessmentsService {
     schoolId: string | null,
     page = 1,
     limit = 20,
-    filters: { classId?: string; subjectId?: string; termId?: string; teacherId?: string; status?: string; type?: string } = {}, // Ã¢Å“â€¦ type ajoutÃƒÂ©
+    filters: { classId?: string; subjectId?: string; termId?: string; teacherId?: string; status?: string; type?: string } = {}, // ✅"¦ type ajouté
     user?: { id: string; roles: string[] },
   ) {
     const where: any = {};
@@ -38,7 +38,7 @@ export class AssessmentsService {
     if (filters.termId) where.termId = filters.termId;
     if (filters.teacherId) where.teacherId = filters.teacherId;
     if (filters.status) where.status = filters.status;
-    if (filters.type) where.type = filters.type; // Ã¢Å“â€¦ Filtre type appliquÃƒÂ©
+    if (filters.type) where.type = filters.type; // ✅"¦ Filtre type appliqué
 
     // FILTRE TEACHER : forcer le teacherId si TEACHER connecte
     const isTeacherOnly =
@@ -207,7 +207,7 @@ export class AssessmentsService {
       const hasCritical = criticalFields.some((f) => (dto as any)[f] !== undefined);
       if (hasCritical) {
         throw new BadRequestException(
-          "Cette evaluation est validee. Les champs structurels (classe, periode, matiere, barÃƒÂ¨me) ne peuvent plus etre modifies.",
+          "Cette evaluation est validee. Les champs structurels (classe, periode, matiere, barème) ne peuvent plus etre modifies.",
         );
       }
     }
@@ -315,7 +315,7 @@ export class AssessmentsService {
     });
     if (!existing) throw new NotFoundException("Evaluation introuvable");
     if (existing.status !== "VALIDATED" && existing.status !== "LOCKED" && existing.status !== "SUBMITTED") {
-      throw new BadRequestException("Cette evaluation n'est pas validÃƒÂ©e, elle n'a pas besoin d'ÃƒÂªtre rÃƒÂ©ouverte.");
+      throw new BadRequestException("Cette evaluation n'est pas validée, elle n'a pas besoin d'être réouverte.");
     }
 
     // Debloquer toutes les notes

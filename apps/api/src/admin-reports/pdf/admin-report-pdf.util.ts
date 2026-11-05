@@ -89,7 +89,7 @@ export async function generateOfficialReportPDF(
 }
 
 function formatValue(v: any, format?: string): string {
-  if (v === null || v === undefined || v === '') return 'â€”';
+  if (v === null || v === undefined || v === '') return '—';
   if (format === 'currency') {
     return new Intl.NumberFormat('fr-FR').format(Number(v)) + ' FCFA';
   }
@@ -113,29 +113,29 @@ function escapeHtml(s: any): string {
 // ============================================================
 
 function labelSchoolType(value: string | null | undefined): string {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const map: Record<string, string> = {
-    FONDAMENTAL: "Ã‰cole fondamentale",
-    FONDAMENTAL_LYCEE: "Fondamental & LycÃ©e",
-    LYCEE: "LycÃ©e",
-    PRIVE: "PrivÃ©",
+    FONDAMENTAL: "École fondamentale",
+    FONDAMENTAL_LYCEE: "Fondamental & Lycée",
+    LYCEE: "Lycée",
+    PRIVE: "Privé",
     PUBLIC: "Public",
-    MEDERSA: "MÃ©dersa",
+    MEDERSA: "Médersa",
     TECHNIQUE: "Enseignement technique",
   };
   return map[value] ?? value;
 }
 
 function labelEnrollmentStatus(value: string | null | undefined): string {
-  if (!value) return "â€”";
+  if (!value) return "—";
   const map: Record<string, string> = {
     ACTIVE: "Inscrit",
     PENDING: "En attente",
-    VALIDATED: "ValidÃ©",
-    CANCELLED: "AnnulÃ©",
-    COMPLETED: "TerminÃ©",
-    TRANSFERRED: "TransfÃ©rÃ©",
-    GRADUATED: "DiplÃ´mÃ©",
+    VALIDATED: "Validé",
+    CANCELLED: "Annulé",
+    COMPLETED: "Terminé",
+    TRANSFERRED: "Transféré",
+    GRADUATED: "Diplômé",
     DROPPED: "Abandon",
     SUSPENDED: "Suspendu",
   };
@@ -143,7 +143,7 @@ function labelEnrollmentStatus(value: string | null | undefined): string {
 }
 
 function formatDate(d: any): string {
-  if (!d) return 'â€”';
+  if (!d) return '—';
   try {
     return new Date(d).toLocaleDateString('fr-FR', {
       day: '2-digit',
@@ -151,7 +151,7 @@ function formatDate(d: any): string {
       year: 'numeric',
     });
   } catch {
-    return 'â€”';
+    return '—';
   }
 }
 
@@ -163,7 +163,7 @@ function buildOfficialHTML(
   const dateStr = formatDate(new Date());
 
   // Annee scolaire
-  let yearLabel = academicYear?.label ?? 'â€”';
+  let yearLabel = academicYear?.label ?? '—';
   if (!academicYear?.label && academicYear?.startDate && academicYear?.endDate) {
     yearLabel = `${new Date(academicYear.startDate).getFullYear()}-${new Date(academicYear.endDate).getFullYear()}`;
   }
@@ -176,7 +176,7 @@ function buildOfficialHTML(
   // Bloc bordereau
   const bordereauBlock = report.bordereauNumber
     ? `<div class="bordereau">
-         <span class="bordereau-label">Bordereau NÂ°</span>
+         <span class="bordereau-label">Bordereau N°</span>
          <span class="bordereau-value">${escapeHtml(report.bordereauNumber)}</span>
        </div>`
     : '';
@@ -236,17 +236,17 @@ function buildOfficialHTML(
   const signatureBlock = `
     <div class="footer-signature">
       <div class="footer-left">
-        <div class="footer-place">Fait Ã  ${escapeHtml(signature?.place ?? school.commune ?? 'â€”')}, le ${dateStr}</div>
+        <div class="footer-place">Fait Ã  ${escapeHtml(signature?.place ?? school.commune ?? '—')}, le ${dateStr}</div>
         <div class="footer-role">${escapeHtml(signature?.role ?? 'Le Directeur')}</div>
         ${
           images.signature
             ? `<img src="${images.signature}" alt="Signature" style="max-height:60px; margin:6px 0;" />`
             : `<div style="height:60px;"></div>`
         }
-        <div class="footer-name">${escapeHtml(signature?.name ?? school.directorName ?? 'â€”')}</div>
+        <div class="footer-name">${escapeHtml(signature?.name ?? school.directorName ?? '—')}</div>
       </div>
       <div class="footer-right">
-        <div class="footer-stamp-label">Cachet de l'Ã©tablissement</div>
+        <div class="footer-stamp-label">Cachet de l'établissement</div>
         ${
           images.stamp
             ? `<img src="${images.stamp}" alt="Cachet" style="max-height:80px; margin-top:6px;" />`
@@ -438,10 +438,10 @@ function buildOfficialHTML(
 
   <div class="header">
     <div class="header-left">
-      <div class="republic">RÃ‰PUBLIQUE DU MALI</div>
+      <div class="republic">RÉPUBLIQUE DU MALI</div>
       <div class="motto">Un Peuple - Un But - Une Foi</div>
-      <div class="ministry">MinistÃ¨re de l'Ã‰ducation Nationale</div>
-      ${school.academy ? `<div class="academy">AcadÃ©mie d'Enseignement de ${escapeHtml(school.academy)}</div>` : ''}
+      <div class="ministry">Ministère de l'Éducation Nationale</div>
+      ${school.academy ? `<div class="academy">Académie d'Enseignement de ${escapeHtml(school.academy)}</div>` : ''}
       ${school.cap ? `<div class="cap">CAP de ${escapeHtml(school.cap)}</div>` : ''}
       <div class="academy" style="margin-top:4px; font-weight:bold;">${escapeHtml(school.name)}</div>
     </div>
@@ -450,19 +450,19 @@ function buildOfficialHTML(
 
   <div class="title-block">
     <h1>${escapeHtml(report.title)}</h1>
-    <div class="subtitle">${escapeHtml(report.code)} â€” AnnÃ©e scolaire ${escapeHtml(yearLabel)}${report.version && report.version > 1 ? ` â€” Version ${report.version}` : ''}</div>
+    <div class="subtitle">${escapeHtml(report.code)} — Année scolaire ${escapeHtml(yearLabel)}${report.version && report.version > 1 ? ` — Version ${report.version}` : ''}</div>
   </div>
 
   <div class="identification">
     <div class="identification-grid">
-      <div><span class="label">Ã‰tablissement :</span>${escapeHtml(school.name)}</div>
-      <div><span class="label">Code :</span>${escapeHtml(school.code ?? 'â€”')}</div>
+      <div><span class="label">Établissement :</span>${escapeHtml(school.name)}</div>
+      <div><span class="label">Code :</span>${escapeHtml(school.code ?? '—')}</div>
       <div><span class="label">Type :</span>${escapeHtml(labelSchoolType(school.type))}</div>
-      <div><span class="label">RÃ©gion :</span>${escapeHtml(school.region ?? 'â€”')}</div>
-      <div><span class="label">Commune :</span>${escapeHtml(school.commune ?? 'â€”')}</div>
-      <div><span class="label">TÃ©lÃ©phone :</span>${escapeHtml(school.phone ?? 'â€”')}</div>
-      <div><span class="label">Email :</span>${escapeHtml(school.email ?? 'â€”')}</div>
-      <div><span class="label">Directeur :</span>${escapeHtml(school.directorName ?? 'â€”')}</div>
+      <div><span class="label">Région :</span>${escapeHtml(school.region ?? '—')}</div>
+      <div><span class="label">Commune :</span>${escapeHtml(school.commune ?? '—')}</div>
+      <div><span class="label">Téléphone :</span>${escapeHtml(school.phone ?? '—')}</div>
+      <div><span class="label">Email :</span>${escapeHtml(school.email ?? '—')}</div>
+      <div><span class="label">Directeur :</span>${escapeHtml(school.directorName ?? '—')}</div>
     </div>
   </div>
 

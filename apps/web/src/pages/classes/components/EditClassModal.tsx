@@ -99,7 +99,7 @@ export function EditClassModal({ classItem, onClose }: EditClassModalProps) {
             <div>
               <h2 className="text-lg font-semibold">Modifier la classe</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {classItem.level?.name} Â· {isFirstCycle ? "1er cycle" : "2eme cycle"}
+                {classItem.level?.name} · {isFirstCycle ? "1er cycle" : "2eme cycle"}
               </p>
             </div>
             <Button
@@ -217,7 +217,7 @@ export function EditClassModal({ classItem, onClose }: EditClassModalProps) {
                   {sortedTeachers.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.lastName} {t.firstName}
-                      {t.specialty ? ` â€” ${t.specialty}` : ""}
+                      {t.specialty ? ` — ${t.specialty}` : ""}
                     </option>
                   ))}
                 </select>

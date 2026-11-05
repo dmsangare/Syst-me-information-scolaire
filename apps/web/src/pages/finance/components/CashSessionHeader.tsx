@@ -51,7 +51,7 @@ export function CashSessionHeader({ session, todayTotal }: Props) {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
-              {" Â· "}
+              {" · "}
               Fonds initial : {formatFCFA(Number(session.openingAmount))}
             </p>
           </div>

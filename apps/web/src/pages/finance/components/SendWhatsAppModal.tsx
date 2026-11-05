@@ -113,7 +113,7 @@ export function SendWhatsAppModal({
       : `Bonjour,\n\n`;
     const motif = formatMotif(invoiceItems);
     const motifLine = motif ? `\nMotif : ${motif}` : "";
-    const receiptLine = receiptNumber ? `\nRecu NÂ° : ${receiptNumber}` : "";
+    const receiptLine = receiptNumber ? `\nRecu N° : ${receiptNumber}` : "";
     const invoiceLine = invoiceNumber ? `\nFacture : ${invoiceNumber}` : "";
     return `${greeting}Nous confirmons la reception de votre paiement de ${amount} pour ${student.firstName} ${student.lastName} le ${date}.${motifLine}${invoiceLine}${receiptLine}\n\nMerci de votre confiance.\n${schoolName}`;
   };

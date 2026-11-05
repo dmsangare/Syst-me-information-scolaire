@@ -813,7 +813,7 @@ export class StudentsService {
 
     return generateExcel({
       title: "Liste des eleves",
-      subtitle: `${data.length} eleve(s) â€” Annee scolaire ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+      subtitle: `${data.length} eleve(s) — Annee scolaire ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
       sheetName: "Eleves",
       schoolName,
       columns,
@@ -863,12 +863,12 @@ export class StudentsService {
 
     return generatePDF({
       title: "LISTE DES ELEVES",
-      subtitle: `${data.length} eleve(s) â€” Genere le ${new Date().toLocaleDateString("fr-FR")}`,
+      subtitle: `${data.length} eleve(s) — Genere le ${new Date().toLocaleDateString("fr-FR")}`,
       schoolName,
       schoolAddress,
       columns,
       data,
-      footerNote: "Document genere automatiquement par SIS-MALI â€” Signature et cachet du directeur",
+      footerNote: "Document genere automatiquement par SIS-MALI — Signature et cachet du directeur",
     }, this.pdfGenerator);
   }
 
@@ -1251,7 +1251,7 @@ export class StudentsService {
   }
 
   /**
-   * BLOC B â€” Genere un PDF de cartes scolaires pour une classe.
+   * BLOC B — Genere un PDF de cartes scolaires pour une classe.
    *
    * - Cree un VerifiableDocument de type ID_CARD pour chaque eleve
    * - Genere un QR code pointant vers /v/{shortCode}/{token}

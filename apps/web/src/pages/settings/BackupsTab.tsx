@@ -102,7 +102,7 @@ export function BackupsTab() {
             Sauvegardes
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {backups.length} sauvegarde(s) â€” Créez et restaurez vos données
+            {backups.length} sauvegarde(s) — Créez et restaurez vos données
           </p>
         </div>
         <Button onClick={handleCreate} disabled={createMutation.isPending}>
@@ -250,7 +250,7 @@ function AutoBackupCard({
                 : "Jamais"
             }
           />
-          <InfoItem label="Prochaine" value={nextRun || "â€”"} />
+          <InfoItem label="Prochaine" value={nextRun || "—"} />
         </div>
 
         <div className="flex justify-end pt-2 border-t">

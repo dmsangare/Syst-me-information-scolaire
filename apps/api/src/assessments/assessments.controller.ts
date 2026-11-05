@@ -50,7 +50,7 @@ export class AssessmentsController {
       termId: query.termId,
       teacherId: query.teacherId,
       status: query.status,
-      type: query.type, // âœ… Ajout du filtre type
+      type: query.type, // ✅ Ajout du filtre type
     }, user);
   }
 

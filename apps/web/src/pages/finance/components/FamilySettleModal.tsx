@@ -89,7 +89,7 @@ export function FamilySettleModal({
             <div>
               <h2 className="text-lg font-semibold">Encaisser pour la famille</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {guardianName} â€” {siblings.length + 1} enfant(s)
+                {guardianName} — {siblings.length + 1} enfant(s)
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ export function FamilySettleModal({
                 id="fam-ref"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder="NÂ° transaction"
+                placeholder="N° transaction"
                 className="mt-1 font-mono"
               />
             </div>

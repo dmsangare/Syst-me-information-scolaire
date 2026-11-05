@@ -82,7 +82,7 @@ export class ClassPdfService {
     let processed = 0;
     for (const report of reports) {
       try {
-        // C4 : charger le nom rÃ©el de l'Ã©cole
+        // C4 : charger le nom réel de l'école
         const school = await this.prisma.school.findUnique({
           where: { id: report.student.schoolId },
           select: { name: true, address: true, phone: true, motto: true, logoUrl: true, stampUrl: true, academy: true, cap: true },
@@ -90,7 +90,7 @@ export class ClassPdfService {
         const schoolName = school?.name ?? 'SIS-MALI';
 
         const data: any = {
-          // C4 : nom rÃ©el de l'Ã©cole
+          // C4 : nom réel de l'école
           schoolName,
           schoolAddress: school?.address ?? null,
           schoolPhone: school?.phone ?? null,
@@ -137,7 +137,7 @@ export class ClassPdfService {
           decisionLabel: undefined,
         };
 
-        // C1 : si annuel, charger les pÃ©riodes
+        // C1 : si annuel, charger les périodes
         if (kind === 'ANNUEL' || report.kind === 'ANNUEL') {
           const cycle = data.cycle;
           const terms = await this.prisma.term.findMany({
@@ -183,13 +183,13 @@ export class ClassPdfService {
             : null;
 
           const decisionMap: Record<string, string> = {
-            ADMIS: 'Admis en classe supÃ©rieure',
-            PASSE: 'Admis en classe supÃ©rieure',
+            ADMIS: 'Admis en classe supérieure',
+            PASSE: 'Admis en classe supérieure',
             REDOUBLE: 'Redouble',
             EXCLU: 'Exclu',
-            A_DETERMINER: 'Ã€ dÃ©terminer',
+            A_DETERMINER: 'À déterminer',
           };
-          data.decisionLabel = decisionMap[report.decision ?? 'A_DETERMINER'] ?? 'Ã€ dÃ©terminer';
+          data.decisionLabel = decisionMap[report.decision ?? 'A_DETERMINER'] ?? 'À déterminer';
         }
         const buffer = kind === 'ANNUEL' || report.kind === 'ANNUEL'
           ? await generateAnnualReportCardPDF(data, this.pdfGenerator)

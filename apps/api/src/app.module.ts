@@ -75,12 +75,12 @@ import { FilesModule } from "./files/files.module";
       cache: true,
     }),
         ThrottlerModule.forRoot([
-      // Throttler global : 50 000 requÃªtes / heure (quasi illimitÃ© pour un utilisateur normal)
-      // L'objectif est de bloquer les attaques DDoS, pas de gÃªner le travail des comptables.
+      // Throttler global : 50 000 requêtes / heure (quasi illimité pour un utilisateur normal)
+      // L'objectif est de bloquer les attaques DDoS, pas de gêner le travail des comptables.
       { name: "default", ttl: 60 * 60_000, limit: 50000 },
       
       // Throttler "auth" : STRICT. 5 tentatives / 15 min (anti brute force login).
-      // C'est la seule vraie porte d'entrÃ©e sensible.
+      // C'est la seule vraie porte d'entrée sensible.
       { name: "auth", ttl: 15 * 60_000, limit: 5 },
       
       // Throttler "verify" : 30 verifications / min (anti enumeration QR)
@@ -136,7 +136,7 @@ import { FilesModule } from "./files/files.module";
     ExportModule,
   ],
   providers: [
-  { provide: APP_GUARD, useClass: UserThrottlerGuard }, // âœ… RemplacÃ©
+  { provide: APP_GUARD, useClass: UserThrottlerGuard }, // âœ… Remplacé
   { provide: APP_GUARD, useClass: JwtAuthGuard },
   { provide: APP_GUARD, useClass: MustChangePasswordGuard },
   { provide: APP_GUARD, useClass: PermissionsGuard },

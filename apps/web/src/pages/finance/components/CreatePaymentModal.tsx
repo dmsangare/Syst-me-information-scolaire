@@ -212,7 +212,7 @@ export function CreatePaymentModal({
                                   {inv.number}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  Total : {formatFCFA(inv.totalAmount)} Â· Payé : {formatFCFA(inv.paidAmount)}
+                                  Total : {formatFCFA(inv.totalAmount)} · Payé : {formatFCFA(inv.paidAmount)}
                                 </p>
                               </div>
                             </div>
@@ -307,7 +307,7 @@ export function CreatePaymentModal({
                 {needsReference && (
                   <div>
                     <Label htmlFor="reference" className="text-sm font-medium">
-                      Reference {method === "MOBILE_MONEY" ? "(NÂ° transaction)" : ""}
+                      Reference {method === "MOBILE_MONEY" ? "(N° transaction)" : ""}
                     </Label>
                     <Input
                       id="reference"
@@ -317,8 +317,8 @@ export function CreatePaymentModal({
                         method === "MOBILE_MONEY"
                           ? "Ex: OM-20261004-1234"
                           : method === "CHECK"
-                          ? "Ex: NÂ° cheque"
-                          : "Ex: NÂ° virement"
+                          ? "Ex: N° cheque"
+                          : "Ex: N° virement"
                       }
                       className="mt-1 font-mono"
                       maxLength={80}

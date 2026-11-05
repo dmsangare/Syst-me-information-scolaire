@@ -9,7 +9,7 @@ import { assertSchoolAccess, isSuperAdmin } from "../common/utils";
  * et lors d'une reinitialisation. L'utilisateur DOIT le changer a sa
  * premiere connexion (mustChangePassword = true).
  */
-// La constante est supprimÃ©e, on utilise generateTempPassword()
+// La constante est supprimée, on utilise generateTempPassword()
 
 
 @Injectable()

@@ -128,7 +128,7 @@ body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1F293
 <div class="title-block">
   <div class="title">RECU DE PAIEMENT</div>
   <div class="subtitle">Emis le ${fmtDateTime(data.issuedAt)}</div>
-  <div class="receipt-number">NÂ° ${data.receiptNumber}</div>
+  <div class="receipt-number">N° ${data.receiptNumber}</div>
 </div>
 <div class="info-box">
   <div class="info-grid">
@@ -149,7 +149,7 @@ body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1F293
   ${data.invoiceItems && data.invoiceItems.length > 0 ? `
     <tr><td colspan="2" style="padding:12px 0 6px 0;">
       <div style="font-weight:600;font-size:11px;color:#374151;border-bottom:1px solid #E5E7EB;padding-bottom:4px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
-        DÃ©tail des frais
+        Détail des frais
       </div>
     </td></tr>
     ${data.invoiceItems.map((it) => `

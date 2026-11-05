@@ -78,3 +78,5 @@ backups/documents_*.tar.gz
 
 # Playwright test artifacts
 playwright_screenshots/
+*.bak_*
+fix-mojibake.ps1

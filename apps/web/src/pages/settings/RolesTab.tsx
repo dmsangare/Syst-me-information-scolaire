@@ -385,7 +385,7 @@ export function RolesTab() {
                           {roleDetail.usersCount ?? 0} utilisateur
                           {(roleDetail.usersCount ?? 0) > 1 ? "s" : ""}
                         </span>
-                        <span>Â·</span>
+                        <span>·</span>
                         <span className="font-mono">
                           {roleDetail.permissions.length} permissions
                         </span>
@@ -477,7 +477,7 @@ export function RolesTab() {
               </span>
               {stats.modified > 0 && (
                 <>
-                  <span className="text-muted-foreground">Â·</span>
+                  <span className="text-muted-foreground">·</span>
                   <span className="text-orange-600 font-medium">
                     {stats.modified} modification{stats.modified > 1 ? "s" : ""} non enregistree{stats.modified > 1 ? "s" : ""}
                   </span>
@@ -485,7 +485,7 @@ export function RolesTab() {
               )}
               {hasChanges && (
                 <>
-                  <span className="text-muted-foreground">Â·</span>
+                  <span className="text-muted-foreground">·</span>
                   <span className="text-blue-600 font-medium">
                     Pensez a enregistrer
                   </span>

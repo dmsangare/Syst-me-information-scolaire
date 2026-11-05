@@ -27,7 +27,7 @@ export async function generateReportPDF(
 }
 
 function formatValue(v: any, format?: string): string {
-  if (v === null || v === undefined || v === '') return 'â€”';
+  if (v === null || v === undefined || v === '') return '—';
   if (format === 'currency') {
     return new Intl.NumberFormat('fr-FR').format(Number(v)) + ' FCFA';
   }
@@ -60,7 +60,7 @@ function buildHTML(opts: PDFOptions): string {
       return `
         <div class="section">
           <h3>${sec.title}</h3>
-          <p class="empty">Aucune donnÃ©e</p>
+          <p class="empty">Aucune donnée</p>
         </div>
       `;
     }
@@ -229,13 +229,13 @@ function buildHTML(opts: PDFOptions): string {
   <div class="header">
     <div class="school-info">
       <h1>${opts.schoolName}</h1>
-      <p>SystÃ¨me d'Information Scolaire â€” SIS-MALI</p>
+      <p>Système d'Information Scolaire — SIS-MALI</p>
     </div>
     <div class="report-meta">
       <div class="report-title">${opts.title}</div>
       ${opts.subtitle ? `<div>${opts.subtitle}</div>` : ''}
-      ${opts.period ? `<div>PÃ©riode : ${opts.period}</div>` : ''}
-      <div>Ã‰ditÃ© le ${date}</div>
+      ${opts.period ? `<div>Période : ${opts.period}</div>` : ''}
+      <div>Édité le ${date}</div>
       <div>Par ${opts.user}</div>
     </div>
   </div>
@@ -246,7 +246,7 @@ function buildHTML(opts: PDFOptions): string {
   ${sectionsHTML}
 
   <div class="footer">
-    Document gÃ©nÃ©rÃ© automatiquement par SIS-MALI Â· ${date}
+    Document généré automatiquement par SIS-MALI · ${date}
   </div>
 </body>
 </html>`;

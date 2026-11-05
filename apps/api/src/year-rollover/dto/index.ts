@@ -1,7 +1,7 @@
 ﻿import { z } from "zod";
 
 // ============================================================
-// BLOC G â€” DTO du wizard de passage a l'annee
+// BLOC G — DTO du wizard de passage a l'annee
 // ============================================================
 
 export const PeriodsToCloneEnum = z.enum(["TRIMESTRE", "SEMESTRE", "MOIS"]);

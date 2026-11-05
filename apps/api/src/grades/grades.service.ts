@@ -176,14 +176,14 @@ export class GradesService {
       await this.prisma.gradeAudit.createMany({ data: auditsToCreate });
     }
 
-    // L8 : recalculer isComplete aprÃ¨s modification
+    // L8 : recalculer isComplete après modification
     try {
       await this.reportCards.recomputeIsCompleteForAssessment(dto.assessmentId);
     } catch (err) {
       // Silencieux : le recalcul ne doit pas bloquer la saisie
     }
 
-    // DEC-9 : marquer les bulletins comme "Ã  recalculer" (non publiÃ©s uniquement)
+    // DEC-9 : marquer les bulletins comme "à recalculer" (non publiés uniquement)
     try {
       const assessment = await this.prisma.assessment.findUnique({
         where: { id: dto.assessmentId },
@@ -247,7 +247,7 @@ export class GradesService {
       },
     });
 
-    // Journal GradeAudit si value a changÃ©
+    // Journal GradeAudit si value a changé
     const valueChanged =
       dto.value !== undefined &&
       (oldValue === null || updated.value === null
@@ -265,14 +265,14 @@ export class GradesService {
       });
     }
 
-    // L8 : recalculer isComplete aprÃ¨s modification
+    // L8 : recalculer isComplete après modification
     try {
       await this.reportCards.recomputeIsCompleteForAssessment(grade.assessmentId);
     } catch (err) {
       // Silencieux
     }
 
-    // DEC-9 : marquer les bulletins comme "Ã  recalculer" (non publiÃ©s uniquement)
+    // DEC-9 : marquer les bulletins comme "à recalculer" (non publiés uniquement)
     try {
       await this.prisma.reportCard.updateMany({
         where: {

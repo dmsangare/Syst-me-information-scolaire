@@ -104,7 +104,7 @@ export function InvoiceDetailPage() {
                 )}
                 {invoice.issuedAt && (
                   <span>
-                    Â· Émise le{" "}
+                    · Émise le{" "}
                     {new Date(invoice.issuedAt).toLocaleDateString("fr-FR")}
                   </span>
                 )}
@@ -188,7 +188,7 @@ export function InvoiceDetailPage() {
                     <tr key={item.id} className="border-b last:border-0">
                       <td className="p-3">
                         <div className="font-medium">
-                          {item.feeType?.name || item.description || "â€”"}
+                          {item.feeType?.name || item.description || "—"}
                         </div>
                         {item.description && item.feeType && (
                           <div className="text-xs text-muted-foreground">
@@ -265,7 +265,7 @@ export function InvoiceDetailPage() {
                           </span>
                         </td>
                         <td className="p-3 font-mono text-xs">
-                          {p.reference || "â€”"}
+                          {p.reference || "—"}
                         </td>
                         <td className="p-3 text-right font-mono font-semibold text-green-600">
                           {formatFCFA(p.amount)}

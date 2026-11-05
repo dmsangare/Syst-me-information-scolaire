@@ -1,5 +1,5 @@
 /**
- * SIS-MALI Ã¢â‚¬â€ SchÃƒÂ©mas Zod partagÃƒÂ©s (validation API + formulaires)
+ * SIS-MALI - Schémas Zod partagés (validation API + formulaires)
  */
 
 import { z } from 'zod';
@@ -43,7 +43,7 @@ const uuid = z.string().uuid('Identifiant UUID invalide');
 const dateISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format AAAA-MM-JJ requis');
 const phoneML = z
   .string()
-  .regex(/^(\+223)?[2-9]\d{7}$/, 'NumÃƒÂ©ro malien invalide (ex: +223 70 00 00 00)');
+  .regex(/^(\+223)?[2-9]\d{7}$/, 'Numéro malien invalide (ex: +223 70 00 00 00)');
 const nonEmptyString = (min = 1, message = 'Champ obligatoire') =>
   z.string().min(min, message);
 
@@ -65,8 +65,8 @@ export type PaginationInput = z.infer<typeof PaginationSchema>;
 // ============================================================
 
 export const LoginSchema = z.object({
-  identifier: nonEmptyString(3, 'Email ou tÃƒÂ©lÃƒÂ©phone requis'),
-  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractÃƒÂ¨res'),
+  identifier: nonEmptyString(3, 'Email ou téléphone requis'),
+  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
 });
 
 export const RefreshTokenSchema = z.object({
@@ -78,11 +78,11 @@ export const ChangePasswordSchema = z
     currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
     newPassword: z
       .string()
-      .min(12, 'Le nouveau mot de passe doit contenir au moins 12 caractÃƒÂ¨res')
+      .min(12, 'Le nouveau mot de passe doit contenir au moins 12 caractères')
       .regex(/[A-Z]/, 'Doit contenir une majuscule')
       .regex(/[a-z]/, 'Doit contenir une minuscule')
       .regex(/\d/, 'Doit contenir un chiffre')
-      .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractÃƒÂ¨re spÃƒÂ©cial'),
+      .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractère spécial'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -234,8 +234,8 @@ export type ClassUpdateInput = z.infer<typeof ClassUpdateSchema>;
 
 export const StudentCreateSchema = z.object({
   schoolId: uuid,
-  firstName: nonEmptyString(2, 'Le prÃƒÂ©nom est requis (min. 2 caractÃƒÂ¨res)').max(100),
-  lastName: nonEmptyString(2, 'Le nom de famille est requis (min. 2 caractÃƒÂ¨res)').max(100),
+  firstName: nonEmptyString(2, 'Le prénom est requis (min. 2 caractères)').max(100),
+  lastName: nonEmptyString(2, 'Le nom de famille est requis (min. 2 caractères)').max(100),
   gender: z.nativeEnum(Gender),
   birthDate: dateISO,
   birthPlace: z.string().max(150).optional(),
@@ -441,7 +441,7 @@ export const AssessmentCreateSchema = z.object({
   subjectId: uuid,
   teacherId: uuid,
   type: z.nativeEnum(AssessmentType),
-  title: nonEmptyString(3, 'Titre requis (ex: Devoir nÃ‚Â°1)').max(150),
+  title: nonEmptyString(3, 'Titre requis (ex: Devoir n°1)').max(150),
   date: dateISO,
   maxScore: z.coerce.number().positive().max(100).default(20),
   coefficient: z.coerce.number().positive().max(10).default(1),
@@ -510,7 +510,7 @@ export type ReportCardGenerateInput = z.infer<typeof ReportCardGenerateSchema>;
 export type ReportCardUpdateInput = z.infer<typeof ReportCardUpdateSchema>;
 
 export const ReportCardReopenSchema = z.object({
-  motive: z.string().min(5, 'Motif obligatoire (min 5 caractÃƒÂ¨res)').max(500),
+  motive: z.string().min(5, 'Motif obligatoire (min 5 caractères)').max(500),
 });
 export type ReportCardReopenInput = z.infer<typeof ReportCardReopenSchema>;
 
@@ -615,7 +615,7 @@ export const PaymentCreateSchema = z.object({
   schoolId: uuid.optional(),
   invoiceId: uuid,
   studentId: uuid,
-  amount: z.coerce.number().positive('Le montant doit ÃƒÂªtre supÃƒÂ©rieur ÃƒÂ  0'),
+  amount: z.coerce.number().positive('Le montant doit être supérieur à  0'),
   method: z.nativeEnum(PaymentMethod).default(PaymentMethod.CASH),
   reference: z.string().max(80).optional(),
   cashierId: uuid.optional(),
@@ -637,7 +637,7 @@ export const PaymentCancelSchema = z.object({
  */
 export const PaymentFamilySchema = z.object({
   guardianId: uuid,
-  amount: z.coerce.number().positive('Le montant doit ÃƒÂªtre supÃƒÂ©rieur ÃƒÂ  0'),
+  amount: z.coerce.number().positive('Le montant doit être supérieur à  0'),
   method: z.nativeEnum(PaymentMethod).default(PaymentMethod.CASH),
   reference: z.string().max(80).optional(),
   idempotencyKey: z.string().max(80).optional(),
@@ -714,14 +714,14 @@ export const UserCreateSchema = z.object({
   phone: phoneML.optional().or(z.literal('')),
   password: z
     .string()
-    .min(12, 'Au moins 12 caractÃƒÂ¨res')
+    .min(12, 'Au moins 12 caractères')
     .regex(/[A-Z]/, 'Doit contenir une majuscule')
     .regex(/[a-z]/, 'Doit contenir une minuscule')
     .regex(/\d/, 'Doit contenir un chiffre')
-    .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractÃƒÂ¨re spÃƒÂ©cial'),
+    .regex(/[^A-Za-z0-9]/, 'Doit contenir un caractère spécial'),
   firstName: nonEmptyString(2).max(100),
   lastName: nonEmptyString(2).max(100),
-  roleIds: z.array(uuid).min(1, 'Au moins un rÃƒÂ´le requis'),
+  roleIds: z.array(uuid).min(1, 'Au moins un rôle requis'),
 });
 
 export const UserUpdateSchema = z.object({
@@ -741,13 +741,13 @@ export type UserUpdateInput = z.infer<typeof UserUpdateSchema>;
 // ============================================================
 
 export const GlobalSearchSchema = z.object({
-  q: z.string().min(2, 'Au moins 2 caractÃƒÂ¨res'),
+  q: z.string().min(2, 'Au moins 2 caractères'),
   limit: z.coerce.number().int().positive().max(50).default(10),
 });
 
 export type GlobalSearchInput = z.infer<typeof GlobalSearchSchema>;
 // ============================================================
-// BACKUP Ã¢â‚¬â€ Configuration sauvegarde automatique
+// BACKUP - Configuration sauvegarde automatique
 // ============================================================
 
 export const BackupRetentionSchema = z.object({

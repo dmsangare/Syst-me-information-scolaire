@@ -158,7 +158,7 @@ export class ReportCardsController {
 
   @Patch(":id/clear-absences")
   @RequirePermissions("report_card:update")
-  @ApiOperation({ summary: "Marquer l'absence comme traitÃ©e (dÃ©bloque le bulletin)" })
+  @ApiOperation({ summary: "Marquer l'absence comme traitée (débloque le bulletin)" })
   async clearAbsences(
     @Param("id") id: string,
     @Body() body: { motive: string },

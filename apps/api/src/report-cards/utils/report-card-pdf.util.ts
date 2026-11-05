@@ -64,7 +64,7 @@ export interface ReportCardPDFData {
 }
 
 const DECISION_LABELS: Record<string, string> = {
-  ADMIS: "Admis en classe supÃ©rieure",
+  ADMIS: "Admis en classe supérieure",
   REDOUBLE: "Redouble",
   EXCLU: "Exclu",
 };
@@ -86,15 +86,15 @@ function onTwenty(value: number, scale: number): number {
 }
 
 function getAppreciation(average: number | null, scale: number): string {
-  if (average === null) return "â€”";
+  if (average === null) return "—";
   const v = onTwenty(average, scale);
   if (v >= 18) return "Excellent";
-  if (v >= 16) return "TrÃ¨s bien";
+  if (v >= 16) return "Très bien";
   if (v >= 14) return "Bien";
   if (v >= 12) return "Assez bien";
   if (v >= 10) return "Passable";
   if (v >= 8) return "Insuffisant";
-  return "TrÃ¨s insuffisant";
+  return "Très insuffisant";
 }
 
 function colorFor(average: number | null, scale: number): string {
@@ -107,26 +107,26 @@ function colorFor(average: number | null, scale: number): string {
 }
 
 export function fmt(n: number | null | undefined): string {
-  if (n === null || n === undefined || Number.isNaN(n)) return "â€”";
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
   return n.toFixed(2).replace(".", ",");
 }
 
 export function ordinal(n: number | null | undefined): string {
-  if (!n) return "â€”";
+  if (!n) return "—";
   return n === 1 ? "1er" : `${n}e`;
 }
 
 export function formatDate(d: string): string {
-  if (!d) return "â€”";
+  if (!d) return "—";
   const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export function genderLabel(g: string | null | undefined): string {
   if (g === "M") return "Masculin";
-  if (g === "F") return "FÃ©minin";
-  return "â€”";
+  if (g === "F") return "Féminin";
+  return "—";
 }
 
 function buildHTML(data: ReportCardPDFData): string {
@@ -150,12 +150,12 @@ function buildHTML(data: ReportCardPDFData): string {
 
   const sumOfAverages = data.items.reduce((s, i) => s + (i.average !== null ? i.average : 0), 0);
   const totalRow = showCoef
-    ? `<tr class="total-row"><td class="l">TOTAL</td><td class="c">${escapeHtml(String(data.totalCoefficient))}</td><td class="c">â€”</td><td class="c">${fmt(data.totalWeighted)}</td><td class="c">â€”</td><td class="c">â€”</td></tr>`
-    : `<tr class="total-row"><td class="l">TOTAL</td><td class="c">${fmt(sumOfAverages)}</td><td class="c">â€”</td><td class="c">â€”</td></tr>`;
+    ? `<tr class="total-row"><td class="l">TOTAL</td><td class="c">${escapeHtml(String(data.totalCoefficient))}</td><td class="c">—</td><td class="c">${fmt(data.totalWeighted)}</td><td class="c">—</td><td class="c">—</td></tr>`
+    : `<tr class="total-row"><td class="l">TOTAL</td><td class="c">${fmt(sumOfAverages)}</td><td class="c">—</td><td class="c">—</td></tr>`;
 
   const headCells = showCoef
-    ? `<th class="l" style="width:30%;">MatiÃ¨re</th><th style="width:9%;">Coef</th><th style="width:15%;">Moyenne /${scale}</th><th style="width:16%;">Coef Ã— Moy</th><th style="width:10%;">Rang</th><th style="width:20%;">ApprÃ©ciation</th>`
-    : `<th class="l" style="width:46%;">MatiÃ¨re</th><th style="width:18%;">Moyenne /${scale}</th><th style="width:14%;">Rang</th><th style="width:22%;">ApprÃ©ciation</th>`;
+    ? `<th class="l" style="width:30%;">Matière</th><th style="width:9%;">Coef</th><th style="width:15%;">Moyenne /${scale}</th><th style="width:16%;">Coef Ã— Moy</th><th style="width:10%;">Rang</th><th style="width:20%;">Appréciation</th>`
+    : `<th class="l" style="width:46%;">Matière</th><th style="width:18%;">Moyenne /${scale}</th><th style="width:14%;">Rang</th><th style="width:22%;">Appréciation</th>`;
 
   const hasDecision = !!data.decision && data.decision !== "A_DETERMINER" && data.decision !== "A_EXAMINER";
   const decisionLabel = hasDecision ? escapeHtml(DECISION_LABELS[data.decision as string] || data.decision) : "";
@@ -167,7 +167,7 @@ function buildHTML(data: ReportCardPDFData): string {
   const logoHTML = logo ? `<img src="${logo}" alt="Logo" style="width:60px;height:60px;object-fit:contain;" />` : "";
   const stamp = safeImage(data.schoolStampBase64);
 
-  const academyLine = data.schoolAcademy ? `<div>AcadÃ©mie d'Enseignement de ${escapeHtml(data.schoolAcademy)}</div>` : "";
+  const academyLine = data.schoolAcademy ? `<div>Académie d'Enseignement de ${escapeHtml(data.schoolAcademy)}</div>` : "";
   const capLine = data.schoolCap ? `<div>CAP de ${escapeHtml(data.schoolCap)}</div>` : "";
 
   return `<!DOCTYPE html>
@@ -229,14 +229,14 @@ function buildHTML(data: ReportCardPDFData): string {
 <table class="head">
   <tr>
     <td class="head-left">
-      <div>MinistÃ¨re de l'Ã‰ducation Nationale</div>
+      <div>Ministère de l'Éducation Nationale</div>
       ${academyLine}
       ${capLine}
     </td>
     <td class="head-center">${logoHTML}</td>
     <td class="head-right">
-      <div class="republic">RÃ©publique du Mali</div>
-      <div class="devise">Un Peuple â€“ Un But â€“ Une Foi</div>
+      <div class="republic">République du Mali</div>
+      <div class="devise">Un Peuple "“ Un But "“ Une Foi</div>
     </td>
   </tr>
 </table>
@@ -244,27 +244,27 @@ function buildHTML(data: ReportCardPDFData): string {
 <div class="school-block">
   <div class="school-name">${escapeHtml(data.schoolName)}</div>
   ${data.schoolAddress ? `<div class="school-info">${escapeHtml(data.schoolAddress)}</div>` : ""}
-  ${data.schoolPhone ? `<div class="school-info">TÃ©l : ${escapeHtml(data.schoolPhone)}</div>` : ""}
+  ${data.schoolPhone ? `<div class="school-info">Tél : ${escapeHtml(data.schoolPhone)}</div>` : ""}
   ${data.schoolMotto ? `<div class="school-motto">Â« ${escapeHtml(data.schoolMotto)} Â»</div>` : ""}
 </div>
 
 <div class="title-block">
   <div class="title">BULLETIN DE NOTES</div>
-  <div class="subtitle">${escapeHtml(data.termName)} â€” AnnÃ©e scolaire ${escapeHtml(data.academicYear)}</div>
+  <div class="subtitle">${escapeHtml(data.termName)} — Année scolaire ${escapeHtml(data.academicYear)}</div>
 </div>
 
 <table class="student">
   <tr>
-    <td><span class="lbl">Ã‰lÃ¨ve : </span><span class="val">${escapeHtml(data.studentName)}</span></td>
+    <td><span class="lbl">Élève : </span><span class="val">${escapeHtml(data.studentName)}</span></td>
     <td><span class="lbl">Classe : </span><span class="val">${escapeHtml(data.className)}</span></td>
   </tr>
   <tr>
     <td><span class="lbl">Matricule : </span><span class="val" style="font-family:monospace;">${escapeHtml(data.studentMatricule)}</span></td>
-    <td><span class="lbl">Effectif : </span><span class="val">${escapeHtml(String(data.classSize))} Ã©lÃ¨ves</span></td>
+    <td><span class="lbl">Effectif : </span><span class="val">${escapeHtml(String(data.classSize))} élèves</span></td>
   </tr>
   <tr>
     <td><span class="lbl">Sexe : </span><span class="val">${genderLabel(data.studentGender)}</span></td>
-    <td><span class="lbl">NÃ©(e) le : </span><span class="val">${formatDate(data.studentBirthDate)}${data.studentBirthPlace ? ` Ã  ${escapeHtml(data.studentBirthPlace)}` : ""}</span></td>
+    <td><span class="lbl">Né(e) le : </span><span class="val">${formatDate(data.studentBirthDate)}${data.studentBirthPlace ? ` Ã  ${escapeHtml(data.studentBirthPlace)}` : ""}</span></td>
   </tr>
 </table>
 
@@ -276,13 +276,13 @@ function buildHTML(data: ReportCardPDFData): string {
 <table class="summary">
   <tr>
     <td>
-      <div class="average-label">Moyenne gÃ©nÃ©rale</div>
+      <div class="average-label">Moyenne générale</div>
       <div class="average-value">${fmt(data.generalAverage)} / ${scale}</div>
       <div class="average-appr">${generalAppr}</div>
     </td>
     <td style="text-align:right;">
       <div class="average-label">Rang</div>
-      <div class="rank-value">${ordinal(data.rank)}${data.classSize ? ` sur ${escapeHtml(String(data.classSize))} Ã©lÃ¨ves` : ""}</div>
+      <div class="rank-value">${ordinal(data.rank)}${data.classSize ? ` sur ${escapeHtml(String(data.classSize))} élèves` : ""}</div>
     </td>
   </tr>
 </table>
@@ -295,27 +295,27 @@ function buildHTML(data: ReportCardPDFData): string {
 </table>
 
 <div class="section">
-  <div class="section-title">ApprÃ©ciation gÃ©nÃ©rale</div>
+  <div class="section-title">Appréciation générale</div>
   <div class="appreciation-text">
-    ${data.appreciation ? escapeMultiline(data.appreciation) : "<em style='color:#6B7280;'>Aucune apprÃ©ciation saisie</em>"}
+    ${data.appreciation ? escapeMultiline(data.appreciation) : "<em style='color:#6B7280;'>Aucune appréciation saisie</em>"}
   </div>
 </div>
 
 ${hasDecision ? `<div class="section" style="border-color:#0EA5E9;background:#F0F9FF;">
-  <div class="section-title" style="color:#0369A1;">DÃ©cision</div>
+  <div class="section-title" style="color:#0369A1;">Décision</div>
   <div class="decision-text">${decisionLabel}</div>
 </div>` : ""}
 
 <table class="sign">
   <tr>
-    <td><div class="signature-line">Le MaÃ®tre ou la MaÃ®tresse / Le Titulaire de classe</div></td>
+    <td><div class="signature-line">Le Maître ou la Maîtresse / Le Titulaire de classe</div></td>
     <td>${stamp ? `<img src="${stamp}" alt="Cachet" style="height:70px;object-fit:contain;" />` : ""}<div class="signature-line">Le Directeur / La Directrice</div></td>
     <td><div class="signature-line">Visa du parent ou tuteur</div></td>
   </tr>
 </table>
 
 <div class="footer">
-  Document gÃ©nÃ©rÃ© par SIS-MALI le ${formatDate(new Date().toISOString())}
+  Document généré par SIS-MALI le ${formatDate(new Date().toISOString())}
 </div>
 
 </body>

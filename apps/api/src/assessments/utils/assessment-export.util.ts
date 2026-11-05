@@ -1,4 +1,4 @@
-﻿import { PdfGeneratorService } from "../../common/pdf";
+import { PdfGeneratorService } from "../../common/pdf";
 import * as ExcelJS from "exceljs";
 
 interface GradeRow {
@@ -70,7 +70,7 @@ function buildHTML(data: AssessmentExportData): string {
         ? '<span style="color:#F59E0B;font-weight:600">ABSENT</span>'
         : g.value !== null
           ? `<strong>${g.value.toFixed(2)}</strong>`
-          : '<span style="color:#9CA3AF">â€”</span>';
+          : '<span style="color:#9CA3AF">—</span>';
 
       const rank = g.rank
         ? g.rank === 1
@@ -80,7 +80,7 @@ function buildHTML(data: AssessmentExportData): string {
             : g.rank === 3
               ? `<span style="color:#EA580C;font-weight:700">ðŸ¥‰ ${g.rank}</span>`
               : g.rank
-        : '<span style="color:#9CA3AF">â€”</span>';
+        : '<span style="color:#9CA3AF">—</span>';
 
       return `
         <tr>
@@ -90,7 +90,7 @@ function buildHTML(data: AssessmentExportData): string {
           <td style="text-align:center">${g.gender === "M" ? "M" : "F"}</td>
           <td style="text-align:center;font-size:13px">${note}</td>
           <td style="text-align:center">${rank}</td>
-          <td style="font-size:9px;color:#6B7280">${g.observation || "â€”"}</td>
+          <td style="font-size:9px;color:#6B7280">${g.observation || "—"}</td>
         </tr>
       `;
     })
@@ -148,8 +148,8 @@ function buildHTML(data: AssessmentExportData): string {
 </div>
 
 <div class="title-block">
-  <div class="title">FICHE DE NOTES â€” ${data.assessmentTitle.toUpperCase()}</div>
-  <div class="subtitle">${data.assessmentType} Â· ${formatDate(data.assessmentDate)}</div>
+  <div class="title">FICHE DE NOTES — ${data.assessmentTitle.toUpperCase()}</div>
+  <div class="subtitle">${data.assessmentType} · ${formatDate(data.assessmentDate)}</div>
 </div>
 
 <div class="info-grid">
@@ -175,7 +175,7 @@ function buildHTML(data: AssessmentExportData): string {
   </div>
   <div class="info-item">
     <span class="info-label">Enseignant</span>
-    <span class="info-value">${data.teacherName || "â€”"}</span>
+    <span class="info-value">${data.teacherName || "—"}</span>
   </div>
 </div>
 
@@ -202,7 +202,7 @@ function buildHTML(data: AssessmentExportData): string {
 <table>
   <thead>
     <tr>
-      <th style="width:30px;text-align:center">NÂ°</th>
+      <th style="width:30px;text-align:center">N°</th>
       <th style="width:90px">Matricule</th>
       <th>Nom & Prenom</th>
       <th style="width:30px;text-align:center">Sexe</th>
@@ -228,7 +228,7 @@ function buildHTML(data: AssessmentExportData): string {
 </div>
 
 <div class="footer">
-  Document genere automatiquement par SIS-MALI le ${formatDate(new Date().toISOString())} â€” Annee scolaire ${data.academicYear}
+  Document genere automatiquement par SIS-MALI le ${formatDate(new Date().toISOString())} — Annee scolaire ${data.academicYear}
 </div>
 
 </body>
@@ -251,9 +251,9 @@ export async function generateAssessmentExcel(
 
   // Largeurs de colonnes
   sheet.columns = [
-    { header: "NÂ°", key: "index", width: 6 },
+    { header: "N°", key: "index", width: 6 },
     { header: "Matricule", key: "matricule", width: 18 },
-    { header: "Nom & PrÃ©nom", key: "name", width: 30 },
+    { header: "Nom & Prénom", key: "name", width: 30 },
     { header: "Sexe", key: "gender", width: 8 },
     { header: `Note /${data.maxScore}`, key: "value", width: 12 },
     { header: "Rang", key: "rank", width: 8 },
@@ -263,7 +263,7 @@ export async function generateAssessmentExcel(
   // Titre
   sheet.mergeCells("A1:G1");
   const titleCell = sheet.getCell("A1");
-  titleCell.value = `FICHE DE NOTES â€” ${data.assessmentTitle}`;
+  titleCell.value = `FICHE DE NOTES — ${data.assessmentTitle}`;
   titleCell.font = { size: 14, bold: true, color: { argb: "FF1E40AF" } };
   titleCell.alignment = { horizontal: "center", vertical: "middle" };
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF6FF" } };
@@ -272,18 +272,18 @@ export async function generateAssessmentExcel(
   // Sous-titre
   sheet.mergeCells("A2:G2");
   const subCell = sheet.getCell("A2");
-  subCell.value = `${data.schoolName} Â· ${data.className} Â· ${data.subjectName} Â· ${data.termName} Â· ${data.assessmentDate}`;
+  subCell.value = `${data.schoolName} · ${data.className} · ${data.subjectName} · ${data.termName} · ${data.assessmentDate}`;
   subCell.font = { size: 10, italic: true, color: { argb: "FF6B7280" } };
   subCell.alignment = { horizontal: "center" };
 
   // Ligne vide
   sheet.addRow([]);
 
-  // En-tÃªtes
+  // En-têtes
   const headerRow = sheet.addRow([
-    "NÂ°",
+    "N°",
     "Matricule",
-    "Nom & PrÃ©nom",
+    "Nom & Prénom",
     "Sexe",
     `Note /${data.maxScore}`,
     "Rang",
@@ -301,8 +301,8 @@ export async function generateAssessmentExcel(
       matricule: g.matricule,
       name: `${g.lastName} ${g.firstName}`,
       gender: g.gender,
-      value: g.isAbsent ? "ABSENT" : g.value !== null ? g.value : "â€”",
-      rank: g.rank || "â€”",
+      value: g.isAbsent ? "ABSENT" : g.value !== null ? g.value : "—",
+      rank: g.rank || "—",
       observation: g.observation || "",
     });
 
@@ -329,7 +329,7 @@ export async function generateAssessmentExcel(
   // Pied de page
   sheet.addRow([]);
   const footerCell = sheet.addRow([
-    `Document genere par SIS-MALI Â· ${new Date().toLocaleDateString("fr-FR")}`,
+    `Document genere par SIS-MALI · ${new Date().toLocaleDateString("fr-FR")}`,
   ]);
   footerCell.font = { size: 9, italic: true, color: { argb: "FF9CA3AF" } };
 
@@ -357,7 +357,7 @@ export function generateAssessmentCSV(data: AssessmentExportData): string {
   // Entete
   lines.push(
     [
-      "NÂ°",
+      "N°",
       "Matricule",
       "Nom & Prenom",
       "Sexe",
