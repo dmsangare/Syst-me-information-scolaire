@@ -87,3 +87,5 @@ fix_schemas.js
 nettoyage.js
 nettoyage.ps1
 nettoyage2.js
+
+seed-permissions.js
