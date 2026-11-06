@@ -19,6 +19,35 @@ export class TimetableService {
     if (classId) where.classId = classId;
     if (teacherId) where.teacherId = teacherId;
 
+    // FILTRE ELEVE : ne voir que l emploi du temps de sa classe
+    if (user && user.roles.includes("STUDENT")) {
+      const enrollment = await this.prisma.enrollment.findFirst({
+        where: { student: { userId: user.id } },
+        select: { classId: true },
+        orderBy: { enrollmentDate: "desc" },
+      });
+      where.classId = enrollment?.classId || "00000000-0000-0000-0000-000000000000";
+    }
+
+    // FILTRE PARENT : ne voir que l emploi du temps de ses enfants
+    if (user && user.roles.includes("PARENT")) {
+      const parent = await this.prisma.guardian.findFirst({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (parent) {
+        const childrenEnrollments = await this.prisma.enrollment.findMany({
+          where: { student: { guardians: { some: { guardianId: parent.id } } } },
+          select: { classId: true },
+          distinct: ["classId"],
+        });
+        const classIds = childrenEnrollments.map((e) => e.classId);
+        where.classId = { in: classIds.length > 0 ? classIds : ["00000000-0000-0000-0000-000000000000"] };
+      } else {
+        where.classId = "00000000-0000-0000-0000-000000000000";
+      }
+    }
+
     // FILTRE TEACHER : forcer le teacherId si TEACHER connecte
     const isTeacherOnly =
       user &&
