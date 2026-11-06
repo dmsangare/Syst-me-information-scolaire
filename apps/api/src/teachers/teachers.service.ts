@@ -9,11 +9,29 @@ export class TeachersService {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 20);
     const where: any = { schoolId };
-    
+
     // Filtre teacherType (GENERALIST / SPECIALIST)
     if (query.teacherType) where.teacherType = query.teacherType;
     if (query.status) where.status = query.status;
-    
+
+    // ✅ Filtre par classe/matière (utilisé par /timetable)
+    // - Si subjectId fourni : SPECIALIST de la matière + GENERALIST de la classe
+    // - Sinon : tous les profs assignés à la classe
+    if (query.classId || query.subjectId) {
+      const assignmentWhere: any = {};
+      if (query.classId) assignmentWhere.classId = query.classId;
+      if (query.academicYearId) assignmentWhere.academicYearId = query.academicYearId;
+
+      if (query.subjectId) {
+        where.OR = [
+          { assignments: { some: { ...assignmentWhere, subjectId: query.subjectId } } },
+          { assignments: { some: { ...assignmentWhere, subjectId: null } } },
+        ];
+      } else {
+        where.assignments = { some: assignmentWhere };
+      }
+    }
+
     if (query.q) {
       where.OR = [
         { firstName: { contains: query.q, mode: 'insensitive' } },
