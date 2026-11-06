@@ -1,4 +1,5 @@
-﻿import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { PublicRoute } from "./PublicRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -81,7 +82,11 @@ export function AppRoutes() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={
+            <ProtectedRoute>
+              <RedirectAfterLogin />
+            </ProtectedRoute>
+          } />
           <Route
             path="/dashboard"
             element={
@@ -624,3 +629,16 @@ export function AppRoutes() {
 
 
 
+
+function RedirectAfterLogin() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  
+  if (user.roles.includes('STUDENT') || user.roles.includes('PARENT')) {
+    return <Navigate to="/report-cards" replace />;
+  }
+  if (user.roles.includes('TEACHER')) {
+    return <Navigate to="/timetable" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+}
