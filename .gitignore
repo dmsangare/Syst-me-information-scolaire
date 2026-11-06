@@ -80,3 +80,10 @@ backups/documents_*.tar.gz
 playwright_screenshots/
 *.bak_*
 fix-mojibake.ps1
+clean.js
+clean.ps1
+fix_export.js
+fix_schemas.js
+nettoyage.js
+nettoyage.ps1
+nettoyage2.js
