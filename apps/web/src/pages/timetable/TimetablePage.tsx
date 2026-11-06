@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClasses } from '@/hooks/classes';
 
 const DAYS = [
   { value: 1, label: 'Lundi' },
@@ -48,10 +49,7 @@ export default function TimetablePage() {
   });
 
   // ----- Data
-  const { data: classes } = useQuery({
-    queryKey: ['timetable', 'classes'],
-    queryFn: async () => (await api.get('/classes')).data?.data ?? [],
-  });
+  const { data: classes } = useClasses();
 
   const { data: years } = useQuery({
     queryKey: ['timetable', 'years'],
@@ -89,13 +87,20 @@ export default function TimetablePage() {
     }
   }, [years, academicYearId]);
 
-  // Teachers filtered by subject + class (via TeacherAssignment)
+  // ✅ Teachers filtered by class + subject (backend filter via TeacherAssignment)
   const { data: availableTeachers } = useQuery({
-    queryKey: ['timetable', 'teachers', form.subjectId, classId],
+    queryKey: ['timetable', 'teachers', form.subjectId, classId, academicYearId],
     queryFn: async () => {
       if (!form.subjectId || !classId) return [];
       try {
-        const res = await api.get('/teachers', { params: { limit: 100 } });
+        const res = await api.get('/teachers', {
+          params: {
+            limit: 100,
+            classId,
+            subjectId: form.subjectId,
+            academicYearId,
+          },
+        });
         return res.data?.data ?? [];
       } catch {
         return [];
