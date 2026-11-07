@@ -8,6 +8,26 @@ import { assertSchoolAccess } from "../common/utils";
 export class AcademicYearsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getCurrent(schoolId: string) {
+    const year = await this.prisma.academicYear.findFirst({
+      where: { schoolId, isCurrent: true },
+      select: {
+        id: true,
+        label: true,
+        isCurrent: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+      },
+    });
+
+    if (!year) {
+      throw new NotFoundException("Aucune année scolaire en cours");
+    }
+
+    return year;
+  }
+
   async findAll(schoolId: string | null, page = 1, limit = 20) {
     const where = schoolId ? { schoolId } : {};
     const [data, total] = await Promise.all([
@@ -89,10 +109,6 @@ export class AcademicYearsService {
     });
   }
 
-  /**
-   * Resume de l'etat de l'annee scolaire avant cloture.
-   * Retourne les blocages eventuels (inscriptions, bulletins, caisses, factures).
-   */
   async getClosingSummary(id: string, user: CurrentUserPayload) {
     const year = await this.findOne(id, user);
 
@@ -104,53 +120,41 @@ export class AcademicYearsService {
       totalStudents,
       totalClasses,
     ] = await Promise.all([
-      // Inscriptions en attente (PENDING)
       this.prisma.enrollment.count({
         where: {
           academicYearId: id,
           status: "PENDING",
         },
       }),
-
-      // Factures impayees
       this.prisma.invoice.count({
         where: {
           academicYearId: id,
           status: { in: ["UNPAID", "PARTIAL", "OVERDUE"] },
         },
       }),
-
-      // Caisses ouvertes pour cette annee
       this.prisma.cashSession.count({
         where: {
           schoolId: year.schoolId,
           status: "OPEN",
         },
       }),
-
-      // Bulletins non publies (DRAFT)
       this.prisma.reportCard.count({
         where: {
           academicYearId: id,
           status: "DRAFT",
         },
       }),
-
-      // Total eleves inscrits (VALIDATED)
       this.prisma.enrollment.count({
         where: {
           academicYearId: id,
           status: "VALIDATED",
         },
       }),
-
-      // Total classes
       this.prisma.class.count({
         where: { academicYearId: id },
       }),
     ]);
 
-    // Blocages : empechent la cloture
     const blockers: Array<{ type: string; count: number; label: string; severity: "error" | "warning" }> = [];
 
     if (pendingEnrollments > 0) {
@@ -170,7 +174,6 @@ export class AcademicYearsService {
       });
     }
 
-    // Avertissements : n'empechent pas la cloture mais a verifier
     const warnings: Array<{ type: string; count: number; label: string }> = [];
 
     if (unpaidInvoices > 0) {

@@ -21,10 +21,6 @@ export class StudentsService {
     private readonly pdfGenerator: PdfGeneratorService,
   ) {}
 
-  /**
-   * Liste des eleves avec filtres avances.
-   * Calcul automatique du statut d'inscription : NOUVEAU / ANCIEN / REDOUBLANT.
-   */
   async findAll(
     schoolId: string | null,
     page = 1,
@@ -48,8 +44,6 @@ export class StudentsService {
     if (status) where.status = status;
     if (gender) where.gender = gender;
 
-    // FILTRE PAR ENSEIGNANT : si le user est TEACHER (et pas admin),
-    // il ne voit que les eleves de ses classes assignees.
     const isTeacherOnly =
       user &&
       user.roles.includes("TEACHER") &&
@@ -58,21 +52,18 @@ export class StudentsService {
       !user.roles.includes("SECRETARY");
 
     if (isTeacherOnly) {
-      // Recuperer le teacherId lie a ce user
       const teacher = await this.prisma.teacher.findFirst({
         where: { userId: user.id },
         select: { id: true },
       });
 
       if (teacher) {
-        // Recuperer les classes ou il est assigne (titulaire ou matiere)
         const assignments = await this.prisma.teacherAssignment.findMany({
           where: { teacherId: teacher.id },
           select: { classId: true },
         });
         const classIds = [...new Set(assignments.map((a) => a.classId))];
 
-        // Filtrer les eleves : inscrits dans une de ses classes
         where.enrollments = {
           some: {
             classId: { in: classIds },
@@ -80,12 +71,10 @@ export class StudentsService {
           },
         };
       } else {
-        // Pas de fiche teacher liee -> aucun eleve
         where.id = "00000000-0000-0000-0000-000000000000";
       }
     }
 
-    // Recherche insensible aux accents
     if (q) {
       where.OR = [
         { firstName: { contains: q, mode: "insensitive" } },
@@ -95,7 +84,6 @@ export class StudentsService {
       ];
     }
 
-    // Filtre par age
     if (ageRange) {
       const today = new Date();
       const ranges: Record<string, [number, number]> = {
@@ -111,7 +99,6 @@ export class StudentsService {
       where.birthDate = { gte: minBirth, lte: maxBirth };
     }
 
-    // Filtre par classe / niveau / cycle (via enrollments)
     if (classId || levelId || cycle) {
       where.enrollments = {
         some: {
@@ -123,10 +110,8 @@ export class StudentsService {
       };
     }
 
-    // Pagination
     const skip = (page - 1) * limit;
 
-    // Tri
     let orderBy: any = [{ lastName: "asc" }, { firstName: "asc" }];
     if (sortField === "matricule") orderBy = { matricule: sortDirection || "asc" };
     else if (sortField === "firstName") orderBy = { firstName: sortDirection || "asc" };
@@ -167,7 +152,6 @@ export class StudentsService {
       this.prisma.student.count({ where }),
     ]);
 
-    // Enrichir chaque eleve avec son statut d'inscription (BATCH)
     const studentIds = data.map((s) => s.id);
     const [statuses, unpaidAmounts] = await Promise.all([
       this.computeEnrollmentStatusesInBatch(studentIds),
@@ -187,7 +171,6 @@ export class StudentsService {
       };
     });
 
-    // Filtrer par nouveaute si demande
     let filtered = enriched;
     if (enrollmentStatus) {
       filtered = enriched.filter((s) => s.enrollmentStatus === enrollmentStatus);
@@ -205,9 +188,6 @@ export class StudentsService {
     };
   }
 
-  /**
-   * Determine si un eleve est NOUVEAU, ANCIEN ou REDOUBLANT.
-   */
   private async computeEnrollmentStatus(studentId: string) {
     const enrollments = await this.prisma.enrollment.findMany({
       where: { studentId, status: "VALIDATED" },
@@ -230,7 +210,6 @@ export class StudentsService {
       return { status: "ANCIEN" as EnrollmentStatusFilter, yearsEnrolled: enrollments.length, isRedoublant: false, previousClass: null };
     }
 
-    // Aucune inscription precedente â†’ NOUVEAU
     if (previousEnrollments.length === 0) {
       return {
         status: "NOUVEAU" as EnrollmentStatusFilter,
@@ -240,7 +219,6 @@ export class StudentsService {
       };
     }
 
-    // Comparer le niveau actuel avec le niveau precedent
     const lastPrevious = previousEnrollments[0];
     const isRedoublant = lastPrevious.levelId === currentEnrollment.levelId;
 
@@ -252,11 +230,6 @@ export class StudentsService {
     };
   }
 
-  /**
-   * Version BATCH de computeEnrollmentStatus.
-   * Optimise le N+1 : 1 requete pour TOUS les eleves au lieu de N.
-   * Retourne une Map<studentId, { status, yearsEnrolled, isRedoublant, previousClass }>.
-   */
   private async computeEnrollmentStatusesInBatch(
     studentIds: string[],
   ): Promise<
@@ -274,7 +247,6 @@ export class StudentsService {
 
     if (studentIds.length === 0) return result;
 
-    // 1 SEULE requete pour tous les enrollments
     const enrollments = await this.prisma.enrollment.findMany({
       where: {
         studentId: { in: studentIds },
@@ -291,14 +263,12 @@ export class StudentsService {
       },
     });
 
-    // Grouper par studentId
     const byStudent = new Map<string, typeof enrollments>();
     for (const e of enrollments) {
       if (!byStudent.has(e.studentId)) byStudent.set(e.studentId, []);
       byStudent.get(e.studentId)!.push(e);
     }
 
-    // Calculer pour chaque eleve
     for (const studentId of studentIds) {
       const studentEnrollments = byStudent.get(studentId) || [];
 
@@ -355,10 +325,6 @@ export class StudentsService {
     return result;
   }
 
-  /**
-   * Version BATCH de computeUnpaidAmount.
-   * 1 requete pour TOUS les eleves.
-   */
   private async computeUnpaidAmountsInBatch(
     studentIds: string[],
   ): Promise<Map<string, number>> {
@@ -383,9 +349,6 @@ export class StudentsService {
     return result;
   }
 
-  /**
-   * Calcule le solde impaye d'un eleve.
-   */
   private async computeUnpaidAmount(studentId: string): Promise<number> {
     const invoices = await this.prisma.invoice.findMany({
       where: { studentId, status: { not: "CANCELLED" } },
@@ -442,9 +405,6 @@ export class StudentsService {
     };
   }
 
-  /**
-   * Recupere le sigle de l'ecole (ex: EPS, ERN, SIS).
-   */
   private async getSchoolSigle(schoolId: string): Promise<string> {
     const school = await this.prisma.school.findUnique({
       where: { id: schoolId },
@@ -453,10 +413,6 @@ export class StudentsService {
     return (school?.sigle || "SIS").toUpperCase();
   }
 
-  /**
-   * Genere le prochain matricule de l'ecole.
-   * Format : {SIGLE}-{ANNEE}-{NNNNNN}
-   */
   private async nextMatricule(schoolId: string): Promise<string> {
     const sigle = await this.getSchoolSigle(schoolId);
     const year = new Date().getFullYear();
@@ -518,7 +474,6 @@ export class StudentsService {
     const where: any = { deletedAt: null };
     if (schoolId) where.schoolId = schoolId;
 
-    // FILTRE TEACHER : ne voir que ses propres eleves
     const isTeacherOnly =
       user &&
       user.roles.includes("TEACHER") &&
@@ -546,7 +501,6 @@ export class StudentsService {
           },
         };
       } else {
-        // Pas de fiche teacher liee -> 0 eleve
         where.id = "00000000-0000-0000-0000-000000000000";
       }
     }
@@ -560,7 +514,6 @@ export class StudentsService {
     const boys = allStudents.filter((s) => s.gender === "M").length;
     const girls = total - boys;
 
-    // Calcul Nouveau / Ancien / Redoublant (BATCH - 1 requete au lieu de N)
     const statuses = await this.computeEnrollmentStatusesInBatch(
       allStudents.map((s) => s.id),
     );
@@ -572,7 +525,6 @@ export class StudentsService {
       else ancienCount++;
     }
 
-    // Repartition par cycle
     const byCycle = await this.prisma.enrollment.groupBy({
       by: ["levelId"],
       where: {
@@ -657,9 +609,6 @@ export class StudentsService {
     return this.prisma.studentDocument.delete({ where: { id: documentId } });
   }
 
-  /**
-   * Export CSV des eleves.
-   */
   async exportCSV(
     schoolId: string | null,
     classId?: string,
@@ -706,7 +655,6 @@ export class StudentsService {
       },
     });
 
-    // Filtrer par statut d'inscription
     let filtered = students;
     if (enrollmentStatus) {
       const statuses = await this.computeEnrollmentStatusesInBatch(
@@ -717,7 +665,6 @@ export class StudentsService {
       );
     }
 
-    // Construire les lignes CSV
     const headers = [
       "Matricule",
       "Nom",
@@ -759,10 +706,6 @@ export class StudentsService {
     return generateCSV(headers, rows);
   }
 
-
-  /**
-   * Export Excel des eleves.
-   */
   async exportExcel(
     schoolId: string | null,
     schoolName: string,
@@ -821,9 +764,6 @@ export class StudentsService {
     });
   }
 
-  /**
-   * Export PDF des eleves.
-   */
   async exportPDF(
     schoolId: string | null,
     schoolName: string,
@@ -872,9 +812,6 @@ export class StudentsService {
     }, this.pdfGenerator);
   }
 
-  /**
-   * Helper : recupere les eleves pour export avec filtres.
-   */
   private async getStudentsForExport(
     schoolId: string | null,
     classId?: string,
@@ -931,12 +868,7 @@ export class StudentsService {
     );
   }
 
-
-  /**
-   * Recupere les freres/soeurs d'un eleve (eleves partageant au moins un tuteur).
-   */
   async getSiblings(studentId: string) {
-    // 1. Recuperer les tuteurs de l'eleve
     const studentGuardians = await this.prisma.studentGuardian.findMany({
       where: { studentId },
       select: { guardianId: true },
@@ -946,7 +878,6 @@ export class StudentsService {
 
     const guardianIds = studentGuardians.map((sg) => sg.guardianId);
 
-    // 2. Trouver les autres eleves lies a ces tuteurs
     const siblings = await this.prisma.studentGuardian.findMany({
       where: {
         guardianId: { in: guardianIds },
@@ -969,7 +900,6 @@ export class StudentsService {
       },
     });
 
-    // 3. Dedupliquer (un eleve peut partager 2 tuteurs)
     const uniqueMap = new Map();
     for (const rel of siblings) {
       if (!uniqueMap.has(rel.student.id)) {
@@ -989,26 +919,19 @@ export class StudentsService {
     return Array.from(uniqueMap.values());
   }
 
-
-  // ============================================================
-  // IMPORT EXCEL - APERCU
-  // ============================================================
   async importPreview(buffer: Buffer, schoolId: string) {
     const { rows, classesTrouvees } = await parseStudentsExcel(buffer);
 
-    // Compter les stats
     const totalRows = rows.length;
     const validRows = rows.filter((r) => r.data !== null);
     const errorRows = rows.filter((r) => r.errors.length > 0);
 
-    // Detecter les doublons dans la DB (matricule ou nom+prenom+dateNaissance)
     const doublons: Array<{ lineNumber: number; raison: string; nom: string }> = [];
 
     for (const row of validRows) {
       if (!row.data) continue;
       const d = row.data;
 
-      // Verifier si l'eleve existe deja (par matricule OU par nom+prenom+date naissance)
       let existing = null;
 
       if (d.matricule) {
@@ -1034,13 +957,11 @@ export class StudentsService {
           raison: "Eleve deja existant dans la base",
           nom: `${d.lastName} ${d.firstName}`,
         });
-        // Marquer comme erreur
         row.errors.push("Doublon : eleve deja existant");
         row.data = null;
       }
     }
 
-    // Regrouper par classe
     const parClasse: Record<string, number> = {};
     for (const row of validRows) {
       if (row.data) {
@@ -1055,14 +976,11 @@ export class StudentsService {
       doublonCount: doublons.length,
       classesTrouvees: Array.from(classesTrouvees),
       elevesParClasse: parClasse,
-      rows: rows.slice(0, 200), // Limiter l'affichage
+      rows: rows.slice(0, 200),
       doublons,
     };
   }
 
-  // ============================================================
-  // IMPORT EXCEL - CONFIRMATION
-  // ============================================================
   async importConfirm(
     students: ParsedStudent[],
     schoolId: string,
@@ -1075,7 +993,6 @@ export class StudentsService {
       errors: [] as Array<{ nom: string; error: string }>,
     };
 
-    // 1) Recuperer l'annee scolaire active
     const academicYear = await this.prisma.academicYear.findFirst({
       where: { schoolId, isCurrent: true },
     });
@@ -1083,40 +1000,32 @@ export class StudentsService {
       throw new Error("Aucune annee scolaire active");
     }
 
-    // 2) Recuperer les niveaux (pour matcher les classes)
     const levels = await this.prisma.level.findMany({
       where: { schoolId },
     });
 
-    // 3) Recuperer les classes existantes
     const existingClasses = await this.prisma.class.findMany({
       where: { schoolId, academicYearId: academicYear.id },
       include: { level: true },
     });
 
-    // Map : nom de classe (ex "6eme A") -> classId
     const classMap = new Map<string, string>();
     existingClasses.forEach((c) => {
       classMap.set(c.name.toLowerCase().trim(), c.id);
     });
 
-    // 4) Traiter chaque eleve
     for (const s of students) {
       try {
-        // Trouver ou creer la classe
         const classKey = s.className.toLowerCase().trim();
         let classId = classMap.get(classKey);
 
         if (!classId) {
-          // Extraire le niveau : "6eme A" -> "6eme"
           const levelPart = s.className.replace(/\s+[A-Z]$/i, "").trim();
 
-          // Chercher un niveau correspondant
           let level = levels.find(
             (l) => l.name.toLowerCase().trim() === levelPart.toLowerCase().trim(),
           );
 
-          // Si pas trouve, prendre le premier niveau par defaut
           if (!level && levels.length > 0) {
             level = levels[0];
           }
@@ -1125,7 +1034,6 @@ export class StudentsService {
             throw new Error(`Aucun niveau disponible pour creer la classe ${s.className}`);
           }
 
-          // Creer la classe
           const newClass = await this.prisma.class.create({
             data: {
               schoolId,
@@ -1142,7 +1050,6 @@ export class StudentsService {
           results.classesCreated++;
         }
 
-        // Creer l'eleve
         const student = await this.prisma.student.create({
           data: {
             schoolId,
@@ -1158,8 +1065,6 @@ export class StudentsService {
           },
         });
 
-        // Creer le tuteur (pere, mere, ou tuteur)
-        // Priorite : pere > mere > tuteur
         const guardiansToCreate: Array<{
           lastName: string;
           firstName: string;
@@ -1198,7 +1103,6 @@ export class StudentsService {
 
         for (let i = 0; i < guardiansToCreate.length; i++) {
           const g = guardiansToCreate[i];
-          // Verifier si un tuteur avec ce telephone existe deja
           let guardian = await this.prisma.guardian.findFirst({
             where: { schoolId, phone: g.phone },
           });
@@ -1216,7 +1120,6 @@ export class StudentsService {
             results.guardiansCreated++;
           }
 
-          // Lier eleve <-> tuteur
           await this.prisma.studentGuardian.create({
             data: {
               studentId: student.id,
@@ -1226,7 +1129,6 @@ export class StudentsService {
           });
         }
 
-        // Creer l'inscription (enrollment)
         await this.prisma.enrollment.create({
           data: {
             studentId: student.id,
@@ -1250,14 +1152,6 @@ export class StudentsService {
     return results;
   }
 
-  /**
-   * BLOC B — Genere un PDF de cartes scolaires pour une classe.
-   *
-   * - Cree un VerifiableDocument de type ID_CARD pour chaque eleve
-   * - Genere un QR code pointant vers /v/{shortCode}/{token}
-   * - Compose un PDF A4 (8 cartes/page) ou PVC
-   * - Met a jour Student.idCardGeneratedAt
-   */
   async generateIdCardsBatch(
     schoolId: string,
     options: {
@@ -1308,7 +1202,6 @@ export class StudentsService {
       klassName = klass.name;
       students = klass.enrollments.map((e) => e.student);
     } else {
-      // studentIds fournis
       const found = await this.prisma.student.findMany({
         where: { id: { in: options.studentIds! }, schoolId, deletedAt: null },
         select: {
@@ -1361,10 +1254,8 @@ export class StudentsService {
     });
     const academicYearLabel = currentYear?.label || "";
 
-
     const QRCode = await import("qrcode");
 
-    // Pre-charger le logo en base64 (une seule fois)
     const schoolLogoBase64 = await fileToBase64(school.logoUrl);
 
     const cards: IdCardData[] = [];
@@ -1415,12 +1306,47 @@ export class StudentsService {
 
     const pdf = await generateIdCardsPDF(cards, options, this.pdfGenerator);
 
-    // Tracer la generation
     await this.prisma.student.updateMany({
       where: { id: { in: students.map((s) => s.id) } },
       data: { idCardGeneratedAt: new Date() },
     });
 
     return pdf;
+  }
+
+  /**
+   * Récupère la fiche élève liée à un compte utilisateur (via userId).
+   * Utilisé par GET /students/me pour les élèves connectés.
+   */
+  async findByUserId(schoolId: string, userId: string) {
+    const student = await this.prisma.student.findFirst({
+      where: { schoolId, userId, deletedAt: null },
+      include: {
+        enrollments: {
+          where: { status: "VALIDATED" },
+          orderBy: { enrollmentDate: "desc" },
+          take: 1,
+          include: {
+            class: { select: { id: true, name: true } },
+            level: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+
+    if (!student) return null;
+
+    const enrollment = student.enrollments[0];
+
+    return {
+      id: student.id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      matricule: student.matricule,
+      classId: enrollment?.class?.id ?? null,
+      className: enrollment?.class?.name ?? null,
+      levelId: enrollment?.level?.id ?? null,
+      levelName: enrollment?.level?.name ?? null,
+    };
   }
 }

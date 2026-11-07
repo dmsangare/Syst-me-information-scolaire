@@ -34,6 +34,8 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   permission?: string;
   indent?: boolean;
+  /** Rôles pour lesquels ce lien ne doit pas être affiché (même si la permission est présente) */
+  hideForRoles?: string[];
 }
 
 interface NavSection {
@@ -57,7 +59,7 @@ const SECTIONS: NavSection[] = [
       { label: "Classes", to: "/classes", icon: School, permission: "class:view" },
       { label: "Enseignants", to: "/teachers", icon: UsersRound, permission: "teacher:view" },
       { label: "Matières", to: "/subjects", icon: BookOpen, permission: "subject:view" },
-      { label: "Affectation matieres", to: "/class-subjects", icon: Layers, permission: "subject:view" },
+      { label: "Affectation matieres", to: "/class-subjects", icon: Layers, permission: "subject:view", hideForRoles: ["TEACHER"] },
       { label: "Coefficients", to: "/coefficients", icon: Percent, permission: "subject:view" },
     ],
   },
@@ -65,12 +67,12 @@ const SECTIONS: NavSection[] = [
     title: "Pédagogie",
     items: [
       { label: "Emploi du temps", to: "/timetable", icon: Calendar, permission: "timetable:view" },
-      { label: "Présences", to: "/attendance", icon: ClipboardCheck, permission: "attendance:view" },
+      { label: "Présences", to: "/attendance", icon: ClipboardCheck, permission: "attendance:view", hideForRoles: ["STUDENT", "PARENT"] },
       { label: "Notes", to: "/assessments", icon: FileText, permission: "grade:view" },
       { label: "Saisie groupee", to: "/grades/batch", icon: ClipboardCheck, permission: "grade:create" },
       { label: "Bulletins", to: "/report-cards", icon: Award, permission: "report_card:view" },
-      { label: "Résultats annuels", to: "/annual-results", icon: TrendingUp, permission: "report_card:view" },
-      { label: "Décisions annuelles", to: "/annual-decisions", icon: CheckCircle2, permission: "report_card:view" },
+      { label: "Résultats annuels", to: "/annual-results", icon: TrendingUp, permission: "report_card:view", hideForRoles: ["TEACHER", "STUDENT", "PARENT"] },
+      { label: "Décisions annuelles", to: "/annual-decisions", icon: CheckCircle2, permission: "report_card:view", hideForRoles: ["TEACHER", "STUDENT", "PARENT"] },
     ],
   },
   {
@@ -93,7 +95,7 @@ const SECTIONS: NavSection[] = [
   {
     title: "Services",
     items: [
-      { label: "Cartes scolaires", to: "/id-cards", icon: CreditCard, permission: "student:view" },
+      { label: "Cartes scolaires", to: "/id-cards", icon: CreditCard, permission: "student:view", hideForRoles: ["TEACHER"] },
     ],
   },
   {
@@ -102,7 +104,7 @@ const SECTIONS: NavSection[] = [
       { label: "Années scolaires", to: "/academic-years", icon: Calendar, permission: "academic_year:view" },
       { label: "Passage d'année", to: "/year-rollover", icon: GraduationCap, permission: "academic_year:create" },
       { label: "Examens d'État", to: "/state-exams", icon: Award, permission: "academic_year:view" },
-      { label: "Rapports administratifs", to: "/admin-reports", icon: FileText, permission: "report_card:view" },
+      { label: "Rapports administratifs", to: "/admin-reports", icon: FileText, permission: "report_card:view", hideForRoles: ["TEACHER", "STUDENT", "PARENT"] },
       { label: "Rapports", to: "/reports", icon: BarChart3, permission: "report:view" },
       { label: "Paramètres", to: "/settings", icon: Settings, permission: "settings:view" },
     ],
@@ -117,11 +119,16 @@ export function Sidebar() {
   const schoolName = school?.name || "SIS-MALI";
   const sigle = school?.sigle || "S";
 
+  // Filtrage : permission + hideForRoles
   const visibleSections = SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter(
-      (item) => !item.permission || hasPermission(item.permission),
-    ),
+    items: section.items.filter((item) => {
+      // 1. Vérifier la permission
+      if (item.permission && !hasPermission(item.permission)) return false;
+      // 2. Vérifier hideForRoles
+      if (item.hideForRoles && item.hideForRoles.some((role) => hasRole(role))) return false;
+      return true;
+    }),
   })).filter((section) => section.items.length > 0);
 
   return (
@@ -195,5 +202,3 @@ export function Sidebar() {
     </aside>
   );
 }
-
-

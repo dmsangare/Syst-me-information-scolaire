@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClasses } from '@/hooks/classes';
+import { useStudentProfile } from '@/hooks/students/useStudentProfile';
 
 const DAYS = [
   { value: 1, label: 'Lundi' },
@@ -27,7 +28,6 @@ function formatTime(h: number) {
 
 function dateToHour(dateStr: string): number {
   if (!dateStr) return 0;
-  // Format "08:00" ou "2026-01-01T08:00:00.000Z"
   if (/^\d{2}:\d{2}/.test(dateStr)) {
     return parseInt(dateStr.slice(0, 2), 10);
   }
@@ -36,9 +36,10 @@ function dateToHour(dateStr: string): number {
 }
 
 export default function TimetablePage() {
-  const { hasPermission } = useAuth();
-  const canCreate = hasPermission("timetable:create");
-  const canDelete = hasPermission("timetable:delete");
+  const { hasPermission, user } = useAuth();
+  const isStudent = user?.roles?.includes('STUDENT') || user?.roles?.includes('PARENT');
+  const canCreate = hasPermission('timetable:create');
+  const canDelete = hasPermission('timetable:delete');
   const qc = useQueryClient();
   const [classId, setClassId] = useState('');
   const [academicYearId, setAcademicYearId] = useState('');
@@ -48,12 +49,24 @@ export default function TimetablePage() {
     dayOfWeek: 1, startHour: 8, endHour: 9, weekPattern: 0,
   });
 
-  // ----- Data
+  const { data: studentProfile } = useStudentProfile();
   const { data: classes } = useClasses();
 
   const { data: years } = useQuery({
     queryKey: ['timetable', 'years'],
-    queryFn: async () => (await api.get('/teachers/academic-years')).data?.data ?? [],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/teachers/academic-years');
+        return res.data?.data ?? [];
+      } catch {
+        try {
+          const res = await api.get('/academic-years/current');
+          return res.data ? [res.data] : [];
+        } catch {
+          return [];
+        }
+      }
+    },
   });
 
   const { data: subjects } = useQuery({
@@ -79,7 +92,6 @@ export default function TimetablePage() {
     enabled: !!classId && !!academicYearId,
   });
 
-  // Auto-select current year
   useMemo(() => {
     if (years && !academicYearId) {
       const cur = years.find((y: any) => y.isCurrent);
@@ -87,19 +99,21 @@ export default function TimetablePage() {
     }
   }, [years, academicYearId]);
 
-  // ✅ Teachers filtered by class + subject (backend filter via TeacherAssignment)
+  useMemo(() => {
+    if (!isStudent) return;
+    if (classId) return;
+    if (studentProfile?.classId) {
+      setClassId(studentProfile.classId);
+    }
+  }, [isStudent, studentProfile, classId]);
+
   const { data: availableTeachers } = useQuery({
     queryKey: ['timetable', 'teachers', form.subjectId, classId, academicYearId],
     queryFn: async () => {
       if (!form.subjectId || !classId) return [];
       try {
         const res = await api.get('/teachers', {
-          params: {
-            limit: 100,
-            classId,
-            subjectId: form.subjectId,
-            academicYearId,
-          },
+          params: { limit: 100, classId, subjectId: form.subjectId, academicYearId },
         });
         return res.data?.data ?? [];
       } catch {
@@ -109,7 +123,6 @@ export default function TimetablePage() {
     enabled: !!form.subjectId && !!classId,
   });
 
-  // ----- Mutations
   const createMut = useMutation({
     mutationFn: (dto: any) => timetableApi.create(dto),
     onSuccess: () => {
@@ -128,7 +141,6 @@ export default function TimetablePage() {
     },
   });
 
-  // ----- Grille : [jour][heure] → slot
   const grid = useMemo(() => {
     const g: Record<number, Record<number, any[]>> = {};
     for (const d of DAYS) {
@@ -177,36 +189,42 @@ export default function TimetablePage() {
         )}
       </div>
 
-      {/* Sélecteurs */}
-      <Card className="p-4 flex gap-3">
-        <select
-          className="border rounded px-3 py-2 text-sm flex-1"
-          value={classId}
-          onChange={(e) => setClassId(e.target.value)}
-        >
-          <option value="">— Choisir une classe —</option>
-          {classes?.map((c: any) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-        <select
-          className="border rounded px-3 py-2 text-sm flex-1"
-          value={academicYearId}
-          onChange={(e) => setAcademicYearId(e.target.value)}
-        >
-          <option value="">— Année scolaire —</option>
-          {years?.map((y: any) => (
-            <option key={y.id} value={y.id}>
-              {y.label} {y.isCurrent ? '(actuelle)' : ''}
-            </option>
-          ))}
-        </select>
-      </Card>
+      {!isStudent && (
+        <Card className="p-4 flex gap-3">
+          <select
+            className="border rounded px-3 py-2 text-sm flex-1"
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+          >
+            <option value="">— Choisir une classe —</option>
+            {classes?.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <select
+            className="border rounded px-3 py-2 text-sm flex-1"
+            value={academicYearId}
+            onChange={(e) => setAcademicYearId(e.target.value)}
+          >
+            <option value="">— Année scolaire —</option>
+            {years?.map((y: any) => (
+              <option key={y.id} value={y.id}>
+                {y.label} {y.isCurrent ? '(actuelle)' : ''}
+              </option>
+            ))}
+          </select>
+        </Card>
+      )}
 
-      {/* Grille */}
+      {isStudent && studentProfile?.className && (
+        <Card className="p-4 text-sm text-slate-600">
+          Ta classe : <strong>{studentProfile.className}</strong>
+        </Card>
+      )}
+
       {!classId || !academicYearId ? (
         <Card className="p-12 text-center text-gray-400">
-          Sélectionne une classe et une année pour afficher l'emploi du temps.
+          {isStudent ? 'Chargement de ton emploi du temps…' : 'Sélectionne une classe et une année pour afficher l\'emploi du temps.'}
         </Card>
       ) : isLoading ? (
         <Card className="p-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></Card>
@@ -234,6 +252,7 @@ export default function TimetablePage() {
                         key={d.value}
                         className="border p-1 align-top h-16 hover:bg-blue-50 cursor-pointer"
                         onClick={() => {
+                          if (!canCreate) return;
                           if (cellSlots.length === 0) {
                             setForm({
                               subjectId: '', teacherId: '', roomId: '',
@@ -276,8 +295,7 @@ export default function TimetablePage() {
         </Card>
       )}
 
-      {/* Modale ajout */}
-      {showModal && (
+      {showModal && canCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <Card className="bg-white w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">

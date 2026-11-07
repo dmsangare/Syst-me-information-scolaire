@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
-import { 
-  Calendar, BookOpen, Users, Clock, ArrowRight, ClipboardCheck, 
+import {
+  Calendar, BookOpen, Users, ArrowRight, ClipboardCheck,
   GraduationCap, AlertCircle
 } from "lucide-react";
-import { 
-  Card, CardContent, CardHeader, CardTitle, KpiCard, PageLoader, 
-  EmptyState, StatusBadge 
+import {
+  Card, CardContent, CardHeader, CardTitle, KpiCard, PageLoader,
+  EmptyState
 } from "@/components/ui";
 import { useTeacherDashboard } from "@/hooks/dashboard/useDashboard";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
@@ -33,7 +33,7 @@ export function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-[#F3F7FD] p-6 md:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        
+
         <WelcomeBanner subtitle="Voici un aperçu de votre activité pédagogique." />
 
         {/* KPI Enseignant */}
@@ -68,7 +68,7 @@ export function TeacherDashboard() {
           />
         </div>
 
-        {/* Mes classes & Matières */}
+        {/* Mes classes & Mes matières */}
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="col-span-2 rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
             <CardHeader className="pb-4">
@@ -78,16 +78,31 @@ export function TeacherDashboard() {
             </CardHeader>
             <CardContent className="p-0">
               {data.myClasses?.length === 0 ? (
-                <div className="p-6"><EmptyState title="Aucune classe" description="Vous n'avez pas encore de classe assignée." /></div>
+                <div className="p-6">
+                  <EmptyState
+                    title="Aucune classe"
+                    description="Vous n'avez pas encore de classe assignée."
+                  />
+                </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {data.myClasses?.map((c: any) => (
-                    <li key={c.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors">
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors"
+                    >
                       <div>
                         <p className="font-medium text-slate-800">{c.name}</p>
-                        <p className="text-xs text-slate-500">{c.level?.name} · {c.studentCount} élèves</p>
+                        <p className="text-xs text-slate-500">
+                          {c.level?.name} · {c.studentCount} élèves
+                        </p>
                       </div>
-                      <Link to="/notes" className="text-xs font-medium text-blue-600 hover:underline">Saisir notes →</Link>
+                      <Link
+                        to="/notes"
+                        className="text-xs font-medium text-blue-600 hover:underline"
+                      >
+                        Saisir notes →
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -102,12 +117,27 @@ export function TeacherDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
+              {data.isGeneralist && (
+                <p className="text-xs text-muted-foreground mb-3 italic">
+                  Enseignant généraliste — toutes les matières de vos classes
+                </p>
+              )}
               {data.mySubjects?.length === 0 ? (
-                <EmptyState title="Aucune matière" description="Vous n'enseignez aucune matière." />
+                <EmptyState
+                  title="Aucune matière"
+                  description={
+                    data.isGeneralist
+                      ? "Aucune matière n'est encore configurée pour vos classes."
+                      : "Vous n'enseignez aucune matière spécifique."
+                  }
+                />
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {data.mySubjects?.map((s: any) => (
-                    <span key={s.id} className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                    <span
+                      key={s.id}
+                      className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+                    >
                       {s.name}
                     </span>
                   ))}
@@ -117,7 +147,7 @@ export function TeacherDashboard() {
           </Card>
         </div>
 
-        {/* Évaluations à venir & En attente */}
+        {/* Évaluations à venir & Notes à saisir */}
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
             <CardHeader className="pb-4">
@@ -127,16 +157,25 @@ export function TeacherDashboard() {
             </CardHeader>
             <CardContent className="p-0">
               {data.upcomingAssessments?.length === 0 ? (
-                <div className="p-6"><EmptyState title="Rien de prévu" description="Aucune évaluation planifiée." /></div>
+                <div className="p-6">
+                  <EmptyState
+                    title="Rien de prévu"
+                    description="Aucune évaluation planifiée."
+                  />
+                </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {data.upcomingAssessments?.map((a: any) => (
                     <li key={a.id} className="flex items-center justify-between p-4">
                       <div>
                         <p className="font-medium text-slate-800">{a.title}</p>
-                        <p className="text-xs text-slate-500">{a.class?.name} · {a.subject?.name}</p>
+                        <p className="text-xs text-slate-500">
+                          {a.class?.name} · {a.subject?.name}
+                        </p>
                       </div>
-                      <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-md">{formatDate(a.date)}</span>
+                      <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                        {formatDate(a.date)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -152,16 +191,31 @@ export function TeacherDashboard() {
             </CardHeader>
             <CardContent className="p-0">
               {data.pendingAssessments?.length === 0 ? (
-                <div className="p-6"><EmptyState title="À jour !" description="Aucune note en attente." /></div>
+                <div className="p-6">
+                  <EmptyState
+                    title="À jour !"
+                    description="Aucune note en attente."
+                  />
+                </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {data.pendingAssessments?.map((a: any) => (
-                    <li key={a.id} className="flex items-center justify-between p-4">
+                    <li
+                      key={a.id}
+                      className="flex items-center justify-between p-4"
+                    >
                       <div>
                         <p className="font-medium text-slate-800">{a.title}</p>
-                        <p className="text-xs text-slate-500">{a.class?.name} · {a._count?.grades || 0} notes saisies</p>
+                        <p className="text-xs text-slate-500">
+                          {a.class?.name} · {a._count?.grades || 0} notes saisies
+                        </p>
                       </div>
-                      <Link to={`/notes?assessment=${a.id}`} className="text-xs font-medium text-blue-600 hover:underline">Saisir →</Link>
+                      <Link
+                        to={`/notes?assessment=${a.id}`}
+                        className="text-xs font-medium text-blue-600 hover:underline"
+                      >
+                        Saisir →
+                      </Link>
                     </li>
                   ))}
                 </ul>

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  HttpCode, HttpStatus, UseGuards,
+  HttpCode, HttpStatus, UseGuards, BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { AcademicYearsService } from "./academic-years.service";
@@ -16,6 +16,15 @@ import { PaginationDto } from "../common/dto/pagination.dto";
 @UseGuards(SchoolScopeGuard)
 export class AcademicYearsController {
   constructor(private readonly service: AcademicYearsService) {}
+
+  @Get("current")
+  @ApiOperation({ summary: "Annee scolaire en cours (accessible a tous)" })
+  async getCurrent(@CurrentUser() user: CurrentUserPayload) {
+    if (!user.schoolId) {
+      throw new BadRequestException("Utilisateur sans ecole");
+    }
+    return this.service.getCurrent(user.schoolId);
+  }
 
   @Get()
   @RequirePermissions("academic_year:view")

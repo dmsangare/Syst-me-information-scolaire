@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query, Res,
   HttpCode, HttpStatus, UseGuards, UseInterceptors, UploadedFile,
-  BadRequestException,
+  BadRequestException, NotFoundException,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
@@ -50,6 +50,18 @@ export class StudentsController {
     });
   }
 
+  @Get("me")
+  @ApiOperation({ summary: "Profil de l'élève connecté (via son userId)" })
+  async me(@CurrentUser() user: CurrentUserPayload) {
+    const student = await this.service.findByUserId(
+      user.schoolId!,
+      user.id,
+    );
+    if (!student) {
+      throw new NotFoundException("Profil élève introuvable");
+    }
+    return student;
+  }
 
   @Get()
   @RequirePermissions("student:view")
@@ -108,7 +120,6 @@ export class StudentsController {
     return this.service.getDocuments(id);
   }
 
-
   @Get(":id/siblings")
   @RequirePermissions("student:view")
   @ApiOperation({ summary: "Freres et soeurs de l eleve" })
@@ -132,7 +143,7 @@ export class StudentsController {
   @UseInterceptors(
     FileInterceptor("file", {
       storage: memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10 Mo
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   async importPreview(
@@ -212,7 +223,6 @@ export class StudentsController {
     res.send(csv);
   }
 
-
   @Get("export/excel")
   @RequirePermissions("student:export")
   @ApiOperation({ summary: "Exporter les eleves en Excel" })
@@ -249,9 +259,6 @@ export class StudentsController {
     res.send(buffer);
   }
 
-  /**
-   * BLOC B — Genere un PDF de cartes scolaires pour une classe.
-   */
   @Post("id-cards/batch")
   @RequirePermissions("student:view")
   @ApiOperation({ summary: "Generer les cartes scolaires (PDF)" })
@@ -275,7 +282,6 @@ export class StudentsController {
       includeVerso,
     });
 
-    // Nom du fichier : "cartes-classe-XXXX.pdf" ou "cartes-eleves-XXXX.pdf"
     const filenameSuffix = body.classId
       ? `classe-${body.classId.slice(0, 8)}`
       : `eleves-${body.studentIds!.length}`;
@@ -322,5 +328,4 @@ export class StudentsController {
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(buffer);
   }
-
 }
