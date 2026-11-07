@@ -12,21 +12,10 @@ export class DashboardService {
     private readonly settings: SettingsService,
   ) {}
 
-  /**
-   * Recalcule le Top 3 (tableau d'honneur) pour une école et un trimestre donnés.
-   * Appelée automatiquement après la génération/modification d'un bulletin.
-   *
-   * Pour chaque cycle (PREMIER_CYCLE, DEUXIEME_CYCLE, LYCEE) :
-   *  - Récupère tous les ReportCard PUBLISHED du term pour ce cycle
-   *  - Trie par moyenne DESC
-   *  - Prend le top 3
-   *  - Écrit dans la table top_students
-   */
   async recomputeTopStudents(
     schoolId: string,
     termId?: string,
   ): Promise<{ updated: number }> {
-    // Sans periode precisee : on recalcule toutes les periodes actives (composition du mois + trimestre)
     if (!termId) {
       const today = new Date();
       const activeTerms = await this.prisma.term.findMany({
@@ -46,12 +35,10 @@ export class DashboardService {
       }
     }
 
-    // 1. Déterminer le trimestre
     let term;
     if (termId) {
       term = await this.prisma.term.findUnique({ where: { id: termId } });
     } else {
-      // Prendre le trimestre actif (aujourd'hui entre startDate et endDate)
       const today = new Date();
       term = await this.prisma.term.findFirst({
         where: {
@@ -70,12 +57,11 @@ export class DashboardService {
       return { updated: 0 };
     }
 
-    // 2. Récupérer tous les ReportCard PUBLISHED du trimestre
     const reportCards = await this.prisma.reportCard.findMany({
       where: {
         termId: term.id,
         status: "PUBLISHED",
-        isComplete: true,   // L8 : exclure les dossiers incomplets
+        isComplete: true,
         student: { schoolId },
       },
       include: {
@@ -104,7 +90,6 @@ export class DashboardService {
       return { updated: 0 };
     }
 
-    // 3. Grouper par cycle
     const byCycle: Record<string, typeof reportCards> = {
       PREMIER_CYCLE: [],
       DEUXIEME_CYCLE: [],
@@ -118,8 +103,6 @@ export class DashboardService {
       }
     }
 
-    // 4. Pour chaque cycle, trier et prendre le top 3
-    // (l'annee affichee est celle du trimestre, pas forcement l'annee en cours)
     const termYear = await this.prisma.academicYear.findUnique({
       where: { id: term.academicYearId },
       select: { label: true },
@@ -133,9 +116,6 @@ export class DashboardService {
     for (const [cycle, cards] of Object.entries(byCycle)) {
       if (cards.length === 0) continue;
 
-      // Trier par moyenne desc ; en cas d'egalite : ordre alphabetique (resultat stable)
-      // Déduplication par studentId : un élève ne peut apparaître qu'une fois par période.
-      // En cas de cartes multiples (ex. import en double), on garde la meilleure moyenne.
       const byStudent = new Map<string, typeof cards[number]>();
       for (const rc of cards) {
         const existing = byStudent.get(rc.studentId);
@@ -156,7 +136,6 @@ export class DashboardService {
       const allAverages = sorted.map((rc) => Number(rc.average));
       const top3 = sorted.slice(0, 3);
 
-      // Suppression + insertion dans UNE transaction : le classement n'est jamais a moitie vide
       await this.prisma.$transaction([
         this.prisma.topStudent.deleteMany({
           where: { schoolId, cycle, periodLabel },
@@ -188,18 +167,10 @@ export class DashboardService {
     return { updated: totalUpdated };
   }
 
-  /**
-   * Tableau d'honneur : Top N CLASSES par cycle.
-   * - Moyenne classe = moyenne des ReportCard.average PUBLISHED des eleves
-   * - Classes sans bulletin publie exclues
-   * - Eleves sans average exclus
-   * - Exaequo : comparaison au centieme, rang partage puis saut (1,2,2,4)
-   */
   async getHonorRoll(schoolId: string, termId?: string, cycleFilter?: string) {
     const data = await this.settings.getDataWithDefaults(schoolId);
     const topN = Math.max(1, Number(data?.honorRoll?.topN ?? 3));
 
-    // 1. Periode ciblee
     const terms = termId
       ? await this.prisma.term.findMany({ where: { id: termId } })
       : await this.prisma.term.findMany({
@@ -213,7 +184,6 @@ export class DashboardService {
       return { topN, term: null, podiums: emptyPodiums() };
     }
 
-    // 2. Classes de l'ecole (filtre cycle optionnel)
     const cycles = cycleFilter
       ? [cycleFilter]
       : ["PREMIER_CYCLE", "DEUXIEME_CYCLE", "LYCEE"];
@@ -227,7 +197,6 @@ export class DashboardService {
       });
       if (classes.length === 0) continue;
 
-      // 3. Moyennes des bulletins PUBLISHED par classe
       const byClass: any[] = [];
       for (const cls of classes) {
         const agg = await this.prisma.reportCard.aggregate({
@@ -247,12 +216,11 @@ export class DashboardService {
           levelName: cls.level?.name ?? null,
           average: Number(agg._avg.average),
           studentsCount: agg._count._all,
-          scale: 20, // sera ajuste selon cycle plus bas
+          scale: 20,
         });
       }
       if (byClass.length === 0) continue;
 
-      // 4. Tri desc + exaequo au centieme
       byClass.sort((a, b) => b.average - a.average || a.className.localeCompare(b.className, "fr"));
       let lastAvg: number | null = null;
       let lastRank = 0;
@@ -272,9 +240,6 @@ export class DashboardService {
     return { topN, term: terms[0] ?? null, podiums };
   }
 
-  /**
-   * Retourne le top 3 pour chaque cycle (visible par tous).
-   */
   async getTopStudents(schoolId: string, termId?: string) {
     type Period = { termId: string; name: string; type: string };
     const emptyPodiums = (): Record<string, any[]> => ({ PREMIER_CYCLE: [], DEUXIEME_CYCLE: [], LYCEE: [] });
@@ -297,7 +262,6 @@ export class DashboardService {
       },
     });
 
-    // Chaque cycle affiche sa periode la plus recente : composition du mois (1er cycle) ou trimestre (2eme cycle, lycee)
     const podiums = emptyPodiums();
     const periods: Record<string, Period | null> = { PREMIER_CYCLE: null, DEUXIEME_CYCLE: null, LYCEE: null };
     let latest: (typeof terms)[number] | null = null;
@@ -311,11 +275,9 @@ export class DashboardService {
         const t = termById.get(r.termId as string)!;
         if (t.endDate.getTime() > best.endDate.getTime()) best = t;
       }
-      // D13 : enrichir avec classSize (inscrits) et studentsCount (classés)
       const filteredRows = cycleRows.filter((r) => r.termId === best.id);
       const classIdsForCycle = Array.from(new Set(filteredRows.map((r) => r.classId)));
 
-      // Effectif classé : nombre de ReportCard PUBLISHED par classe pour ce term
       const classCounts = await this.prisma.reportCard.groupBy({
         by: ["classId"],
         where: {
@@ -330,7 +292,6 @@ export class DashboardService {
         classCounts.map((c) => [c.classId, c._count._all]),
       );
 
-      // Effectif inscrit : nombre d'Enrollment VALIDATED par classe pour ce term
       const enrollCounts = await this.prisma.enrollment.groupBy({
         by: ["classId"],
         where: {
@@ -374,6 +335,7 @@ export class DashboardService {
 
   /**
    * Retourne les donnees du dashboard pour un enseignant.
+   * Gère les GENERALIST (matières de ses classes) et SPECIALIST (matières de ses assignments).
    */
   async getTeacherDashboard(userId: string, schoolId: string) {
     // 1. Trouver le Teacher associe a cet utilisateur
@@ -425,13 +387,38 @@ export class DashboardService {
     const myClasses = Array.from(classesMap.values());
 
     // 4. Matieres uniques
+    //    - SPECIALIST : les matières de ses assignments
+    //    - GENERALIST : toutes les matières de ses classes (via ClassSubject)
     const subjectsMap = new Map<string, any>();
-    for (const a of assignments) {
-      if (a.subjectId && a.subject && !subjectsMap.has(a.subjectId)) {
-        subjectsMap.set(a.subjectId, a.subject);
+
+    if (teacher.teacherType === "GENERALIST") {
+      const classIds = Array.from(classesMap.keys());
+      if (classIds.length > 0) {
+        const classSubjects = await this.prisma.classSubject.findMany({
+          where: {
+            classId: { in: classIds },
+            isActive: true,
+            ...(year ? { academicYearId: year.id } : {}),
+          },
+          include: {
+            subject: { select: { id: true, name: true, code: true } },
+          },
+        });
+        for (const cs of classSubjects) {
+          if (!subjectsMap.has(cs.subject.id)) {
+            subjectsMap.set(cs.subject.id, cs.subject);
+          }
+        }
+      }
+    } else {
+      for (const a of assignments) {
+        if (a.subjectId && a.subject && !subjectsMap.has(a.subjectId)) {
+          subjectsMap.set(a.subjectId, a.subject);
+        }
       }
     }
     const mySubjects = Array.from(subjectsMap.values());
+    const isGeneralist = teacher.teacherType === "GENERALIST";
 
     // 5. Total eleves
     const totalStudents = myClasses.reduce(
@@ -482,6 +469,7 @@ export class DashboardService {
         lastName: teacher.lastName,
         matricule: teacher.matricule,
       },
+      isGeneralist,
       myClasses,
       mySubjects,
       totalStudents,
@@ -490,9 +478,6 @@ export class DashboardService {
     };
   }
 
-  /**
-   * Retourne les donnees du dashboard pour un surveillant.
-   */
   async getSupervisorDashboard(schoolId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -501,7 +486,6 @@ export class DashboardService {
       where: { schoolId, isCurrent: true },
     });
 
-    // Sessions de presence du jour
     const todaySessions = year
       ? await this.prisma.attendanceSession.count({
           where: {
@@ -511,7 +495,6 @@ export class DashboardService {
         })
       : 0;
 
-    // Absents du jour
     const absents = await this.prisma.attendanceRecord.findMany({
       where: {
         status: "ABSENT",
@@ -553,14 +536,10 @@ export class DashboardService {
     };
   }
 
-  /**
-   * Retourne les donnees du dashboard pour une secretaire.
-   */
   async getSecretaryDashboard(schoolId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Inscriptions du jour
     const todayEnrollments = await this.prisma.enrollment.count({
       where: {
         student: { schoolId },
@@ -568,7 +547,6 @@ export class DashboardService {
       },
     });
 
-    // Derniers eleves inscrits
     const recentStudents = await this.prisma.student.findMany({
       where: { schoolId },
       orderBy: { createdAt: "desc" },
@@ -582,7 +560,6 @@ export class DashboardService {
       },
     });
 
-    // Total eleves actifs
     const totalStudents = await this.prisma.student.count({
       where: { schoolId, status: "ACTIVE" },
     });
@@ -598,10 +575,6 @@ export class DashboardService {
   // LOT 2B — Endpoints pour la refonte du dashboard
   // ============================================================
 
-  /**
-   * Effectifs par classe avec répartition garçons/filles.
-   * Filtre sur l'année courante + Enrollment VALIDATED + Student ACTIVE non supprimé.
-   */
   async getEnrollmentByClass(schoolId: string) {
     const currentYear = await this.prisma.academicYear.findFirst({
       where: { schoolId, isCurrent: true },
@@ -657,9 +630,6 @@ export class DashboardService {
     };
   }
 
-  /**
-   * Répartition des classes par niveau (pour le donut "Répartition des classes").
-   */
   async getClassesDistribution(schoolId: string) {
     const currentYear = await this.prisma.academicYear.findFirst({
       where: { schoolId, isCurrent: true },
@@ -714,9 +684,6 @@ export class DashboardService {
     };
   }
 
-  /**
-   * 5 bulletins les plus récents.
-   */
   async getRecentReportCards(schoolId: string, limit = 5) {
     const data = await this.prisma.reportCard.findMany({
       where: {
@@ -742,10 +709,6 @@ export class DashboardService {
     return { data };
   }
 
-  /**
-   * 10 dernières activités (depuis AuditLog).
-   * Ne remonte que les actions lisibles pour un humain.
-   */
   async getRecentActivities(schoolId: string, limit = 10) {
     const ACTIVITY_LABELS: Record<string, string> = {
       "report-card.create": "Nouveau bulletin créé",
@@ -802,10 +765,6 @@ export class DashboardService {
       })),
     };
   }
-
-  // ============================================================
-  // HELPERS
-  // ============================================================
 
   private async getYearLabel(schoolId: string): Promise<string | null> {
     const year = await this.prisma.academicYear.findFirst({
