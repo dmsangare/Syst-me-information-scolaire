@@ -595,6 +595,215 @@ export class DashboardService {
   }
 
   // ============================================================
+  // LOT 2B — Endpoints pour la refonte du dashboard
+  // ============================================================
+
+  /**
+   * Effectifs par classe avec répartition garçons/filles.
+   * Filtre sur l'année courante + Enrollment VALIDATED + Student ACTIVE non supprimé.
+   */
+  async getEnrollmentByClass(schoolId: string) {
+    const currentYear = await this.prisma.academicYear.findFirst({
+      where: { schoolId, isCurrent: true },
+      select: { id: true, label: true },
+    });
+
+    if (!currentYear) {
+      return { academicYear: null, classes: [] };
+    }
+
+    const classes = await this.prisma.class.findMany({
+      where: {
+        schoolId,
+        academicYearId: currentYear.id,
+        status: "OPEN",
+      },
+      select: {
+        id: true,
+        name: true,
+        level: { select: { name: true, cycle: true } },
+        enrollments: {
+          where: { status: "VALIDATED" },
+          select: {
+            student: {
+              select: { gender: true, status: true, deletedAt: true },
+            },
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return {
+      academicYear: currentYear.label,
+      classes: classes.map((c) => {
+        const activeStudents = c.enrollments
+          .map((e) => e.student)
+          .filter((s) => s.status === "ACTIVE" && !s.deletedAt);
+
+        const boys = activeStudents.filter((s) => s.gender === "M").length;
+        const girls = activeStudents.filter((s) => s.gender === "F").length;
+
+        return {
+          classId: c.id,
+          className: c.name,
+          levelName: c.level?.name ?? null,
+          cycle: c.level?.cycle ?? null,
+          boys,
+          girls,
+          total: boys + girls,
+        };
+      }),
+    };
+  }
+
+  /**
+   * Répartition des classes par niveau (pour le donut "Répartition des classes").
+   */
+  async getClassesDistribution(schoolId: string) {
+    const currentYear = await this.prisma.academicYear.findFirst({
+      where: { schoolId, isCurrent: true },
+      select: { id: true },
+    });
+
+    if (!currentYear) {
+      return { total: 0, levels: [] };
+    }
+
+    const classes = await this.prisma.class.findMany({
+      where: {
+        schoolId,
+        academicYearId: currentYear.id,
+        status: "OPEN",
+      },
+      select: {
+        id: true,
+        level: {
+          select: { id: true, name: true, cycle: true, orderIndex: true },
+        },
+      },
+    });
+
+    const map = new Map<
+      string,
+      { levelId: string; levelName: string; cycle: string; orderIndex: number; count: number }
+    >();
+
+    for (const c of classes) {
+      if (!c.level) continue;
+      const key = c.level.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          levelId: c.level.id,
+          levelName: c.level.name,
+          cycle: c.level.cycle,
+          orderIndex: c.level.orderIndex,
+          count: 0,
+        });
+      }
+      map.get(key)!.count += 1;
+    }
+
+    const levels = Array.from(map.values()).sort(
+      (a, b) => a.orderIndex - b.orderIndex,
+    );
+
+    return {
+      total: classes.length,
+      levels,
+    };
+  }
+
+  /**
+   * 5 bulletins les plus récents.
+   */
+  async getRecentReportCards(schoolId: string, limit = 5) {
+    const data = await this.prisma.reportCard.findMany({
+      where: {
+        student: { schoolId, deletedAt: null },
+      },
+      take: limit,
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        status: true,
+        average: true,
+        scale: true,
+        createdAt: true,
+        updatedAt: true,
+        student: {
+          select: { id: true, firstName: true, lastName: true, matricule: true },
+        },
+        class: { select: { id: true, name: true } },
+        term: { select: { id: true, name: true, type: true } },
+      },
+    });
+
+    return { data };
+  }
+
+  /**
+   * 10 dernières activités (depuis AuditLog).
+   * Ne remonte que les actions lisibles pour un humain.
+   */
+  async getRecentActivities(schoolId: string, limit = 10) {
+    const ACTIVITY_LABELS: Record<string, string> = {
+      "report-card.create": "Nouveau bulletin créé",
+      "report-card.validate": "Bulletin validé",
+      "report-card.publish": "Bulletin publié",
+      "teacher.create": "Nouvel enseignant ajouté",
+      "teacher.update": "Enseignant modifié",
+      "assignment.create": "Affectation matière-classe ajoutée",
+      "assignment.update": "Affectation matière-classe modifiée",
+      "payment.create": "Paiement enregistré",
+      "payment.cancel": "Paiement annulé",
+      "grade.create": "Note saisie",
+      "grade.update": "Note modifiée",
+      "assessment.create": "Évaluation créée",
+      "student.create": "Nouvel élève inscrit",
+      "class.create": "Nouvelle classe créée",
+      "invoice.create": "Facture créée",
+    };
+
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        schoolId,
+        action: { in: Object.keys(ACTIVITY_LABELS) },
+      },
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        action: true,
+        module: true,
+        objectType: true,
+        objectId: true,
+        createdAt: true,
+        userId: true,
+        newValue: true,
+      },
+    });
+
+    return {
+      data: logs.map((l) => ({
+        id: l.id,
+        action: l.action,
+        label: ACTIVITY_LABELS[l.action] ?? l.action,
+        module: l.module,
+        objectType: l.objectType,
+        objectId: l.objectId,
+        userId: l.userId,
+        createdAt: l.createdAt,
+        title:
+          (l.newValue as any)?.label ??
+          (l.newValue as any)?.name ??
+          (l.newValue as any)?.reference ??
+          null,
+      })),
+    };
+  }
+
+  // ============================================================
   // HELPERS
   // ============================================================
 

@@ -46,21 +46,16 @@ export function useDeleteTeacher() {
   });
 }
 
-export function useAvailableTeachers() {
+export function useAvailableTeachers(includeLinked = false) {
   return useQuery({
-    queryKey: ["teachers", "available"],
+    queryKey: ["teachers", "available", includeLinked],
     queryFn: async () => {
-      const { data } = await api.get("/teachers/available");
-      return (data.data || data) as Array<{
-        id: string;
-        matricule: string;
-        firstName: string;
-        lastName: string;
-        teacherType?: "GENERALIST" | "SPECIALIST";
-        specialty?: string | null;
-      }>;
+      const { data } = await api.get("/teachers/available", {
+        params: { includeLinked: includeLinked ? "true" : "false" },
+      });
+      return data.data || data || [];
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 }
 

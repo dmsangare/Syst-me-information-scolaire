@@ -216,6 +216,7 @@ function CreateUserModal({
   const [createdResult, setCreatedResult] = useState<{ email: string; password: string } | null>(null);
   const createMutation = useCreateUser();
 
+  // ⚠️ Pour la CRÉATION, on ne veut QUE les fiches non liées (comportement original)
   const { data: availableTeachers = [] } = useAvailableTeachers();
   const { data: availableGuardians = [] } = useAvailableGuardians();
   const { data: availableStudents = [] } = useAvailableStudents();
@@ -535,7 +536,8 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
   const [resetLoading, setResetLoading] = useState(false);
 
   const { data: roles = [] } = useRoles();
-  const { data: availableTeachers = [] } = useAvailableTeachers();
+  // ⚠️ Pour l'ÉDITION, on veut TOUTES les fiches (liées ou pas) pour griser les autres
+  const { data: availableTeachers = [] } = useAvailableTeachers(true);
   const { data: availableGuardians = [] } = useAvailableGuardians();
   const { data: availableStudents = [] } = useAvailableStudents();
   const { data: school } = useSchool();
@@ -741,14 +743,23 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
                       className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                     >
                       <option value="">-- Aucune fiche liee --</option>
-                      {availableTeachers.map((t: any) => (
-                        <option key={t.id} value={t.id}>
-                          {t.matricule} · {t.lastName} {t.firstName}
-                        </option>
-                      ))}
+                      {availableTeachers.map((t: any) => {
+                        const isLinkedToOther = t.userId && t.userId !== user.id;
+                        return (
+                          <option
+                            key={t.id}
+                            value={t.id}
+                            disabled={isLinkedToOther}
+                          >
+                            {t.matricule} · {t.lastName} {t.firstName}
+                            {isLinkedToOther ? " (Déjà lié à un autre compte)" : ""}
+                            {t.userId === user.id ? " (Actuel)" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                     <p className="text-xs text-muted-foreground">
-                      {availableTeachers.length} fiche(s) enseignant disponible(s)
+                      {availableTeachers.length} fiche(s) au total
                     </p>
                   </div>
                 )}

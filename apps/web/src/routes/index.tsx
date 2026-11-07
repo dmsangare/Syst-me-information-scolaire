@@ -87,14 +87,14 @@ export function AppRoutes() {
               <RedirectAfterLogin />
             </ProtectedRoute>
           } />
-          <Route
+         <Route
             path="/dashboard"
             element={
-              <ProtectedRoute requiredPermission="dashboard:view">
-                <DashboardPage />
+              <ProtectedRoute>
+                 <DashboardPage />
               </ProtectedRoute>
-            }
-          />
+  }
+/>
           <Route path="/honor-roll" element={<HonorRollPage />} />
 
           {/* É"°lÉÂ¨ves */}
@@ -629,16 +629,27 @@ export function AppRoutes() {
 
 
 
-
 function RedirectAfterLogin() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  
-  if (user.roles.includes('STUDENT') || user.roles.includes('PARENT')) {
+
+  const roles = user.roles || [];
+
+  // Élèves et parents → bulletins
+  if (roles.includes("STUDENT") || roles.includes("PARENT")) {
     return <Navigate to="/report-cards" replace />;
   }
-  if (user.roles.includes('TEACHER')) {
-    return <Navigate to="/timetable" replace />;
+
+  // Enseignants → leur dashboard
+  if (roles.includes("TEACHER") && !roles.includes("SUPER_ADMIN") && !roles.includes("DIRECTOR")) {
+    return <Navigate to="/dashboard" replace />;
   }
+
+  // Surveillants et secrétaires → leur dashboard
+  if (roles.includes("SECRETARY") || roles.includes("SUPERVISOR")) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Par défaut (Admin/Directeur/Comptable) → dashboard
   return <Navigate to="/dashboard" replace />;
 }

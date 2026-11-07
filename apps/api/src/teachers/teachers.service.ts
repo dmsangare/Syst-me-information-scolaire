@@ -15,8 +15,6 @@ export class TeachersService {
     if (query.status) where.status = query.status;
 
     // ✅ Filtre par classe/matière (utilisé par /timetable)
-    // - Si subjectId fourni : SPECIALIST de la matière + GENERALIST de la classe
-    // - Sinon : tous les profs assignés à la classe
     if (query.classId || query.subjectId) {
       const assignmentWhere: any = {};
       if (query.classId) assignmentWhere.classId = query.classId;
@@ -72,12 +70,14 @@ export class TeachersService {
     };
   }
 
-  async findAvailable(schoolId: string) {
+  async findAvailable(schoolId: string, includeLinked = false) {
     return this.prisma.teacher.findMany({
       where: {
         schoolId,
-        userId: null,
         status: 'ACTIVE',
+        // Si includeLinked=false → que les non-liés (comportement actuel)
+        // Si includeLinked=true → tous les enseignants (pour la modale Edit)
+        ...(includeLinked ? {} : { userId: null }),
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       select: {
@@ -88,6 +88,7 @@ export class TeachersService {
         specialty: true,
         teacherType: true,
         status: true,
+        userId: true, // ← NOUVEAU : pour que le front sache qui est déjà lié
       },
     });
   }

@@ -11,7 +11,6 @@ export function DashboardPage() {
 
   const roles = user.roles || [];
 
-  // Role TEACHER : uniquement si l'utilisateur est enseignant (pas admin)
   if (roles.includes("TEACHER") && !roles.includes("SUPER_ADMIN") && !roles.includes("DIRECTOR")) {
     return <TeacherDashboard />;
   }

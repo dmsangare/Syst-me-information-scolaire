@@ -89,6 +89,66 @@ export class DashboardController {
     return this.service.getSecretaryDashboard(user.schoolId);
   }
 
+  // ============================================================
+  // LOT 2B — Endpoints pour la refonte du dashboard
+  // ============================================================
+
+  @Get("enrollment-by-class")
+  @RequirePermissions("dashboard:view")
+  @ApiOperation({ summary: "Effectifs par classe avec répartition garçons/filles" })
+  async enrollmentByClass(@CurrentUser() user: CurrentUserPayload) {
+    const schoolId = user.roles.includes("SUPER_ADMIN")
+      ? await this.getSuperAdminSchoolId(user)
+      : user.schoolId;
+    if (!schoolId) throw new BadRequestException("Ecole introuvable");
+    return this.service.getEnrollmentByClass(schoolId);
+  }
+
+  @Get("classes-distribution")
+  @RequirePermissions("dashboard:view")
+  @ApiOperation({ summary: "Répartition des classes par niveau (donut)" })
+  async classesDistribution(@CurrentUser() user: CurrentUserPayload) {
+    const schoolId = user.roles.includes("SUPER_ADMIN")
+      ? await this.getSuperAdminSchoolId(user)
+      : user.schoolId;
+    if (!schoolId) throw new BadRequestException("Ecole introuvable");
+    return this.service.getClassesDistribution(schoolId);
+  }
+
+  @Get("recent-report-cards")
+  @RequirePermissions("dashboard:view")
+  @ApiOperation({ summary: "5 derniers bulletins" })
+  async recentReportCards(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query("limit") limit?: string,
+  ) {
+    const schoolId = user.roles.includes("SUPER_ADMIN")
+      ? await this.getSuperAdminSchoolId(user)
+      : user.schoolId;
+    if (!schoolId) throw new BadRequestException("Ecole introuvable");
+    return this.service.getRecentReportCards(
+      schoolId,
+      limit ? Number(limit) : 5,
+    );
+  }
+
+  @Get("recent-activities")
+  @RequirePermissions("dashboard:view")
+  @ApiOperation({ summary: "10 dernières activités (AuditLog)" })
+  async recentActivities(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query("limit") limit?: string,
+  ) {
+    const schoolId = user.roles.includes("SUPER_ADMIN")
+      ? await this.getSuperAdminSchoolId(user)
+      : user.schoolId;
+    if (!schoolId) throw new BadRequestException("Ecole introuvable");
+    return this.service.getRecentActivities(
+      schoolId,
+      limit ? Number(limit) : 10,
+    );
+  }
+
   /**
    * Pour un SUPER_ADMIN, on prend la premiere ecole active
    * (utile en mode mono-etablissement).
@@ -97,8 +157,6 @@ export class DashboardController {
     user: CurrentUserPayload,
   ): Promise<string | null> {
     if (user.schoolId) return user.schoolId;
-    // A defaut, on prend la premiere ecole
-    // Note : cette methode ne devrait pas exister si le SUPER_ADMIN a toujours une ecole
     return null;
   }
 }

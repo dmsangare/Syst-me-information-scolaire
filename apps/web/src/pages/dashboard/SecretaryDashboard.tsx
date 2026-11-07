@@ -1,167 +1,101 @@
 import { Link } from "react-router-dom";
-import {
-  Users,
-  UserPlus,
-  Clock,
-  ArrowRight,
-  GraduationCap,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  KpiCard,
-  PageLoader,
-  ErrorState,
-  EmptyState,
-} from "@/components/ui";
-import { useSecretaryDashboard } from "@/hooks/dashboard";
+import { UserPlus, Users, ArrowRight, FileText, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, KpiCard, PageLoader, EmptyState } from "@/components/ui";
+import { useSecretaryDashboard } from "@/hooks/dashboard/useDashboard";
+import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
+import { TechFooter } from "@/components/dashboard/TechFooter";
+import { formatDate } from "@/lib/formatters";
 
 export function SecretaryDashboard() {
-  const { data, isLoading, isError, refetch } = useSecretaryDashboard();
+  const { data, isLoading } = useSecretaryDashboard();
 
   if (isLoading) return <PageLoader label="Chargement du secrétariat..." />;
 
-  if (isError) {
-    return (
-      <div className="p-6">
-        <ErrorState
-          title="Impossible de charger les données"
-          description="Une erreur est survenue lors de la récupération des inscriptions."
-          onRetry={() => refetch()}
-        />
-      </div>
-    );
-  }
-
-  const { todayEnrollments, totalStudents, recentStudents } = data ?? {
-    todayEnrollments: 0,
-    totalStudents: 0,
-    recentStudents: [],
-  };
-
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* En-tête */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Tableau de bord — Secrétariat
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Suivi des inscriptions et des nouveaux élèves.
-          </p>
+    <div className="min-h-screen bg-[#F3F7FD] p-6 md:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        
+        <WelcomeBanner subtitle="Gérez les inscriptions et les dossiers élèves." />
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <KpiCard
+            label="Inscriptions du jour"
+            value={data?.todayEnrollments || 0}
+            hint="Nouveaux élèves"
+            icon={<UserPlus className="h-5 w-5" />}
+            accent="success"
+          />
+          <KpiCard
+            label="Total élèves actifs"
+            value={data?.totalStudents || 0}
+            hint="Année en cours"
+            icon={<Users className="h-5 w-5" />}
+            accent="brand"
+          />
+          <KpiCard
+            label="Dossiers récents"
+            value={data?.recentStudents?.length || 0}
+            hint="5 derniers inscrits"
+            icon={<FileText className="h-5 w-5" />}
+            accent="info"
+          />
         </div>
-        <div className="text-sm text-muted-foreground flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full">
-          <Clock className="h-4 w-4" />
-          {new Date().toLocaleDateString("fr-FR", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </div>
-      </div>
 
-      {/* KPI */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <KpiCard
-          label="Inscriptions aujourd'hui"
-          value={todayEnrollments}
-          hint="Nouvelles inscriptions enregistrées ce jour"
-          icon={<UserPlus className="h-5 w-5" />}
-          accent="brand"
-        />
-        <KpiCard
-          label="Élèves actifs"
-          value={totalStudents}
-          hint="Total des élèves actifs dans l'établissement"
-          icon={<Users className="h-5 w-5" />}
-          accent="success"
-        />
-      </div>
-
-      {/* Derniers élèves inscrits */}
-      <Card>
-        <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-sis-brand" />
-            Derniers élèves inscrits
-          </CardTitle>
-          <Link
-            to="/students"
-            className="text-xs text-primary hover:underline flex items-center gap-1"
-          >
-            Tout voir <ArrowRight className="h-3 w-3" />
-          </Link>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentStudents.length === 0 ? (
-            <div className="p-6">
-              <EmptyState
-                title="Aucun élève inscrit"
-                description="Les inscriptions apparaîtront ici dès que vous ajouterez un élève."
-              />
-            </div>
-          ) : (
-            <div className="divide-y">
-              {recentStudents.map((s: any) => (
-                <Link
-                  key={s.id}
-                  to={`/students/${s.id}`}
-                  className="flex items-center justify-between p-4 hover:bg-muted/30 transition"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {s.lastName?.toUpperCase()} {s.firstName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {s.matricule} ·{" "}
-                      {new Date(s.createdAt).toLocaleDateString("fr-FR")}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Actions rapides */}
-      <div className="grid gap-3 md:grid-cols-2">
-        <Link to="/students/new" className="block group">
-          <Card className="h-full transition-all group-hover:border-sis-brand group-hover:shadow-sis-md cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sis-brand-50 text-sis-brand">
-                <UserPlus className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Inscrire un élève</p>
-                <p className="text-xs text-muted-foreground">
-                  Ajouter un nouvel élève
-                </p>
-              </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+            <CardHeader className="pb-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-emerald-600" /> Derniers élèves inscrits
+              </CardTitle>
+              <Link to="/students" className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1">
+                Tout voir <ArrowRight className="h-3 w-3" />
+              </Link>
+            </CardHeader>
+            <CardContent className="p-0">
+              {!data?.recentStudents || data.recentStudents.length === 0 ? (
+                <div className="p-6"><EmptyState title="Aucun élève" description="Aucun élève récemment inscrit." /></div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {data.recentStudents.map((s: any) => (
+                    <li key={s.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors">
+                      <div>
+                        <p className="font-medium text-slate-800">{s.firstName} {s.lastName}</p>
+                        <p className="text-xs text-slate-500">{s.matricule}</p>
+                      </div>
+                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                        {formatDate(s.createdAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
-        </Link>
 
-        <Link to="/enrollments" className="block group">
-          <Card className="h-full transition-all group-hover:border-sis-brand group-hover:shadow-sis-md cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sis-info-bg text-sis-info">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Inscriptions en cours</p>
-                <p className="text-xs text-muted-foreground">
-                  Voir toutes les inscriptions
-                </p>
-              </div>
+          <Card className="rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-blue-600" /> Actions rapides
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+              <Link to="/students/new" className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all">
+                <span className="text-sm font-medium text-slate-700">Inscrire un nouvel élève</span>
+                <ArrowRight className="h-4 w-4 text-blue-500" />
+              </Link>
+              <Link to="/classes" className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all">
+                <span className="text-sm font-medium text-slate-700">Gérer les classes</span>
+                <ArrowRight className="h-4 w-4 text-blue-500" />
+              </Link>
+              <Link to="/students" className="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all">
+                <span className="text-sm font-medium text-slate-700">Consulter les dossiers élèves</span>
+                <ArrowRight className="h-4 w-4 text-blue-500" />
+              </Link>
             </CardContent>
           </Card>
-        </Link>
+        </div>
+
+        <TechFooter />
       </div>
     </div>
   );

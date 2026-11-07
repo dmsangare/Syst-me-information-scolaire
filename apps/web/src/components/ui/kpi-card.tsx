@@ -15,13 +15,13 @@ export interface KpiCardProps {
   className?: string;
 }
 
-const accentClasses: Record<NonNullable<KpiCardProps["accent"]>, string> = {
-  brand:   "bg-sis-brand-50 text-sis-brand dark:bg-sis-brand-900/30 dark:text-sis-brand-300",
-  success: "bg-sis-success-bg text-sis-success dark:bg-sis-success-bg dark:text-sis-success",
-  warning: "bg-sis-warning-bg text-sis-warning dark:bg-sis-warning-bg dark:text-sis-warning",
-  danger:  "bg-sis-danger-bg text-sis-danger dark:bg-sis-danger-bg dark:text-sis-danger",
-  info:    "bg-sis-info-bg text-sis-info dark:bg-sis-info-bg dark:text-sis-info",
-  neutral: "bg-sis-neutral-100 text-sis-neutral-700 dark:bg-sis-neutral-800 dark:text-sis-neutral-200",
+const accentStyles: Record<NonNullable<KpiCardProps["accent"]>, { bg: string; text: string }> = {
+  brand:   { bg: "bg-blue-50",   text: "text-blue-600" },
+  info:    { bg: "bg-cyan-50",   text: "text-cyan-600" },
+  success: { bg: "bg-emerald-50", text: "text-emerald-600" },
+  warning: { bg: "bg-amber-50",   text: "text-amber-600" },
+  danger:  { bg: "bg-red-50",     text: "text-red-600" },
+  neutral: { bg: "bg-slate-100",  text: "text-slate-600" },
 };
 
 export function KpiCard({
@@ -33,54 +33,37 @@ export function KpiCard({
   accent = "brand",
   className,
 }: KpiCardProps) {
+  const styles = accentStyles[accent];
+
   return (
     <div
       className={cn(
-        "rounded-sis-lg border border-sis-neutral-200 bg-card p-5 shadow-sis-sm transition-shadow hover:shadow-sis dark:border-sis-neutral-800",
+        "rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.1)]",
         className
       )}
     >
       <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
-            {value}
-          </p>
-          {hint && (
-            <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+        <div className="flex items-center gap-4">
+          {icon && (
+            <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-full", styles.bg, styles.text)}>
+              {icon}
+            </div>
           )}
+          <div>
+            <p className="text-sm font-medium text-slate-500">{label}</p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+          </div>
         </div>
-        {icon && (
-          <div
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-sis-md",
-              accentClasses[accent]
-            )}
-          >
-            {icon}
+
+        {trend && (
+          <div className={cn("flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full", trend.direction === "up" ? "bg-emerald-50 text-emerald-600" : trend.direction === "down" ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500")}>
+            {trend.direction === "up" && <ArrowUpRight className="h-3 w-3" />}
+            {trend.direction === "down" && <ArrowDownRight className="h-3 w-3" />}
+            <span>{trend.value}</span>
           </div>
         )}
       </div>
-      {trend && (
-        <div className="mt-3 flex items-center gap-1 text-xs">
-          {trend.direction === "up" && (
-            <ArrowUpRight className="h-3.5 w-3.5 text-sis-success" />
-          )}
-          {trend.direction === "down" && (
-            <ArrowDownRight className="h-3.5 w-3.5 text-sis-danger" />
-          )}
-          <span
-            className={cn(
-              "font-medium",
-              trend.direction === "up" && "text-sis-success",
-              trend.direction === "down" && "text-sis-danger",
-              trend.direction === "neutral" && "text-muted-foreground"
-            )}
-          >
-            {trend.value}
-          </span>
-        </div>
-      )}
+      {hint && <p className="mt-3 text-xs text-slate-400">{hint}</p>}
     </div>
   );
 }

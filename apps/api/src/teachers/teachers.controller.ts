@@ -34,8 +34,14 @@ export class TeachersController {
 
   @Get('available')
   @RequirePermissions('teacher:view')
-  findAvailable(@Req() req: any) {
-    return this.service.findAvailable(req.user.schoolId);
+  findAvailable(
+    @Req() req: any,
+    @Query('includeLinked') includeLinked?: string,
+  ) {
+    return this.service.findAvailable(
+      req.user.schoolId,
+      includeLinked === 'true',
+    );
   }
 
   @Get(':id')
