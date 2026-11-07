@@ -19,6 +19,7 @@ import { EnrollmentByClassChart } from "@/components/dashboard/EnrollmentByClass
 import { ClassesDistributionDonut } from "@/components/dashboard/ClassesDistributionDonut";
 import { RecentActivities } from "@/components/dashboard/RecentActivities";
 import { RecentReportCards } from "@/components/dashboard/RecentReportCards";
+import { GradesBySubjectChart } from "@/components/dashboard/GradesBySubjectChart";
 
 export function AdminDashboard() {
   const { data: stats, isLoading, error, refetch } = useQuery({
@@ -109,6 +110,9 @@ export function AdminDashboard() {
           <EnrollmentByClassChart />
           <ClassesDistributionDonut />
         </div>
+
+        {/* Ligne 3b : Répartition des notes par matière */}
+        <GradesBySubjectChart />
 
         {/* Ligne 4 : Activités + Bulletins récents */}
         <div className="grid gap-6 lg:grid-cols-2">

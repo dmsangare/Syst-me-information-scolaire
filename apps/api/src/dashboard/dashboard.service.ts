@@ -51,9 +51,7 @@ export class DashboardService {
     }
 
     if (!term) {
-      this.logger.warn(
-        `Aucun trimestre actif pour l'ecole ${schoolId}. Recalcul ignore.`,
-      );
+      this.logger.warn(`Aucun trimestre actif pour l'ecole ${schoolId}. Recalcul ignore.`);
       return { updated: 0 };
     }
 
@@ -65,28 +63,13 @@ export class DashboardService {
         student: { schoolId },
       },
       include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            matricule: true,
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            level: { select: { cycle: true, name: true } },
-          },
-        },
+        student: { select: { id: true, firstName: true, lastName: true, matricule: true } },
+        class: { select: { id: true, name: true, level: { select: { cycle: true, name: true } } } },
       },
     });
 
     if (reportCards.length === 0) {
-      this.logger.log(
-        `Aucun bulletin publie pour le term ${term.id}. Recalcul ignore.`,
-      );
+      this.logger.log(`Aucun bulletin publie pour le term ${term.id}. Recalcul ignore.`);
       return { updated: 0 };
     }
 
@@ -137,9 +120,7 @@ export class DashboardService {
       const top3 = sorted.slice(0, 3);
 
       await this.prisma.$transaction([
-        this.prisma.topStudent.deleteMany({
-          where: { schoolId, cycle, periodLabel },
-        }),
+        this.prisma.topStudent.deleteMany({ where: { schoolId, cycle, periodLabel } }),
         ...top3.map((rc) =>
           this.prisma.topStudent.create({
             data: {
@@ -160,10 +141,7 @@ export class DashboardService {
       totalUpdated += top3.length;
     }
 
-    this.logger.log(
-      `Top students recalcule : ${totalUpdated} eleves mis a jour (term ${term.id})`,
-    );
-
+    this.logger.log(`Top students recalcule : ${totalUpdated} eleves mis a jour (term ${term.id})`);
     return { updated: totalUpdated };
   }
 
@@ -173,9 +151,7 @@ export class DashboardService {
 
     const terms = termId
       ? await this.prisma.term.findMany({ where: { id: termId } })
-      : await this.prisma.term.findMany({
-          where: { academicYear: { schoolId, isCurrent: true } },
-        });
+      : await this.prisma.term.findMany({ where: { academicYear: { schoolId, isCurrent: true } } });
 
     const emptyPodiums = (): Record<string, any[]> => ({
       PREMIER_CYCLE: [], DEUXIEME_CYCLE: [], LYCEE: [],
@@ -280,30 +256,17 @@ export class DashboardService {
 
       const classCounts = await this.prisma.reportCard.groupBy({
         by: ["classId"],
-        where: {
-          classId: { in: classIdsForCycle },
-          termId: best.id,
-          status: "PUBLISHED",
-          student: { schoolId },
-        },
+        where: { classId: { in: classIdsForCycle }, termId: best.id, status: "PUBLISHED", student: { schoolId } },
         _count: { _all: true },
       });
-      const studentsCountByClass = new Map(
-        classCounts.map((c) => [c.classId, c._count._all]),
-      );
+      const studentsCountByClass = new Map(classCounts.map((c) => [c.classId, c._count._all]));
 
       const enrollCounts = await this.prisma.enrollment.groupBy({
         by: ["classId"],
-        where: {
-          classId: { in: classIdsForCycle },
-          academicYearId: best.academicYearId,
-          status: "VALIDATED",
-        },
+        where: { classId: { in: classIdsForCycle }, academicYearId: best.academicYearId, status: "VALIDATED" },
         _count: { _all: true },
       });
-      const classSizeByClass = new Map(
-        enrollCounts.map((c) => [c.classId, c._count._all]),
-      );
+      const classSizeByClass = new Map(enrollCounts.map((c) => [c.classId, c._count._all]));
 
       podiums[cycle] = filteredRows.map((row) => ({
         rank: row.rank,
@@ -320,40 +283,21 @@ export class DashboardService {
 
     return {
       term: latest
-        ? {
-            id: latest.id,
-            name: latest.name,
-            type: latest.type,
-            startDate: latest.startDate,
-            endDate: latest.endDate,
-          }
+        ? { id: latest.id, name: latest.name, type: latest.type, startDate: latest.startDate, endDate: latest.endDate }
         : null,
       periods,
       podiums,
     };
   }
 
-  /**
-   * Retourne les donnees du dashboard pour un enseignant.
-   * Gère les GENERALIST (matières de ses classes) et SPECIALIST (matières de ses assignments).
-   */
   async getTeacherDashboard(userId: string, schoolId: string) {
-    // 1. Trouver le Teacher associe a cet utilisateur
-    const teacher = await this.prisma.teacher.findFirst({
-      where: { userId, schoolId },
-    });
+    const teacher = await this.prisma.teacher.findFirst({ where: { userId, schoolId } });
 
     if (!teacher) {
-      return {
-        hasProfile: false,
-        message: "Aucun profil enseignant associe",
-      };
+      return { hasProfile: false, message: "Aucun profil enseignant associe" };
     }
 
-    // 2. Ses assignments (classes + matieres) pour l'annee en cours
-    const year = await this.prisma.academicYear.findFirst({
-      where: { schoolId, isCurrent: true },
-    });
+    const year = await this.prisma.academicYear.findFirst({ where: { schoolId, isCurrent: true } });
 
     const assignments = year
       ? await this.prisma.teacherAssignment.findMany({
@@ -372,7 +316,6 @@ export class DashboardService {
         })
       : [];
 
-    // 3. Classes uniques
     const classesMap = new Map<string, any>();
     for (const a of assignments) {
       if (!classesMap.has(a.classId)) {
@@ -386,9 +329,6 @@ export class DashboardService {
     }
     const myClasses = Array.from(classesMap.values());
 
-    // 4. Matieres uniques
-    //    - SPECIALIST : les matières de ses assignments
-    //    - GENERALIST : toutes les matières de ses classes (via ClassSubject)
     const subjectsMap = new Map<string, any>();
 
     if (teacher.teacherType === "GENERALIST") {
@@ -400,9 +340,7 @@ export class DashboardService {
             isActive: true,
             ...(year ? { academicYearId: year.id } : {}),
           },
-          include: {
-            subject: { select: { id: true, name: true, code: true } },
-          },
+          include: { subject: { select: { id: true, name: true, code: true } } },
         });
         for (const cs of classSubjects) {
           if (!subjectsMap.has(cs.subject.id)) {
@@ -420,55 +358,29 @@ export class DashboardService {
     const mySubjects = Array.from(subjectsMap.values());
     const isGeneralist = teacher.teacherType === "GENERALIST";
 
-    // 5. Total eleves
-    const totalStudents = myClasses.reduce(
-      (sum, c) => sum + (c.studentCount || 0),
-      0,
-    );
+    const totalStudents = myClasses.reduce((sum, c) => sum + (c.studentCount || 0), 0);
 
-    // 6. Evaluations a venir (7 jours)
     const today = new Date();
     const in7Days = new Date();
     in7Days.setDate(in7Days.getDate() + 7);
 
     const upcomingAssessments = await this.prisma.assessment.findMany({
-      where: {
-        teacherId: teacher.id,
-        schoolId,
-        date: { gte: today, lte: in7Days },
-      },
+      where: { teacherId: teacher.id, schoolId, date: { gte: today, lte: in7Days } },
       orderBy: { date: "asc" },
       take: 10,
-      include: {
-        class: { select: { name: true } },
-        subject: { select: { name: true } },
-      },
+      include: { class: { select: { name: true } }, subject: { select: { name: true } } },
     });
 
-    // 7. Notes a saisir (assessments sans notes)
     const pendingAssessments = await this.prisma.assessment.findMany({
-      where: {
-        teacherId: teacher.id,
-        schoolId,
-        status: { in: ["DRAFT", "OPEN"] },
-      },
+      where: { teacherId: teacher.id, schoolId, status: { in: ["DRAFT", "OPEN"] } },
       orderBy: { date: "desc" },
       take: 10,
-      include: {
-        class: { select: { name: true } },
-        subject: { select: { name: true } },
-        _count: { select: { grades: true } },
-      },
+      include: { class: { select: { name: true } }, subject: { select: { name: true } }, _count: { select: { grades: true } } },
     });
 
     return {
       hasProfile: true,
-      teacher: {
-        id: teacher.id,
-        firstName: teacher.firstName,
-        lastName: teacher.lastName,
-        matricule: teacher.matricule,
-      },
+      teacher: { id: teacher.id, firstName: teacher.firstName, lastName: teacher.lastName, matricule: teacher.matricule },
       isGeneralist,
       myClasses,
       mySubjects,
@@ -482,58 +394,31 @@ export class DashboardService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const year = await this.prisma.academicYear.findFirst({
-      where: { schoolId, isCurrent: true },
-    });
+    const year = await this.prisma.academicYear.findFirst({ where: { schoolId, isCurrent: true } });
 
     const todaySessions = year
       ? await this.prisma.attendanceSession.count({
-          where: {
-            date: today,
-            class: { academicYearId: year.id, schoolId },
-          },
+          where: { date: today, class: { academicYearId: year.id, schoolId } },
         })
       : 0;
 
     const absents = await this.prisma.attendanceRecord.findMany({
-      where: {
-        status: "ABSENT",
-        session: {
-          date: today,
-          class: { schoolId },
-        },
-      },
+      where: { status: "ABSENT", session: { date: today, class: { schoolId } } },
       include: {
         student: {
           select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            matricule: true,
+            id: true, firstName: true, lastName: true, matricule: true,
             guardians: {
-              select: {
-                guardian: {
-                  select: { id: true, firstName: true, lastName: true, phone: true, relationType: true },
-                },
-              },
+              select: { guardian: { select: { id: true, firstName: true, lastName: true, phone: true, relationType: true } } },
             },
           },
         },
-        session: {
-          select: {
-            class: { select: { name: true } },
-            startTime: true,
-          },
-        },
+        session: { select: { class: { select: { name: true } }, startTime: true } },
       },
       take: 20,
     });
 
-    return {
-      todaySessions,
-      absentsCount: absents.length,
-      absents,
-    };
+    return { todaySessions, absentsCount: absents.length, absents };
   }
 
   async getSecretaryDashboard(schoolId: string) {
@@ -541,39 +426,20 @@ export class DashboardService {
     today.setHours(0, 0, 0, 0);
 
     const todayEnrollments = await this.prisma.enrollment.count({
-      where: {
-        student: { schoolId },
-        enrollmentDate: { gte: today },
-      },
+      where: { student: { schoolId }, enrollmentDate: { gte: today } },
     });
 
     const recentStudents = await this.prisma.student.findMany({
       where: { schoolId },
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        matricule: true,
-        createdAt: true,
-      },
+      select: { id: true, firstName: true, lastName: true, matricule: true, createdAt: true },
     });
 
-    const totalStudents = await this.prisma.student.count({
-      where: { schoolId, status: "ACTIVE" },
-    });
+    const totalStudents = await this.prisma.student.count({ where: { schoolId, status: "ACTIVE" } });
 
-    return {
-      todayEnrollments,
-      totalStudents,
-      recentStudents,
-    };
+    return { todayEnrollments, totalStudents, recentStudents };
   }
-
-  // ============================================================
-  // LOT 2B — Endpoints pour la refonte du dashboard
-  // ============================================================
 
   async getEnrollmentByClass(schoolId: string) {
     const currentYear = await this.prisma.academicYear.findFirst({
@@ -581,27 +447,17 @@ export class DashboardService {
       select: { id: true, label: true },
     });
 
-    if (!currentYear) {
-      return { academicYear: null, classes: [] };
-    }
+    if (!currentYear) return { academicYear: null, classes: [] };
 
     const classes = await this.prisma.class.findMany({
-      where: {
-        schoolId,
-        academicYearId: currentYear.id,
-        status: "OPEN",
-      },
+      where: { schoolId, academicYearId: currentYear.id, status: "OPEN" },
       select: {
         id: true,
         name: true,
         level: { select: { name: true, cycle: true } },
         enrollments: {
           where: { status: "VALIDATED" },
-          select: {
-            student: {
-              select: { gender: true, status: true, deletedAt: true },
-            },
-          },
+          select: { student: { select: { gender: true, status: true, deletedAt: true } } },
         },
       },
       orderBy: { name: "asc" },
@@ -610,21 +466,15 @@ export class DashboardService {
     return {
       academicYear: currentYear.label,
       classes: classes.map((c) => {
-        const activeStudents = c.enrollments
-          .map((e) => e.student)
-          .filter((s) => s.status === "ACTIVE" && !s.deletedAt);
-
+        const activeStudents = c.enrollments.map((e) => e.student).filter((s) => s.status === "ACTIVE" && !s.deletedAt);
         const boys = activeStudents.filter((s) => s.gender === "M").length;
         const girls = activeStudents.filter((s) => s.gender === "F").length;
-
         return {
           classId: c.id,
           className: c.name,
           levelName: c.level?.name ?? null,
           cycle: c.level?.cycle ?? null,
-          boys,
-          girls,
-          total: boys + girls,
+          boys, girls, total: boys + girls,
         };
       }),
     };
@@ -636,76 +486,42 @@ export class DashboardService {
       select: { id: true },
     });
 
-    if (!currentYear) {
-      return { total: 0, levels: [] };
-    }
+    if (!currentYear) return { total: 0, levels: [] };
 
     const classes = await this.prisma.class.findMany({
-      where: {
-        schoolId,
-        academicYearId: currentYear.id,
-        status: "OPEN",
-      },
-      select: {
-        id: true,
-        level: {
-          select: { id: true, name: true, cycle: true, orderIndex: true },
-        },
-      },
+      where: { schoolId, academicYearId: currentYear.id, status: "OPEN" },
+      select: { id: true, level: { select: { id: true, name: true, cycle: true, orderIndex: true } } },
     });
 
-    const map = new Map<
-      string,
-      { levelId: string; levelName: string; cycle: string; orderIndex: number; count: number }
-    >();
+    const map = new Map<string, { levelId: string; levelName: string; cycle: string; orderIndex: number; count: number }>();
 
     for (const c of classes) {
       if (!c.level) continue;
       const key = c.level.id;
       if (!map.has(key)) {
         map.set(key, {
-          levelId: c.level.id,
-          levelName: c.level.name,
-          cycle: c.level.cycle,
-          orderIndex: c.level.orderIndex,
-          count: 0,
+          levelId: c.level.id, levelName: c.level.name, cycle: c.level.cycle, orderIndex: c.level.orderIndex, count: 0,
         });
       }
       map.get(key)!.count += 1;
     }
 
-    const levels = Array.from(map.values()).sort(
-      (a, b) => a.orderIndex - b.orderIndex,
-    );
-
-    return {
-      total: classes.length,
-      levels,
-    };
+    const levels = Array.from(map.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+    return { total: classes.length, levels };
   }
 
   async getRecentReportCards(schoolId: string, limit = 5) {
     const data = await this.prisma.reportCard.findMany({
-      where: {
-        student: { schoolId, deletedAt: null },
-      },
+      where: { student: { schoolId, deletedAt: null } },
       take: limit,
       orderBy: { updatedAt: "desc" },
       select: {
-        id: true,
-        status: true,
-        average: true,
-        scale: true,
-        createdAt: true,
-        updatedAt: true,
-        student: {
-          select: { id: true, firstName: true, lastName: true, matricule: true },
-        },
+        id: true, status: true, average: true, scale: true, createdAt: true, updatedAt: true,
+        student: { select: { id: true, firstName: true, lastName: true, matricule: true } },
         class: { select: { id: true, name: true } },
         term: { select: { id: true, name: true, type: true } },
       },
     });
-
     return { data };
   }
 
@@ -729,22 +545,10 @@ export class DashboardService {
     };
 
     const logs = await this.prisma.auditLog.findMany({
-      where: {
-        schoolId,
-        action: { in: Object.keys(ACTIVITY_LABELS) },
-      },
+      where: { schoolId, action: { in: Object.keys(ACTIVITY_LABELS) } },
       take: limit,
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        action: true,
-        module: true,
-        objectType: true,
-        objectId: true,
-        createdAt: true,
-        userId: true,
-        newValue: true,
-      },
+      select: { id: true, action: true, module: true, objectType: true, objectId: true, createdAt: true, userId: true, newValue: true },
     });
 
     return {
@@ -757,12 +561,124 @@ export class DashboardService {
         objectId: l.objectId,
         userId: l.userId,
         createdAt: l.createdAt,
-        title:
-          (l.newValue as any)?.label ??
-          (l.newValue as any)?.name ??
-          (l.newValue as any)?.reference ??
-          null,
+        title: (l.newValue as any)?.label ?? (l.newValue as any)?.name ?? (l.newValue as any)?.reference ?? null,
       })),
+    };
+  }
+
+  // ============================================================
+  // LOT 3 — Répartition des notes par matière
+  // ============================================================
+
+  async getGradesBySubject(
+    schoolId: string,
+    classId: string,
+    termId?: string,
+  ) {
+    const klass = await this.prisma.class.findFirst({
+      where: { id: classId, schoolId },
+      select: {
+        id: true,
+        name: true,
+        academicYearId: true,
+        level: { select: { id: true, name: true, cycle: true } },
+      },
+    });
+
+    if (!klass) {
+      return { class: null, term: null, scale: null, subjects: [], message: "Classe introuvable" };
+    }
+
+    let term;
+    if (termId) {
+      term = await this.prisma.term.findUnique({ where: { id: termId } });
+    } else {
+      const today = new Date();
+      term = await this.prisma.term.findFirst({
+        where: {
+          academicYearId: klass.academicYearId,
+          startDate: { lte: today },
+          endDate: { gte: today },
+        },
+        orderBy: { orderIndex: "asc" },
+      });
+    }
+
+    if (!term) {
+      return { class: klass, term: null, scale: null, subjects: [], message: "Aucun trimestre actif" };
+    }
+
+    const classSubjects = await this.prisma.classSubject.findMany({
+      where: {
+        classId: klass.id,
+        academicYearId: klass.academicYearId,
+        isActive: true,
+      },
+      include: { subject: { select: { id: true, code: true, name: true } } },
+      orderBy: { displayOrder: "asc" },
+    });
+
+    if (classSubjects.length === 0) {
+      return { class: klass, term, scale: null, subjects: [], message: "Aucune matière configurée pour cette classe" };
+    }
+
+    const scale = classSubjects[0].scale;
+
+    const subjectsWithAverages = await Promise.all(
+      classSubjects.map(async (cs) => {
+        const grades = await this.prisma.grade.findMany({
+          where: {
+            assessment: {
+              classId: klass.id,
+              subjectId: cs.subjectId,
+              termId: term!.id,
+            },
+            value: { not: null },
+            isAbsent: false,
+          },
+          select: { value: true, assessment: { select: { maxScore: true } } },
+        });
+
+        if (grades.length === 0) {
+          return {
+            subjectId: cs.subject.id,
+            subjectName: cs.subject.name,
+            subjectCode: cs.subject.code,
+            average: null,
+            gradesCount: 0,
+            scale,
+          };
+        }
+
+        let sum = 0;
+        let count = 0;
+        for (const g of grades) {
+          if (g.value === null) continue;
+          const rawValue = Number(g.value);
+          const maxScore = Number(g.assessment.maxScore ?? scale);
+          const normalized = (rawValue / maxScore) * scale;
+          sum += normalized;
+          count++;
+        }
+
+        const average = count > 0 ? sum / count : null;
+
+        return {
+          subjectId: cs.subject.id,
+          subjectName: cs.subject.name,
+          subjectCode: cs.subject.code,
+          average: average !== null ? Math.round(average * 100) / 100 : null,
+          gradesCount: count,
+          scale,
+        };
+      }),
+    );
+
+    return {
+      class: klass,
+      term: { id: term.id, name: term.name, type: term.type },
+      scale,
+      subjects: subjectsWithAverages,
     };
   }
 

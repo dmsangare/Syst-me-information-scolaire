@@ -89,10 +89,6 @@ export class DashboardController {
     return this.service.getSecretaryDashboard(user.schoolId);
   }
 
-  // ============================================================
-  // LOT 2B — Endpoints pour la refonte du dashboard
-  // ============================================================
-
   @Get("enrollment-by-class")
   @RequirePermissions("dashboard:view")
   @ApiOperation({ summary: "Effectifs par classe avec répartition garçons/filles" })
@@ -126,10 +122,7 @@ export class DashboardController {
       ? await this.getSuperAdminSchoolId(user)
       : user.schoolId;
     if (!schoolId) throw new BadRequestException("Ecole introuvable");
-    return this.service.getRecentReportCards(
-      schoolId,
-      limit ? Number(limit) : 5,
-    );
+    return this.service.getRecentReportCards(schoolId, limit ? Number(limit) : 5);
   }
 
   @Get("recent-activities")
@@ -143,19 +136,26 @@ export class DashboardController {
       ? await this.getSuperAdminSchoolId(user)
       : user.schoolId;
     if (!schoolId) throw new BadRequestException("Ecole introuvable");
-    return this.service.getRecentActivities(
-      schoolId,
-      limit ? Number(limit) : 10,
-    );
+    return this.service.getRecentActivities(schoolId, limit ? Number(limit) : 10);
   }
 
-  /**
-   * Pour un SUPER_ADMIN, on prend la premiere ecole active
-   * (utile en mode mono-etablissement).
-   */
-  private async getSuperAdminSchoolId(
-    user: CurrentUserPayload,
-  ): Promise<string | null> {
+  @Get("grades-by-subject")
+  @RequirePermissions("dashboard:view")
+  @ApiOperation({ summary: "Répartition des notes par matière pour une classe" })
+  async gradesBySubject(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query("classId") classId?: string,
+    @Query("termId") termId?: string,
+  ) {
+    const schoolId = user.roles.includes("SUPER_ADMIN")
+      ? await this.getSuperAdminSchoolId(user)
+      : user.schoolId;
+    if (!schoolId) throw new BadRequestException("Ecole introuvable");
+    if (!classId) throw new BadRequestException("classId obligatoire");
+    return this.service.getGradesBySubject(schoolId, classId, termId);
+  }
+
+  private async getSuperAdminSchoolId(user: CurrentUserPayload): Promise<string | null> {
     if (user.schoolId) return user.schoolId;
     return null;
   }
