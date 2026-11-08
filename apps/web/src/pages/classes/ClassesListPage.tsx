@@ -3,6 +3,7 @@ import { School, Search, Plus, DoorOpen } from "lucide-react";
 import { Input, Button, PageLoader, EmptyState } from "@/components/ui";
 import { useClasses } from "@/hooks/classes";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 import { CycleSection } from "./components/CycleSection";
 import { CreateClassModal } from "./components/CreateClassModal";
 import { RoomsTab } from "./components/RoomsTab";
@@ -10,7 +11,8 @@ import type { ClassItem, LevelCycle } from "@/types/class";
 
 export function ClassesListPage() {
   const { hasPermission } = useAuth();
-  const canCreate = hasPermission("class:create");
+  const isReadOnly = useIsReadOnly();
+  const canCreate = hasPermission("class:create") && !isReadOnly;
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDefaultCycle, setModalDefaultCycle] =
@@ -19,7 +21,6 @@ export function ClassesListPage() {
 
   const { data: classes, isLoading } = useClasses();
 
-  // --- Filtrage par recherche ---
   const filteredClasses = useMemo(() => {
     if (!classes) return [];
     const q = searchQuery.trim().toLowerCase();
@@ -33,7 +34,6 @@ export function ClassesListPage() {
     );
   }, [classes, searchQuery]);
 
-  // --- Repartition par cycle ---
   const { firstCycle, secondCycle } = useMemo(() => {
     const first: ClassItem[] = [];
     const second: ClassItem[] = [];
@@ -44,13 +44,11 @@ export function ClassesListPage() {
     return { firstCycle: first, secondCycle: second };
   }, [filteredClasses]);
 
-  // --- Ouverture modale ---
   const openModal = (cycle: LevelCycle) => {
     setModalDefaultCycle(cycle);
     setModalOpen(true);
   };
 
-  // --- Stats globales ---
   const totalClasses = classes?.length ?? 0;
   const totalStudents = useMemo(() => {
     if (!classes) return 0;
@@ -59,7 +57,6 @@ export function ClassesListPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* ONGLETS */}
       <div className="flex items-center gap-1 border-b border-sis-neutral-200 dark:border-sis-neutral-800">
         <button
           onClick={() => setActiveTab("classes")}
@@ -87,12 +84,10 @@ export function ClassesListPage() {
         </button>
       </div>
 
-      {/* CONTENU CONDITIONNEL */}
       {activeTab === "rooms" ? (
         <RoomsTab />
       ) : (
         <div className="space-y-6">
-          {/* HEADER */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-sis-md bg-sis-brand-50 text-sis-brand mt-0.5 dark:bg-sis-brand-900/30 dark:text-sis-brand-300">
@@ -114,7 +109,6 @@ export function ClassesListPage() {
             )}
           </div>
 
-          {/* BARRE DE RECHERCHE */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -125,7 +119,6 @@ export function ClassesListPage() {
             />
           </div>
 
-          {/* CONTENU */}
           {isLoading ? (
             <PageLoader label="Chargement des classes..." />
           ) : totalClasses === 0 ? (
@@ -159,8 +152,7 @@ export function ClassesListPage() {
             </div>
           )}
 
-          {/* MODALE DE CREATION */}
-          {modalOpen && (
+          {modalOpen && !isReadOnly && (
             <CreateClassModal
               defaultCycle={modalDefaultCycle}
               onClose={() => setModalOpen(false)}

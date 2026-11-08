@@ -28,10 +28,8 @@ import { formatDate } from "@/lib/formatters";
 import { CreateAssessmentModal } from "./components/CreateAssessmentModal";
 import { QuickGradeEntryModal } from "./components/QuickGradeEntryModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 
-// ============================================================
-// Types & configuration
-// ============================================================
 interface Assessment {
   id: string;
   title: string;
@@ -69,21 +67,17 @@ const STATUS_LABELS: Record<string, { label: string; variant: BadgeVariant }> = 
   LOCKED: { label: "Verrouillée", variant: "neutral" },
 };
 
-// ============================================================
-// Page principale
-// ============================================================
 export function AssessmentsListPage() {
   const { hasPermission } = useAuth();
+  const isReadOnly = useIsReadOnly();
   const canCreate = hasPermission("assessment:create");
   
-  // Filtres
   const [classId, setClassId] = useState("");
   const [termId, setTermId] = useState("");
   const [subjectId, setSubjectId] = useState("");
-  const [typeFilter, setTypeFilter] = useState(""); // ✅ NOUVEAU FILTRE
+  const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
   
-  // Modales
   const [createOpen, setCreateOpen] = useState(false);
   const [quickEntryOpen, setQuickEntryOpen] = useState(false);
 
@@ -108,12 +102,11 @@ export function AssessmentsListPage() {
     staleTime: 10 * 60_000,
   });
 
-  // Construction des filtres API
   const filters: Record<string, string> = {};
   if (classId) filters.classId = classId;
   if (termId) filters.termId = termId;
   if (subjectId) filters.subjectId = subjectId;
-  if (typeFilter) filters.type = typeFilter; // ✅ Ajout du filtre type
+  if (typeFilter) filters.type = typeFilter;
 
   const { data, isLoading } = useAssessments(filters);
 
@@ -146,15 +139,12 @@ export function AssessmentsListPage() {
     setClassId("");
     setTermId("");
     setSubjectId("");
-    setTypeFilter(""); // ✅ Reset du filtre type
+    setTypeFilter("");
     setSearch("");
   };
 
   const hasFilters = Boolean(classId || termId || subjectId || typeFilter || search);
 
-  // ============================================================
-  // Colonnes du tableau
-  // ============================================================
   const columns: Column<Assessment>[] = [
     {
       key: "type",
@@ -269,7 +259,6 @@ export function AssessmentsListPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* HEADER */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-sis-md bg-sis-brand-50 text-sis-brand mt-0.5 dark:bg-sis-brand-900/30 dark:text-sis-brand-300">
@@ -284,12 +273,12 @@ export function AssessmentsListPage() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setQuickEntryOpen(true)}>
+          <Button variant="outline" onClick={() => setQuickEntryOpen(true)} disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
             <Edit className="h-4 w-4 mr-2" />
             Saisir des notes
           </Button>
           {canCreate && (
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => setCreateOpen(true)} disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle évaluation
             </Button>
@@ -297,7 +286,6 @@ export function AssessmentsListPage() {
         </div>
       </div>
 
-      {/* KPI */}
       <div className="grid gap-4 md:grid-cols-2">
         <KpiCard
           label="Évaluations"
@@ -315,10 +303,8 @@ export function AssessmentsListPage() {
         />
       </div>
 
-      {/* FILTRES */}
       <div className="rounded-sis-lg border border-sis-neutral-200 bg-card p-4 dark:border-sis-neutral-800">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Classe */}
           <select
             value={classId}
             onChange={(e) => setClassId(e.target.value)}
@@ -336,7 +322,6 @@ export function AssessmentsListPage() {
             })}
           </select>
 
-          {/* Trimestre */}
           <select
             value={termId}
             onChange={(e) => setTermId(e.target.value)}
@@ -350,7 +335,6 @@ export function AssessmentsListPage() {
             ))}
           </select>
 
-          {/* Matière */}
           <select
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
@@ -364,7 +348,6 @@ export function AssessmentsListPage() {
             ))}
           </select>
 
-          {/* ✅ NOUVEAU : Type d'évaluation */}
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
@@ -381,7 +364,6 @@ export function AssessmentsListPage() {
             <option value="PROJET">🔷 Projet</option>
           </select>
 
-          {/* Recherche */}
           <div className="relative">
             <Input
               placeholder="Rechercher un titre..."
@@ -407,7 +389,6 @@ export function AssessmentsListPage() {
         )}
       </div>
 
-      {/* TABLEAU OU ÉTAT */}
       {isLoading ? (
         <PageLoader label="Chargement des évaluations..." />
       ) : assessments.length === 0 ? (
@@ -424,7 +405,7 @@ export function AssessmentsListPage() {
               <Button variant="outline" onClick={handleReset}>
                 Réinitialiser les filtres
               </Button>
-            ) : canCreate ? (
+            ) : canCreate && !isReadOnly ? (
               <Button onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle évaluation
@@ -440,23 +421,20 @@ export function AssessmentsListPage() {
         />
       )}
 
-      {/* MODALES */}
-      {createOpen && (
+      {createOpen && !isReadOnly && (
         <CreateAssessmentModal onClose={() => setCreateOpen(false)} />
       )}
-      {quickEntryOpen && (
+      {quickEntryOpen && !isReadOnly && (
         <QuickGradeEntryModal onClose={() => setQuickEntryOpen(false)} />
       )}
     </div>
   );
 }
 
-// ============================================================
-// Composant Actions
-// ============================================================
 function AssessmentActions({ assessment }: { assessment: Assessment }) {
   const { hasPermission } = useAuth();
-  const canManage = hasPermission("assessment:update");
+  const isReadOnly = useIsReadOnly();
+  const canManage = hasPermission("assessment:update") && !isReadOnly;
 
   const isLocked = assessment.status === "LOCKED";
   const canLock = assessment.status === "VALIDATED";
@@ -471,7 +449,7 @@ function AssessmentActions({ assessment }: { assessment: Assessment }) {
   return (
     <div className="flex items-center justify-end gap-1">
       {canGrade ? (
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
           <Link to={`/assessments/${assessment.id}/grades`}>
             <Edit className="h-3.5 w-3.5 mr-1" />
             Saisir

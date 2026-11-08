@@ -6,10 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InvoicesListPage } from "./InvoicesListPage";
 import { ImportSituationPage } from "./ImportSituationPage";
 import { BulkInvoiceModal } from "./components/BulkInvoiceModal";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 
 const VALID_TABS = ["invoices", "bulk", "import"];
 
 export function FacturationPage() {
+  const isReadOnly = useIsReadOnly();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get("tab") || "invoices";
   const activeTab = VALID_TABS.includes(currentTab) ? currentTab : "invoices";
@@ -60,7 +62,7 @@ export function FacturationPage() {
                 Créez automatiquement les factures pour tous les élèves d'un niveau,
                 d'une classe ou de toute l'école.
               </p>
-              <Button onClick={() => setBulkOpen(true)} size="lg">
+              <Button onClick={() => setBulkOpen(true)} size="lg" disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
                 <Plus className="h-4 w-4 mr-2" />
                 Lancer la génération en masse
               </Button>
@@ -73,7 +75,7 @@ export function FacturationPage() {
         </TabsContent>
       </Tabs>
 
-      {bulkOpen && <BulkInvoiceModal onClose={() => setBulkOpen(false)} />}
+      {bulkOpen && !isReadOnly && <BulkInvoiceModal onClose={() => setBulkOpen(false)} />}
     </div>
   );
 }

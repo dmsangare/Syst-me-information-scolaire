@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useStudents, useDeleteStudent, useStudentStats, useExportStudents } from "@/hooks/students";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 import {
   PageHeader,
   StatsCard,
@@ -28,6 +29,7 @@ const DEFAULT_FILTERS: StudentListFilters = {
 
 export function StudentsListPage() {
   const { hasPermission, hasRole } = useAuth();
+  const isReadOnly = useIsReadOnly();
   const canCreate = hasPermission("student:create");
   const canExport = hasPermission("student:export");
   const canDelete = hasPermission("student:delete");
@@ -111,7 +113,7 @@ export function StudentsListPage() {
               />
             )}
             {canCreate && (
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
                 <Link to="/students/import">
                   <FileSpreadsheet className="h-4 w-4" />
                   Importer Excel
@@ -119,7 +121,7 @@ export function StudentsListPage() {
               </Button>
             )}
             {canCreate && (
-              <Button asChild>
+              <Button asChild disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
                 <Link to="/students/new">
                   <Plus className="h-4 w-4" />
                   Nouvel eleve
@@ -201,7 +203,7 @@ export function StudentsListPage() {
                   ) : (
                     <div className="flex gap-2">
                       {canCreate && (
-                        <Button variant="outline" asChild>
+                        <Button variant="outline" asChild disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
                           <Link to="/students/import">
                             <FileSpreadsheet className="h-4 w-4" />
                             Importer Excel
@@ -209,7 +211,7 @@ export function StudentsListPage() {
                         </Button>
                       )}
                       {canCreate && (
-                        <Button asChild>
+                        <Button asChild disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
                           <Link to="/students/new">
                             <Plus className="h-4 w-4" />
                             Ajouter un eleve

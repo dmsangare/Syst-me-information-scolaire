@@ -39,10 +39,8 @@ import { GenerateReportCardsModal } from "./components/GenerateReportCardsModal"
 import { useGenerateClassPdf, useClassPdfStatus } from "@/hooks/report-cards/useClassPdf";
 import { PublishClassModal } from "./components/PublishClassModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 
-// ============================================================
-// Types pour StatusBadge (variants SIS)
-// ============================================================
 type BadgeVariant = "success" | "warning" | "danger" | "info" | "neutral";
 
 function getStatusVariant(status: string): BadgeVariant {
@@ -58,12 +56,10 @@ function getStatusVariant(status: string): BadgeVariant {
   }
 }
 
-// ============================================================
-// Page principale
-// ============================================================
 export function ReportCardsListPage() {
   const { hasPermission } = useAuth();
-  const canManage = hasPermission("report_card:create");
+  const isReadOnly = useIsReadOnly();
+  const canManage = hasPermission("report_card:create") && !isReadOnly;
   const [classId, setClassId] = useState("");
   const [termId, setTermId] = useState("");
   const [search, setSearch] = useState("");
@@ -141,9 +137,6 @@ export function ReportCardsListPage() {
     setSearch("");
   };
 
-  // ============================================================
-  // Colonnes du tableau
-  // ============================================================
   const columns: Column<ReportCard>[] = [
     {
       key: "student",
@@ -219,14 +212,6 @@ export function ReportCardsListPage() {
       className: "text-center",
       cell: (r) => {
         if (!r.rank) return <span className="text-muted-foreground">—</span>;
-        const variant: BadgeVariant =
-          r.rank === 1
-            ? "warning"
-            : r.rank === 2
-              ? "neutral"
-              : r.rank === 3
-                ? "warning"
-                : "neutral";
         return (
           <span
             className={cn(
@@ -291,7 +276,6 @@ export function ReportCardsListPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* HEADER */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-sis-md bg-sis-brand-50 text-sis-brand mt-0.5 dark:bg-sis-brand-900/30 dark:text-sis-brand-300">
@@ -330,7 +314,6 @@ export function ReportCardsListPage() {
         </div>
       </div>
 
-      {/* KPI */}
       <div className="grid gap-4 md:grid-cols-3">
         <KpiCard
           label="Total bulletins"
@@ -355,7 +338,6 @@ export function ReportCardsListPage() {
         />
       </div>
 
-      {/* FILTRES */}
       <div className="rounded-sis-lg border border-sis-neutral-200 bg-card p-4 dark:border-sis-neutral-800">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select
@@ -397,7 +379,6 @@ export function ReportCardsListPage() {
         </div>
       </div>
 
-      {/* TABLEAU OU ÉTAT */}
       {isLoading ? (
         <PageLoader label="Chargement des bulletins..." />
       ) : reports.length === 0 ? (
@@ -430,23 +411,20 @@ export function ReportCardsListPage() {
         />
       )}
 
-      {/* MODALES */}
-      {generateOpen && (
+      {generateOpen && !isReadOnly && (
         <GenerateReportCardsModal onClose={() => setGenerateOpen(false)} />
       )}
-      {publishOpen && (
+      {publishOpen && !isReadOnly && (
         <PublishClassModal onClose={() => setPublishOpen(false)} />
       )}
     </div>
   );
 }
 
-// ============================================================
-// Composant Actions
-// ============================================================
 function ReportCardActions({ report }: { report: ReportCard }) {
   const { hasPermission } = useAuth();
-  const canManage = hasPermission("report_card:update");
+  const isReadOnly = useIsReadOnly();
+  const canManage = hasPermission("report_card:update") && !isReadOnly;
 
   const validateMutation = useValidateReportCard();
   const publishMutation = usePublishReportCard();

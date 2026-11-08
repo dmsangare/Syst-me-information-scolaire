@@ -2,10 +2,12 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Users, Plus, Search, Loader2, Mail, Phone, GraduationCap, BookOpen } from "lucide-react";
 import { useTeachers } from "@/hooks/teachers";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 import { initials } from "@/lib/formatters";
 import { Button, Input, Card, CardContent, Avatar, AvatarFallback } from "@/components/ui";
 
 export function TeachersListPage() {
+  const isReadOnly = useIsReadOnly();
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -41,7 +43,7 @@ export function TeachersListPage() {
             {data?.meta.total || 0} enseignant(s)
           </p>
         </div>
-        <Button asChild>
+        <Button asChild disabled={isReadOnly} title={isReadOnly ? "Action non autorisée" : undefined}>
           <Link to="/teachers/new">
             <Plus className="h-4 w-4" />
             Nouvel enseignant
