@@ -34,6 +34,7 @@ import { AttendanceListPage, AttendanceDetailPage } from "@/pages/attendance";
 import { AttendanceDashboardPage } from "@/pages/attendance/AttendanceDashboardPage";
 import { DailyCallPage } from "@/pages/attendance/DailyCallPage";
 import { AttendanceStudentPage } from "@/pages/attendance/AttendanceStudentPage";
+import { AttendanceAlertsPage } from "@/pages/attendance/AttendanceAlertsPage";
 import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
 import { ReportCardsListPage, ReportCardDetailPage } from "@/pages/report-cards";
 import { CalculationPage } from "@/pages/report-cards/CalculationPage";
@@ -232,7 +233,9 @@ export function AppRoutes() {
             }
           />
 
-          {/* Présences */}
+          {/* ═══════════════════════════════════════════════ */}
+          {/* PRÉSENCES — Toutes les routes au même endroit */}
+          {/* ═══════════════════════════════════════════════ */}
           <Route
             path="/attendance"
             element={
@@ -249,6 +252,23 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/attendance/alerts"
+            element={
+              <ProtectedRoute requiredPermission="attendance:view">
+                <AttendanceAlertsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance/student/:id"
+            element={
+              <ProtectedRoute requiredPermission="attendance:view">
+                <AttendanceStudentPage />
+              </ProtectedRoute>
+            }
+          />
+          
           <Route
             path="/attendance/:id"
             element={

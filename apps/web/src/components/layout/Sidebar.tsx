@@ -68,6 +68,8 @@ const SECTIONS: NavSection[] = [
     items: [
       { label: "Emploi du temps", to: "/timetable", icon: Calendar, permission: "timetable:view" },
       { label: "Présences", to: "/attendance", icon: ClipboardCheck, permission: "attendance:view", hideForRoles: ["STUDENT", "PARENT"] },
+      { label: "Effectuer un appel", to: "/attendance/call", icon: ClipboardCheck, permission: "attendance:view", hideForRoles: ["STUDENT", "PARENT"], indent: true },
+      { label: "Alertes assiduité", to: "/attendance/alerts", icon: AlertTriangle, permission: "attendance:view", hideForRoles: ["STUDENT", "PARENT"], indent: true },
       { label: "Notes", to: "/assessments", icon: FileText, permission: "grade:view" },
       { label: "Saisie groupee", to: "/grades/batch", icon: ClipboardCheck, permission: "grade:create" },
       { label: "Bulletins", to: "/report-cards", icon: Award, permission: "report_card:view" },
