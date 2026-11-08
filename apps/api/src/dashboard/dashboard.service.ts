@@ -525,44 +525,121 @@ export class DashboardService {
     return { data };
   }
 
-  async getRecentActivities(schoolId: string, limit = 10) {
-    const ACTIVITY_LABELS: Record<string, string> = {
-      "report-card.create": "Nouveau bulletin créé",
-      "report-card.validate": "Bulletin validé",
-      "report-card.publish": "Bulletin publié",
-      "teacher.create": "Nouvel enseignant ajouté",
-      "teacher.update": "Enseignant modifié",
-      "assignment.create": "Affectation matière-classe ajoutée",
-      "assignment.update": "Affectation matière-classe modifiée",
-      "payment.create": "Paiement enregistré",
-      "payment.cancel": "Paiement annulé",
-      "grade.create": "Note saisie",
-      "grade.update": "Note modifiée",
-      "assessment.create": "Évaluation créée",
-      "student.create": "Nouvel élève inscrit",
-      "class.create": "Nouvelle classe créée",
-      "invoice.create": "Facture créée",
+   async getRecentActivities(schoolId: string, limit = 10) {
+    // Labels lisibles par (action, module)
+    const LABELS: Record<string, string> = {
+      // Élèves
+      "CREATE:students": "Nouvel élève inscrit",
+      "UPDATE:students": "Fiche élève modifiée",
+      "DELETE:students": "Élève supprimé",
+
+      // Enseignants
+      "CREATE:teachers": "Nouvel enseignant ajouté",
+      "UPDATE:teachers": "Enseignant modifié",
+      "DELETE:teachers": "Enseignant supprimé",
+
+      // Classes
+      "CREATE:classes": "Nouvelle classe créée",
+      "UPDATE:classes": "Classe modifiée",
+      "DELETE:classes": "Classe supprimée",
+
+      // Matières
+      "CREATE:subjects": "Nouvelle matière créée",
+      "UPDATE:subjects": "Matière modifiée",
+
+      // Évaluations
+      "CREATE:assessments": "Nouvelle évaluation créée",
+      "UPDATE:assessments": "Évaluation modifiée",
+      "DELETE:assessments": "Évaluation supprimée",
+
+      // Notes
+      "CREATE:grades": "Note saisie",
+      "UPDATE:grades": "Note modifiée",
+
+      // Bulletins
+      "CREATE:report-cards": "Nouveau bulletin créé",
+      "UPDATE:report-cards": "Bulletin modifié",
+      "VALIDATE:report-cards": "Bulletin validé",
+      "PUBLISH:report-cards": "Bulletin publié",
+
+      // Paiements
+      "CREATE:payments": "Paiement enregistré",
+      "CANCEL:payments": "Paiement annulé",
+
+      // Factures
+      "CREATE:invoices": "Facture créée",
+      "UPDATE:invoices": "Facture modifiée",
+      "CANCEL:invoices": "Facture annulée",
+
+      // Affectations
+      "CREATE:teacher-assignments": "Affectation ajoutée",
+      "UPDATE:teacher-assignments": "Affectation modifiée",
+
+      // Authentification (on ignore pour le dashboard)
+      // "CREATE:auth": on filtre
     };
 
+    // Modules intéressants pour le dashboard
+    const RELEVANT_MODULES = [
+      "students",
+      "teachers",
+      "classes",
+      "subjects",
+      "assessments",
+      "grades",
+      "report-cards",
+      "payments",
+      "invoices",
+      "teacher-assignments",
+      "enrollments",
+    ];
+
     const logs = await this.prisma.auditLog.findMany({
-      where: { schoolId, action: { in: Object.keys(ACTIVITY_LABELS) } },
+      where: {
+        schoolId,
+        module: { in: RELEVANT_MODULES },
+      },
       take: limit,
       orderBy: { createdAt: "desc" },
-      select: { id: true, action: true, module: true, objectType: true, objectId: true, createdAt: true, userId: true, newValue: true },
+      select: {
+        id: true,
+        action: true,
+        module: true,
+        objectType: true,
+        objectId: true,
+        createdAt: true,
+        userId: true,
+        newValue: true,
+      },
     });
 
     return {
-      data: logs.map((l) => ({
-        id: l.id,
-        action: l.action,
-        label: ACTIVITY_LABELS[l.action] ?? l.action,
-        module: l.module,
-        objectType: l.objectType,
-        objectId: l.objectId,
-        userId: l.userId,
-        createdAt: l.createdAt,
-        title: (l.newValue as any)?.label ?? (l.newValue as any)?.name ?? (l.newValue as any)?.reference ?? null,
-      })),
+      data: logs.map((l) => {
+        const key = `${l.action}:${l.module}`;
+        const label = LABELS[key] ?? `${l.action} ${l.module}`;
+
+        // Extraire un titre lisible depuis newValue (si présent)
+        const nv = (l.newValue as any) || {};
+        const title =
+          nv.label ??
+          nv.name ??
+          nv.title ??
+          nv.reference ??
+          nv.number ??
+          null;
+
+        return {
+          id: l.id,
+          action: l.action,
+          label,
+          module: l.module,
+          objectType: l.objectType,
+          objectId: l.objectId,
+          userId: l.userId,
+          createdAt: l.createdAt,
+          title,
+        };
+      }),
     };
   }
 
