@@ -3,6 +3,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
@@ -35,10 +36,41 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   isLoading?: boolean;
+  /** Si true, force l'affichage même en lecture seule (override). Utile pour les boutons de consultation. */
+  forceVisible?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, isLoading, children, disabled, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      isLoading,
+      children,
+      disabled,
+      forceVisible = false,
+      ...props
+    },
+    ref,
+  ) => {
+    // Hook pour détecter la lecture seule (PROMOTEUR)
+    const isReadOnly = useIsReadOnly();
+
+    // Variants "action" qui disparaissent en lecture seule :
+    // - default : bouton principal (Créer, Ajouter, Générer, etc.)
+    // - destructive : bouton destructif (Supprimer, Annuler)
+    // - secondary : bouton secondaire d'action (Rechercher, etc.)
+    // Les variants "outline", "ghost", "link" restent visibles (navigation / consultation)
+    const isActionVariant =
+      variant === "default" || variant === "destructive";
+
+    // En lecture seule + variant d'action + pas d'override → on cache complètement
+    if (isReadOnly && isActionVariant && !forceVisible) {
+      return null;
+    }
+
     const Comp = asChild ? Slot : "button";
     const isDisabled = disabled || isLoading;
 
