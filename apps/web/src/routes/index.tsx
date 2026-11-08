@@ -31,11 +31,13 @@ import ClassSubjectsPage from "@/pages/class-subjects/ClassSubjectsPage";
 import CoefficientsPage from "@/pages/coefficients/CoefficientsPage";
 import { LevelsListPage } from "@/pages/levels/LevelsListPage";
 import { AttendanceListPage, AttendanceDetailPage } from "@/pages/attendance";
+import { AttendanceDashboardPage } from "@/pages/attendance/AttendanceDashboardPage";
+import { DailyCallPage } from "@/pages/attendance/DailyCallPage";
 import { AssessmentsListPage, AssessmentGradesPage } from "@/pages/assessments";
 import { ReportCardsListPage, ReportCardDetailPage } from "@/pages/report-cards";
 import { CalculationPage } from "@/pages/report-cards/CalculationPage";
 import { AnnualResultsPage } from "@/pages/report-cards/AnnualResultsPage";
-import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage"; // ✅ NOUVEL IMPORT
+import { AnnualDecisionsPage } from "@/pages/annual-decisions/AnnualDecisionsPage";
 import {
   InvoicesListPage,
   InvoiceDetailPage,
@@ -87,17 +89,19 @@ export function AppRoutes() {
               <RedirectAfterLogin />
             </ProtectedRoute>
           } />
-         <Route
+
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                 <DashboardPage />
+                <DashboardPage />
               </ProtectedRoute>
-  }
-/>
+            }
+          />
+
           <Route path="/honor-roll" element={<HonorRollPage />} />
 
-          {/* É"°lÉÂ¨ves */}
+          {/* Élèves */}
           <Route
             path="/students"
             element={
@@ -191,7 +195,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* MatiÉÂ¨res */}
+          {/* Matières */}
           <Route
             path="/subjects"
             element={
@@ -227,12 +231,20 @@ export function AppRoutes() {
             }
           />
 
-          {/* PrÉÂ©sences */}
+          {/* Présences */}
           <Route
             path="/attendance"
             element={
-              <ProtectedRoute requiredPermission="student:view">
-                <AttendanceListPage />
+              <ProtectedRoute requiredPermission="attendance:view">
+                <AttendanceDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/attendance/call"
+            element={
+              <ProtectedRoute requiredPermission="attendance:view">
+                <DailyCallPage />
               </ProtectedRoute>
             }
           />
@@ -288,8 +300,6 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
-
-          {/* ✅ DÉÂ©cisions annuelles */}
           <Route
             path="/annual-decisions"
             element={
@@ -467,7 +477,7 @@ export function AppRoutes() {
             }
           />
 
-          {/* ParamÉÂ¨tres */}
+          {/* Paramètres */}
           <Route
             path="/settings"
             element={
@@ -476,146 +486,164 @@ export function AppRoutes() {
               </ProtectedRoute>
             }
           />
+
+          {/* Class subjects */}
+          <Route
+            path="/class-subjects"
+            element={
+              <ProtectedRoute requiredPermission="subject:view">
+                <ClassSubjectsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Coefficients */}
+          <Route
+            path="/coefficients"
+            element={
+              <ProtectedRoute requiredPermission="subject:view">
+                <CoefficientsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Calculation */}
+          <Route
+            path="/report-cards/calculation"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <CalculationPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ID cards */}
+          <Route
+            path="/id-cards"
+            element={
+              <ProtectedRoute requiredPermission="student:view">
+                <IdCardsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Academic years */}
+          <Route
+            path="/academic-years"
+            element={
+              <ProtectedRoute requiredPermission="academic_year:view">
+                <AcademicYearsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Year rollover */}
+          <Route
+            path="/year-rollover"
+            element={
+              <ProtectedRoute requiredPermission="academic_year:create">
+                <YearRolloverPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* State exams */}
+          <Route
+            path="/state-exams"
+            element={
+              <ProtectedRoute requiredPermission="academic_year:view">
+                <StateExamsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin reports */}
+          <Route
+            path="/admin-reports"
+            element={
+              <ProtectedRoute requiredPermission="student:view">
+                <AdminReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-reports/dashboard"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <AdminReportsDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-reports/deadlines"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <AdminReportsDeadlinesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-reports/new"
+            element={
+              <ProtectedRoute requiredPermission="report_card:create">
+                <AdminReportNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-reports/:id"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <AdminReportDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-reports/archives"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <AdminReportsArchivesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* State exam dossiers */}
+          <Route
+            path="/state-exam-dossiers"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <StateExamSessionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/state-exam-dossiers/sessions/:id"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <StateExamSessionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/state-exam-dossiers/dossiers/:id"
+            element={
+              <ProtectedRoute requiredPermission="report_card:view">
+                <StateExamDossierDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Batch grades */}
+          <Route
+            path="/grades/batch"
+            element={
+              <ProtectedRoute requiredPermission="grade:view">
+                <BatchGradesEntryPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
-
-            <Route
-              path="/class-subjects"
-              element={
-                <ProtectedRoute requiredPermission="subject:view">
-                  <ClassSubjectsPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/coefficients"
-              element={
-                <ProtectedRoute requiredPermission="subject:view">
-                  <CoefficientsPage />
-                </ProtectedRoute>
-              }
-            />
-        <Route
-          path="/report-cards/calculation"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <CalculationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/id-cards"
-          element={
-            <ProtectedRoute requiredPermission="student:view">
-              <IdCardsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/academic-years"
-          element={
-            <ProtectedRoute requiredPermission="academic_year:view">
-              <AcademicYearsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/year-rollover"
-          element={
-            <ProtectedRoute requiredPermission="academic_year:create">
-              <YearRolloverPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/state-exams"
-          element={
-            <ProtectedRoute requiredPermission="academic_year:view">
-              <StateExamsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-reports"
-          element={
-            <ProtectedRoute requiredPermission="student:view">
-              <AdminReportsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-reports/dashboard"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <AdminReportsDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-reports/deadlines"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <AdminReportsDeadlinesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-reports/new"
-          element={
-            <ProtectedRoute requiredPermission="report_card:create">
-              <AdminReportNewPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-reports/:id"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <AdminReportDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-reports/archives"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <AdminReportsArchivesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/state-exam-dossiers"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <StateExamSessionsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/state-exam-dossiers/sessions/:id"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <StateExamSessionDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/state-exam-dossiers/dossiers/:id"
-          element={
-            <ProtectedRoute requiredPermission="report_card:view">
-              <StateExamDossierDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/grades/batch"
-          element={
-            <ProtectedRoute requiredPermission="grade:view">
-              <BatchGradesEntryPage />
-            </ProtectedRoute>
-          }
-        />
-</Route>
+      </Route>
 
       <Route path="/v/:shortCode" element={<PublicVerificationPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
@@ -624,32 +652,23 @@ export function AppRoutes() {
   );
 }
 
-
-
-
-
-
 function RedirectAfterLogin() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
 
   const roles = user.roles || [];
 
-  // Élèves et parents → bulletins
   if (roles.includes("STUDENT") || roles.includes("PARENT")) {
     return <Navigate to="/report-cards" replace />;
   }
 
-  // Enseignants → leur dashboard
   if (roles.includes("TEACHER") && !roles.includes("SUPER_ADMIN") && !roles.includes("DIRECTOR")) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Surveillants et secrétaires → leur dashboard
   if (roles.includes("SECRETARY") || roles.includes("SUPERVISOR")) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Par défaut (Admin/Directeur/Comptable) → dashboard
   return <Navigate to="/dashboard" replace />;
 }

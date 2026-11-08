@@ -1,6 +1,6 @@
 // ============================================================
-// SIS-MALI â€” Schema Prisma complet
-// PostgreSQL 16 â€” 47 tables â€” 33 enums
+// SIS-MALI — Schema Prisma complet
+// PostgreSQL 16 — 50 tables — 33 enums
 // ============================================================
 
 generator client {
@@ -322,7 +322,6 @@ enum TransferStatus {
 // 1. BLOC ADMINISTRATION
 // ============================================================
 
-// BLOC 6 â€” Enums ajoutÃ©s (additif)
 enum GradeStatus {
   PRESENT
   ABSENT
@@ -400,6 +399,7 @@ model School {
   studentAccounts           StudentAccount[]
   SubjectDomain             SubjectDomain[]
   ReportCardAbsenceOverride ReportCardAbsenceOverride[]
+  dailyAttendances          DailyAttendance[]
 
   @@map("schools")
 }
@@ -435,6 +435,7 @@ model AcademicYear {
   stateExamSessions   StateExamSession[]   @relation("YearStateExamSessions")
   subjectCoefficients SubjectCoefficient[]
   classSubjects       ClassSubject[]
+  dailyAttendances    DailyAttendance[]
 
   @@unique([schoolId, label])
   @@index([schoolId, status])
@@ -523,6 +524,7 @@ model TeacherSpecialty {
   @@index([teacherId])
   @@map("teacher_specialties")
 }
+
 model Class {
   id             String      @id @default(uuid()) @db.Uuid
   schoolId       String      @map("school_id") @db.Uuid
@@ -553,6 +555,7 @@ model Class {
   topStudents        TopStudent[]
   examDossiers       ExamDossier[]       @relation("ClassExamDossiers")
   classSubjects      ClassSubject[]
+  dailyAttendances   DailyAttendance[]
 
   @@unique([academicYearId, code])
   @@index([schoolId])
@@ -613,6 +616,9 @@ model User {
   expensesMade       Expense[]           @relation("ExpenseCashier")
   cashSessionsOpened CashSession[]       @relation("CashSessionCashier")
   messageLogs        MessageLog[]
+  dailyAttendancesCreated  DailyAttendance[]        @relation("DailyAttCreatedBy")
+  dailyAttendancesJustified DailyAttendanceRecord[] @relation("DailyAttJustifiedBy")
+  attendanceCorrections    AttendanceCorrection[]   @relation("DailyAttCorrectedBy")
 
   @@index([schoolId])
   @@map("users")
@@ -746,6 +752,8 @@ model Student {
   examDossierPieces  ExamDossierPiece[]  @relation("StudentExamDossierPieces")
   topStudents        TopStudent[]
   messageLogs        MessageLog[]
+  dailyAttendanceRecords DailyAttendanceRecord[]
+  attendanceCorrections  AttendanceCorrection[]
 
   @@unique([schoolId, matricule])
   @@index([schoolId])
@@ -858,6 +866,7 @@ enum TeacherType {
   GENERALIST
   SPECIALIST
 }
+
 model Teacher {
   id           String        @id @default(uuid()) @db.Uuid
   schoolId     String        @map("school_id") @db.Uuid
@@ -1056,7 +1065,7 @@ model Assessment {
   teacherId      String           @map("teacher_id") @db.Uuid
   type           AssessmentType
   title          String           @db.VarChar(150)
-  date           DateTime         @db.Date
+  date           DateTime         @map("date") @db.Date
   maxScore       Decimal          @map("max_score") @db.Decimal(5, 2)
   coefficient    Decimal          @default(1) @db.Decimal(4, 2)
   durationMin    Int?             @map("duration_min") @db.SmallInt
@@ -1212,7 +1221,7 @@ model ExamSession {
   classId      String   @map("class_id") @db.Uuid
   roomId       String?  @map("room_id") @db.Uuid
   supervisorId String?  @map("supervisor_id") @db.Uuid
-  date         DateTime @db.Date
+  date         DateTime @map("date") @db.Date
   startTime    DateTime @map("start_time") @db.Time
   endTime      DateTime @map("end_time") @db.Time
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -1677,19 +1686,14 @@ model MessageLog {
 }
 
 // ============================================================
-// BLOC A â€” Verification QR (fondations)
-// Chaque document signÃ© (carte, bulletin, recu, attestation...)
-// possede un short code unique + une signature HMAC pour
-// verification publique via QR code.
+// BLOC A — Verification QR (fondations)
 // ============================================================
 model StudentAccount {
   id        String @id @default(uuid()) @db.Uuid
   studentId String @unique @map("student_id") @db.Uuid
   schoolId  String @map("school_id") @db.Uuid
 
-  // creditBalance > 0 => l'ecole doit de l'argent a l'eleve
   creditBalance Decimal @default(0) @map("credit_balance") @db.Decimal(14, 2)
-  // debtBalance > 0 => l'eleve doit de l'argent a l'ecole
   debtBalance   Decimal @default(0) @map("debt_balance") @db.Decimal(14, 2)
 
   lastCreditAt DateTime? @map("last_credit_at") @db.Timestamptz
@@ -1709,11 +1713,11 @@ model StudentAccount {
 model VerifiableDocument {
   id          String    @id @default(uuid()) @db.Uuid
   schoolId    String    @map("school_id") @db.Uuid
-  type        String    @db.VarChar(30) // BULLETIN | RECEIPT | ID_CARD | ATTESTATION | CERTIFICATE
+  type        String    @db.VarChar(30)
   referenceId String    @map("reference_id") @db.Uuid
   shortCode   String    @unique @map("short_code") @db.VarChar(12)
   hmacToken   String    @map("hmac_token") @db.VarChar(64)
-  meta        Json? // infos utiles (matricule, nom, classe...) pour verif offline
+  meta        Json?
   revokedAt   DateTime? @map("revoked_at") @db.Timestamptz
   revokedBy   String?   @map("revoked_by") @db.Uuid
   viewCount   Int       @default(0) @map("view_count")
@@ -2034,7 +2038,6 @@ model InvoiceInstallment {
   @@map("invoice_installments")
 }
 
-// BLOC 6 â€” Nouveaux modÃ¨les (additif)
 model SubjectDomain {
   id        String    @id @default(uuid()) @db.Uuid
   schoolId  String    @map("school_id") @db.Uuid
@@ -2061,14 +2064,6 @@ model GradeAudit {
 
   @@map("grade_audits")
 }
-
-// ============================================================
-// CONFIGURATION DU BULLETIN (par Ã©cole)
-// ============================================================
-
-// -------------------------------------------------------------
-// MODULE MATIERES - NOUVEAUX MODELES (PRODUCTION V3)
-// -------------------------------------------------------------
 
 model ClassSubject {
   id             String   @id @default(uuid()) @db.Uuid
@@ -2116,4 +2111,73 @@ model SubjectCoefficientAudit {
   @@index([createdAt])
   @@index([operationType])
   @@map("subject_coefficient_audits")
+}
+
+// ============================================================
+// MODULE PRÉSENCES — LOT 2 (Appel quotidien)
+// ============================================================
+
+model DailyAttendance {
+  id             String   @id @default(uuid()) @db.Uuid
+  schoolId       String   @map("school_id") @db.Uuid
+  classId        String   @map("class_id") @db.Uuid
+  academicYearId String   @map("academic_year_id") @db.Uuid
+  date           DateTime @db.Date
+  createdBy      String   @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  school       School                  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class        Class                   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear            @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  createdByUser User                   @relation("DailyAttCreatedBy", fields: [createdBy], references: [id])
+  records      DailyAttendanceRecord[]
+  corrections  AttendanceCorrection[]
+
+  @@unique([classId, date], name: "uq_daily_att_class_date")
+  @@index([schoolId, date])
+  @@map("daily_attendances")
+}
+
+model DailyAttendanceRecord {
+  id                    String    @id @default(uuid()) @db.Uuid
+  sessionId             String    @map("session_id") @db.Uuid
+  studentId             String    @map("student_id") @db.Uuid
+  status                String    @default("PRESENT") @db.VarChar(50)
+  observation           String?
+  justificationStatus   String?   @map("justification_status") @db.VarChar(20)
+  justificationReason   String?   @map("justification_reason")
+  justificationFileUrl  String?   @map("justification_file_url")
+  justifiedAt           DateTime? @map("justified_at") @db.Timestamptz
+  justifiedBy           String?   @map("justified_by") @db.Uuid
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  session   DailyAttendance @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student   Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  justifier User?           @relation("DailyAttJustifiedBy", fields: [justifiedBy], references: [id])
+
+  @@unique([sessionId, studentId], name: "uq_dar_session_student")
+  @@index([sessionId])
+  @@index([studentId])
+  @@map("daily_attendance_records")
+}
+
+model AttendanceCorrection {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionId    String   @map("session_id") @db.Uuid
+  studentId    String   @map("student_id") @db.Uuid
+  oldStatus    String   @map("old_status") @db.VarChar(50)
+  newStatus    String   @map("new_status") @db.VarChar(50)
+  reason       String
+  correctedBy  String   @map("corrected_by") @db.Uuid
+  correctedAt  DateTime @default(now()) @map("corrected_at") @db.Timestamptz
+
+  session  DailyAttendance @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student  Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  corrector User           @relation("DailyAttCorrectedBy", fields: [correctedBy], references: [id])
+
+  @@index([sessionId])
+  @@index([studentId])
+  @@map("attendance_corrections")
 }
