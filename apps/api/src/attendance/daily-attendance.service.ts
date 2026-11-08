@@ -48,7 +48,6 @@ export class DailyAttendanceService {
 
   /**
    * Liste des classes avec l'état de l'appel du jour.
-   * Si userId est fourni et correspond à un enseignant, on filtre sur ses classes.
    */
   async getClassesStatus(schoolId: string, date: string, userId?: string) {
     const dateObj = new Date(date + "T00:00:00.000Z");
@@ -62,7 +61,6 @@ export class DailyAttendanceService {
       return { date, classes: [] };
     }
 
-    // Filtrage par enseignant (si userId est un teacher)
     let classIdsFilter: string[] | null = null;
 
     if (userId) {
@@ -72,13 +70,11 @@ export class DailyAttendanceService {
       });
 
       if (teacher) {
-        // Classes où il est assigné (via TeacherAssignment)
         const assignments = await this.prisma.teacherAssignment.findMany({
           where: { teacherId: teacher.id, academicYearId: currentYear.id },
           select: { classId: true },
         });
 
-        // Classes dont il est le prof principal (mainTeacher)
         const mainClasses = await this.prisma.class.findMany({
           where: { mainTeacherId: teacher.id, academicYearId: currentYear.id },
           select: { id: true },
@@ -172,14 +168,12 @@ export class DailyAttendanceService {
   ) {
     const dateObj = new Date(dto.date + "T00:00:00.000Z");
 
-    // Vérifier que la classe existe
     const klass = await this.prisma.class.findFirst({
       where: { id: dto.classId, schoolId },
       select: { id: true, academicYearId: true },
     });
     if (!klass) throw new NotFoundException("Classe introuvable");
 
-    // Vérifier qu'aucun appel n'existe déjà
     const existing = await this.prisma.dailyAttendance.findFirst({
       where: { classId: dto.classId, date: dateObj },
     });
@@ -189,7 +183,6 @@ export class DailyAttendanceService {
       );
     }
 
-    // Créer l'appel + les records en transaction
     const session = await this.prisma.dailyAttendance.create({
       data: {
         schoolId,
@@ -233,7 +226,6 @@ export class DailyAttendanceService {
     });
     if (!record) throw new NotFoundException("Enregistrement introuvable");
 
-    // Si le statut change, on enregistre la correction
     if (dto.status !== record.status) {
       await this.prisma.attendanceCorrection.create({
         data: {
@@ -254,6 +246,48 @@ export class DailyAttendanceService {
         observation: dto.observation ?? record.observation,
         justificationStatus:
           dto.status === "ABSENT" ? "PENDING" : record.justificationStatus,
+      },
+    });
+  }
+
+  /**
+   * Justifie une absence (ACCEPTED ou REJECTED).
+   */
+  async justifyRecord(
+    schoolId: string,
+    userId: string,
+    recordId: string,
+    dto: { decision: "ACCEPTED" | "REJECTED"; reason: string; observation?: string },
+  ) {
+    const record = await this.prisma.dailyAttendanceRecord.findFirst({
+      where: { id: recordId, session: { schoolId } },
+      include: { session: true },
+    });
+    if (!record) throw new NotFoundException("Enregistrement introuvable");
+
+    const newStatus =
+      dto.decision === "ACCEPTED" ? "ABSENT_JUSTIFIED" : "ABSENT_UNJUSTIFIED";
+
+    await this.prisma.attendanceCorrection.create({
+      data: {
+        sessionId: record.sessionId,
+        studentId: record.studentId,
+        oldStatus: record.status,
+        newStatus: newStatus,
+        reason: "Justification : " + dto.reason,
+        correctedBy: userId,
+      },
+    });
+
+    return this.prisma.dailyAttendanceRecord.update({
+      where: { id: recordId },
+      data: {
+        status: newStatus,
+        justificationStatus: dto.decision === "ACCEPTED" ? "ACCEPTED" : "REJECTED",
+        justificationReason: dto.reason,
+        justifiedAt: new Date(),
+        justifiedBy: userId,
+        observation: dto.observation ?? record.observation,
       },
     });
   }
@@ -306,7 +340,7 @@ export class DailyAttendanceService {
       justified,
       unjustified,
       pending,
-      rate: Math.round(rate * 10) / 10, // Arrondi propre
+      rate: Math.round(rate * 10) / 10,
     };
   }
 }

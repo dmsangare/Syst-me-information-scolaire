@@ -93,3 +93,54 @@ export const dailyAttendanceApi = {
     return data;
   },
 };
+
+export interface StudentAttendanceSummary {
+  student: { id: string; firstName: string; lastName: string; matricule: string } | null;
+  academicYear: { id: string; label: string };
+  stats: {
+    totalDays: number;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    justifiedDays: number;
+    unjustifiedDays: number;
+    pendingDays: number;
+    maxConsecutiveAbsences: number;
+    lastAbsenceDate: string | null;
+    rate: number;
+  };
+}
+
+export interface StudentAttendanceHistory {
+  academicYear: { id: string; label: string };
+  history: Array<{
+    id: string;
+    date: string;
+    className: string | null;
+    status: string;
+    justificationStatus: string | null;
+    justificationReason: string | null;
+    justifiedAt: string | null;
+    justifiedBy: string | null;
+    observation: string | null;
+  }>;
+}
+
+export const attendanceStudentApi = {
+  async justifyRecord(recordId: string, dto: { decision: "ACCEPTED" | "REJECTED"; reason: string; observation?: string }) {
+    const { data } = await api.post(`/attendance/daily/records/${recordId}/justify`, dto);
+    return data;
+  },
+  async getStudentSummary(studentId: string, academicYearId?: string): Promise<StudentAttendanceSummary> {
+    const { data } = await api.get(`/attendance/student/${studentId}/summary`, {
+      params: academicYearId ? { academicYearId } : {},
+    });
+    return data;
+  },
+  async getStudentHistory(studentId: string, academicYearId?: string): Promise<StudentAttendanceHistory> {
+    const { data } = await api.get(`/attendance/student/${studentId}/history`, {
+      params: academicYearId ? { academicYearId } : {},
+    });
+    return data;
+  },
+};

@@ -17,6 +17,7 @@ import {
   useCreateDailyAttendance,
   useUpdateAttendanceRecord,
 } from "@/hooks/attendance/useDailyAttendance";
+import { JustifyAbsenceModal } from "./components/JustifyAbsenceModal";
 
 type Status = "PRESENT" | "ABSENT" | "LATE";
 
@@ -62,11 +63,11 @@ export function DailyCallPage() {
   });
 
   const [records, setRecords] = useState<Record<string, Status>>({});
+  const [justifyRecord, setJustifyRecord] = useState<{ recordId: string; studentName: string } | null>(null);
 
   const classes = classesData?.classes ?? [];
   const selectedClass = classes.find((c) => c.classId === selectedClassId);
 
-  // Liste des élèves : session existante OU liste des inscrits
   const students: StudentLite[] = useMemo(() => {
     if (existingSession?.records) {
       return existingSession.records.map((r) => r.student);
@@ -74,7 +75,6 @@ export function DailyCallPage() {
     return studentsData ?? [];
   }, [existingSession, studentsData]);
 
-  // Initialiser les statuts
   useEffect(() => {
     if (!selectedClassId) return;
     if (existingSession?.records) {
@@ -243,13 +243,17 @@ export function DailyCallPage() {
                   return (
                     <div key={st.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400 font-mono w-6">{String(idx + 1).padStart(2, "0")}</span>
+                        <span className="text-xs text-slate-400 font-mono w-6">
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
                         <div>
-                          <p className="font-medium text-slate-800">{st.lastName} {st.firstName}</p>
+                          <p className="font-medium text-slate-800">
+                            {st.lastName} {st.firstName}
+                          </p>
                           <p className="text-xs text-slate-500">{st.matricule}</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2">
                         {(["PRESENT", "ABSENT", "LATE"] as Status[]).map((s) => {
                           const cfg = STATUS_CONFIG[s];
                           const Icon = cfg.icon;
@@ -260,7 +264,9 @@ export function DailyCallPage() {
                               onClick={() => handleStatusChange(st.id, s)}
                               disabled={isReadOnly}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                isActive ? `${cfg.bg} text-white border-transparent shadow-sm` : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                                isActive
+                                  ? `${cfg.bg} text-white border-transparent shadow-sm`
+                                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                               } ${isReadOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                               <Icon className="h-3.5 w-3.5" />
@@ -268,6 +274,25 @@ export function DailyCallPage() {
                             </button>
                           );
                         })}
+                        {currentStatus === "ABSENT" && existingSession && (
+                          <button
+                            onClick={() => {
+                              const rec = existingSession.records.find(
+                                (r) => r.studentId === st.id
+                              );
+                              if (rec) {
+                                setJustifyRecord({
+                                  recordId: rec.id,
+                                  studentName: `${st.lastName} ${st.firstName}`,
+                                });
+                              }
+                            }}
+                            className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all"
+                            title="Justifier cette absence"
+                          >
+                            Justifier
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -278,17 +303,39 @@ export function DailyCallPage() {
 
           {!isReadOnly && (
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => navigate("/attendance")}>Annuler</Button>
-              <Button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>
+              <Button variant="outline" onClick={() => navigate("/attendance")}>
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={createMut.isPending || updateMut.isPending}
+              >
                 {(createMut.isPending || updateMut.isPending) ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enregistrement…</>
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Enregistrement…
+                  </>
                 ) : (
-                  <><Save className="h-4 w-4 mr-2" />{existingSession ? "Enregistrer les modifications" : "Enregistrer l'appel"}</>
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {existingSession ? "Enregistrer les modifications" : "Enregistrer l'appel"}
+                  </>
                 )}
               </Button>
             </div>
           )}
         </>
+      )}
+
+      {justifyRecord && (
+        <JustifyAbsenceModal
+          recordId={justifyRecord.recordId}
+          studentName={justifyRecord.studentName}
+          onClose={() => setJustifyRecord(null)}
+          onSuccess={() => {
+            setJustifyRecord(null);
+          }}
+        />
       )}
     </div>
   );

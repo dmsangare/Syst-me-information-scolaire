@@ -64,3 +64,40 @@ export function useUpdateAttendanceRecord() {
       toast.error(e?.response?.data?.message || "Erreur"),
   });
 }
+
+// ============================================================
+// LOT 3 : Justifications + Bilan élève
+// ============================================================
+
+import { attendanceStudentApi } from "@/api/daily-attendance";
+
+export function useJustifyAbsence() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ recordId, dto }: { recordId: string; dto: { decision: "ACCEPTED" | "REJECTED"; reason: string; observation?: string } }) =>
+      attendanceStudentApi.justifyRecord(recordId, dto),
+    onSuccess: () => {
+      toast.success("Absence justifiée");
+      qc.invalidateQueries({ queryKey: [KEY] });
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || "Erreur"),
+  });
+}
+
+export function useStudentAttendanceSummary(studentId: string | null, academicYearId?: string) {
+  return useQuery({
+    queryKey: [KEY, "student-summary", studentId, academicYearId],
+    queryFn: () => attendanceStudentApi.getStudentSummary(studentId!, academicYearId),
+    enabled: !!studentId,
+    staleTime: 30_000,
+  });
+}
+
+export function useStudentAttendanceHistory(studentId: string | null, academicYearId?: string) {
+  return useQuery({
+    queryKey: [KEY, "student-history", studentId, academicYearId],
+    queryFn: () => attendanceStudentApi.getStudentHistory(studentId!, academicYearId),
+    enabled: !!studentId,
+    staleTime: 30_000,
+  });
+}
