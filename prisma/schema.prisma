@@ -400,7 +400,7 @@ model School {
   SubjectDomain             SubjectDomain[]
   ReportCardAbsenceOverride ReportCardAbsenceOverride[]
   dailyAttendances          DailyAttendance[]
-
+  attendanceAlerts          AttendanceAlert[]
   @@map("schools")
 }
 
@@ -436,6 +436,7 @@ model AcademicYear {
   subjectCoefficients SubjectCoefficient[]
   classSubjects       ClassSubject[]
   dailyAttendances    DailyAttendance[]
+  attendanceAlerts    AttendanceAlert[]
 
   @@unique([schoolId, label])
   @@index([schoolId, status])
@@ -619,7 +620,7 @@ model User {
   dailyAttendancesCreated  DailyAttendance[]        @relation("DailyAttCreatedBy")
   dailyAttendancesJustified DailyAttendanceRecord[] @relation("DailyAttJustifiedBy")
   attendanceCorrections    AttendanceCorrection[]   @relation("DailyAttCorrectedBy")
-
+  attendanceAlertsResolved AttendanceAlert[]        @relation("AlertResolvedBy")
   @@index([schoolId])
   @@map("users")
 }
@@ -754,6 +755,7 @@ model Student {
   messageLogs        MessageLog[]
   dailyAttendanceRecords DailyAttendanceRecord[]
   attendanceCorrections  AttendanceCorrection[]
+  attendanceAlerts       AttendanceAlert[]
 
   @@unique([schoolId, matricule])
   @@index([schoolId])
@@ -2180,4 +2182,29 @@ model AttendanceCorrection {
   @@index([sessionId])
   @@index([studentId])
   @@map("attendance_corrections")
+}
+model AttendanceAlert {
+  id             String    @id @default(uuid()) @db.Uuid
+  schoolId       String    @map("school_id") @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  academicYearId String    @map("academic_year_id") @db.Uuid
+  level          Int       @default(1)
+  type           String    @db.VarChar(50)
+  reason         String
+  status         String    @default("NEW") @db.VarChar(20)
+  detectedAt     DateTime  @default(now()) @map("detected_at") @db.Timestamptz
+  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz
+  resolvedBy     String?   @map("resolved_by") @db.Uuid
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  resolver     User?        @relation("AlertResolvedBy", fields: [resolvedBy], references: [id])
+
+  @@index([schoolId, status])
+  @@index([studentId])
+  @@map("attendance_alerts")
 }
