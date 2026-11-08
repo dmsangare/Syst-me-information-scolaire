@@ -38,7 +38,7 @@ export function WelcomeBanner({
 
       {/* Carte de droite (Image) */}
       <div
-        className="relative hidden min-h-[140px] overflow-hidden rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] lg:block lg:min-w-[340px] bg-slate-800"
+        className="relative hidden min-h-[140px] overflow-hidden rounded-3xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hidden lg:block lg:min-w-[340px] bg-slate-800"
         style={{
           backgroundImage: `url(${bannerUrl || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=800"})`,
           backgroundSize: "cover",

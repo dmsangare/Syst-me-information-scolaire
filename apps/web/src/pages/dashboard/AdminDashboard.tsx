@@ -106,7 +106,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Ligne 3 : Graphiques modernes (Effectifs + Donut) */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <EnrollmentByClassChart />
           <ClassesDistributionDonut />
         </div>
@@ -115,13 +115,13 @@ export function AdminDashboard() {
         <GradesBySubjectChart />
 
         {/* Ligne 4 : Activités + Bulletins récents */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <RecentActivities />
           <RecentReportCards />
         </div>
 
         {/* Ligne 5 : Impayés + Paiements récents */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <Card className="rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
@@ -133,7 +133,7 @@ export function AdminDashboard() {
               {unpaidList.length === 0 ? (
                 <div className="p-6"><EmptyState title="Aucun impayé" description="Tous les paiements sont à jour." /></div>
               ) : (
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto"><table className="w-full text-sm min-w-[500px]">
                   <tbody className="divide-y divide-slate-100">
                     {unpaidList.slice(0, 5).map((inv: any) => (
                       <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
@@ -149,7 +149,7 @@ export function AdminDashboard() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </CardContent>
           </Card>
@@ -165,7 +165,7 @@ export function AdminDashboard() {
               {paymentList.length === 0 ? (
                 <div className="p-6"><EmptyState title="Aucun paiement" description="Aucun paiement enregistré." /></div>
               ) : (
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto"><table className="w-full text-sm min-w-[500px]">
                   <tbody className="divide-y divide-slate-100">
                     {paymentList.slice(0, 5).map((p: any) => (
                       <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
@@ -179,14 +179,14 @@ export function AdminDashboard() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* Ligne 6 : Examens + Répartition */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <Card className="rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
