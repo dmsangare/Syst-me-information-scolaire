@@ -12,6 +12,7 @@
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { CashSessionsService } from './cash-sessions.service';
 import { OpenCashSessionDto } from './dto/open-cash-session.dto';
 import { CloseCashSessionDto } from './dto/close-cash-session.dto';
@@ -29,31 +30,37 @@ export class CashSessionsController {
   ) {}
 
   @Get('current')
+  @RequirePermissions('cash:view')
   current(@Req() req: any) {
     return this.service.getCurrent(req.user.schoolId, req.user.id);
   }
 
   @Post('open')
+  @RequirePermissions('cash:create')
   open(@Req() req: any, @Body() dto: OpenCashSessionDto) {
     return this.service.open(req.user.schoolId, req.user.id, dto);
   }
 
   @Post('close')
+  @RequirePermissions('cash:close')
   close(@Req() req: any, @Body() dto: CloseCashSessionDto) {
     return this.service.close(req.user.schoolId, req.user.id, dto);
   }
 
   @Get('history')
+  @RequirePermissions('cash:view')
   history(@Req() req: any, @Query() query: any) {
     return this.service.history(req.user.schoolId, query);
   }
 
   @Get(':id')
+  @RequirePermissions('cash:view')
   detail(@Req() req: any, @Param('id') id: string) {
     return this.service.detail(req.user.schoolId, id);
   }
 
   @Get(':id/pdf')
+  @RequirePermissions('cash:print')
   async pdf(
     @Req() req: any,
     @Param('id') id: string,
@@ -61,7 +68,7 @@ export class CashSessionsController {
   ) {
     const session = await this.service.detail(req.user.schoolId, id);
 
-    // Fusionner payments + expenses en mouvements chronologiques
+    // ... (le reste du code PDF reste inchangé)
     const movements = [
       ...(session.payments || []).map((p: any) => ({
         time: new Date(p.paidAt).toLocaleTimeString('fr-FR', {
@@ -97,7 +104,6 @@ export class CashSessionsController {
       ? `${session.cashier.firstName} ${session.cashier.lastName}`
       : 'Caissier';
 
-    // Charger le logo de l'ecole en base64 (multi-tenant)
     const schoolLogoBase64 = await loadLogoAsBase64(session.school?.logoUrl);
     const schoolStampBase64 = await fileToBase64(session.school?.stampUrl);
 

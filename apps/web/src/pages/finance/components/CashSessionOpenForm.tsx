@@ -1,11 +1,45 @@
 import { useState } from "react";
-import { Wallet, Loader2, ArrowRight } from "lucide-react";
+import { Wallet, Loader2, ArrowRight, Lock } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { useOpenCashSession } from "@/hooks/finance/useCashSessions";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 
 export function CashSessionOpenForm() {
   const [amount, setAmount] = useState("");
   const openMutation = useOpenCashSession();
+  const isReadOnly = useIsReadOnly();
+
+  // Si lecture seule, on affiche un message neutre au lieu du formulaire
+  if (isReadOnly) {
+    return (
+      <div className="flex items-center justify-center min-h-[500px] p-6">
+        <div className="w-full max-w-md bg-card border rounded-lg shadow-sm">
+          <div className="p-6 border-b">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-slate-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold">Caisse</h2>
+                <p className="text-sm text-muted-foreground">
+                  Aucune session ouverte
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-3 text-center">
+            <Lock className="h-8 w-8 mx-auto text-slate-400" />
+            <p className="text-sm text-muted-foreground">
+              Vous n'avez pas les droits pour ouvrir une session de caisse.
+            </p>
+            <p className="text-xs text-slate-400">
+              Contactez le comptable ou le directeur pour ouvrir la caisse.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleOpen = () => {
     const value = Number(amount.replace(/\s/g, "").replace(",", "."));

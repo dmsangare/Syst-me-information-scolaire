@@ -14,6 +14,7 @@ import { useStudentDetail } from "@/hooks/students/useStudentDetail";
 import { Button } from "@/components/ui";
 import { Users } from "lucide-react";
 import { useSchool } from "@/hooks/school/useSchool";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 import type { Invoice, InvoiceInstallment } from "@/types/finance";
 
 interface StudentLite {
@@ -31,6 +32,7 @@ interface StudentLite {
 
 export function PointDeCaissePage() {
   const { data: session, isLoading } = useCurrentCashSession();
+  const isReadOnly = useIsReadOnly();
   const [student, setStudent] = useState<StudentLite | null>(null);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
@@ -45,7 +47,6 @@ export function PointDeCaissePage() {
     date: string;
   } | null>(null);
 
-  // Charger le detail complet (avec guardians) quand un élève est selectionne
   const { data: studentDetail } = useStudentDetail(student?.id);
   const { data: school } = useSchool();
 
@@ -58,12 +59,19 @@ export function PointDeCaissePage() {
     );
   }
 
-  // 2. Pas de session → formulaire d'ouverture
+  // 2. Pas de session → formulaire d'ouverture (mais SEULEMENT pour non-readonly)
   if (!session) {
+    if (isReadOnly) {
+      return (
+        <div className="flex h-96 items-center justify-center text-muted-foreground">
+          <p>Aucune session de caisse ouverte pour le moment.</p>
+        </div>
+      );
+    }
     return <CashSessionOpenForm />;
   }
 
-  // 3. Session ouverte → interface complete
+  // 3. Session ouverte → interface complète
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
       <CashSessionHeader session={session} />
@@ -105,6 +113,7 @@ export function PointDeCaissePage() {
                 student={student}
                 onSelectInvoice={setActiveInvoice}
                 onPayInstallment={(inst: InvoiceInstallment) => {
+                  if (isReadOnly) return;
                   setSelectedInstallment(inst);
                 }}
               />
@@ -112,8 +121,8 @@ export function PointDeCaissePage() {
 
             {/* Panneau encaissement */}
             <div>
-              {/* Bouton Encaisser Famille (si élève + guardian principal) */}
-              {student && studentDetail && (studentDetail.guardians?.length || 0) > 0 && (
+              {/* Bouton Encaisser Famille (masqué si read-only) */}
+              {!isReadOnly && student && studentDetail && (studentDetail.guardians?.length || 0) > 0 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -126,25 +135,39 @@ export function PointDeCaissePage() {
               )}
 
               {activeInvoice ? (
-                <PaymentPanel
-                  invoice={activeInvoice}
-                  studentId={student.id}
-                  installment={selectedInstallment}
-                  onPaymentSuccess={() => {
-                    setSelectedInstallment(null);
-                  }}
-                  onPaymentComplete={(info) => {
-                    setLastPayment({
-                      paymentId: info.paymentId,
-                      receiptId: info.receiptId,
-                      receiptNumber: info.receiptNumber,
-                      amount: info.amount,
-                      date: new Date().toISOString(),
-                    });
-                    setWhatsappOpen(true);
-                  }}
-                  onClearInstallment={() => setSelectedInstallment(null)}
-                />
+                isReadOnly ? (
+                  <Card>
+                    <CardContent className="py-16 text-center text-muted-foreground">
+                      <Wallet className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm font-medium">
+                        Consultation uniquement
+                      </p>
+                      <p className="text-xs mt-1">
+                        Vous n'avez pas les droits pour encaisser.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <PaymentPanel
+                    invoice={activeInvoice}
+                    studentId={student.id}
+                    installment={selectedInstallment}
+                    onPaymentSuccess={() => {
+                      setSelectedInstallment(null);
+                    }}
+                    onPaymentComplete={(info) => {
+                      setLastPayment({
+                        paymentId: info.paymentId,
+                        receiptId: info.receiptId,
+                        receiptNumber: info.receiptNumber,
+                        amount: info.amount,
+                        date: new Date().toISOString(),
+                      });
+                      setWhatsappOpen(true);
+                    }}
+                    onClearInstallment={() => setSelectedInstallment(null)}
+                  />
+                )
               ) : (
                 <Card>
                   <CardContent className="py-16 text-center text-muted-foreground">
@@ -164,7 +187,8 @@ export function PointDeCaissePage() {
       <TodaySummary />
 
       {/* Modal Encaissement Famille */}
-      {familyOpen &&
+      {!isReadOnly &&
+        familyOpen &&
         student &&
         studentDetail &&
         (studentDetail.guardians?.length || 0) > 0 && (
@@ -189,7 +213,8 @@ export function PointDeCaissePage() {
         )}
 
       {/* Modal WhatsApp post-paiement */}
-      {whatsappOpen &&
+      {!isReadOnly &&
+        whatsappOpen &&
         lastPayment &&
         studentDetail &&
         activeInvoice && (

@@ -4,6 +4,7 @@ import { Button, Input } from "@/components/ui";
 import { useCloseCashSession } from "@/hooks/finance/useCashSessions";
 import { formatFCFA } from "@/types/finance";
 import type { CashSession } from "@/types/finance";
+import { useIsReadOnly } from "@/hooks/auth/useIsReadOnly";
 
 interface Props {
   session: CashSession;
@@ -14,6 +15,7 @@ export function CashSessionHeader({ session, todayTotal }: Props) {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closingAmount, setClosingAmount] = useState("");
   const closeMutation = useCloseCashSession();
+  const isReadOnly = useIsReadOnly();
 
   const handleClose = () => {
     const value = Number(closingAmount.replace(/\s/g, "").replace(",", "."));
@@ -66,18 +68,20 @@ export function CashSessionHeader({ session, todayTotal }: Props) {
               </div>
             </div>
           )}
-          <Button
-            variant="outline"
-            onClick={() => setShowCloseModal(true)}
-            disabled={closeMutation.isPending}
-          >
-            <Lock className="h-4 w-4 mr-2" />
-            Clôturer
-          </Button>
+          {!isReadOnly && (
+            <Button
+              variant="outline"
+              onClick={() => setShowCloseModal(true)}
+              disabled={closeMutation.isPending}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Clôturer
+            </Button>
+          )}
         </div>
       </div>
 
-      {showCloseModal && (
+      {showCloseModal && !isReadOnly && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div
             className="bg-background rounded-sis-lg shadow-2xl relative z-[10000] max-w-md w-full"
