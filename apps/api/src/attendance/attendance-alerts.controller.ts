@@ -24,6 +24,17 @@ export class AttendanceAlertsController {
     return this.service.getAlerts(user.schoolId, status);
   }
 
+  @Get(":id")
+  @RequirePermissions("attendance:view")
+  @ApiOperation({ summary: "Détails d'une alerte avec historique des contacts" })
+  async getDetails(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param("id") id: string,
+  ) {
+    if (!user.schoolId) throw new BadRequestException("Ecole introuvable");
+    return this.service.getAlertDetails(user.schoolId, id);
+  }
+
   @Patch(":id")
   @RequirePermissions("attendance:update")
   @ApiOperation({ summary: "Changer le statut d'une alerte" })

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -119,7 +119,7 @@ export class AttendanceAlertsService {
     const alert = await this.prisma.attendanceAlert.findFirst({
       where: { id: alertId, schoolId },
     });
-    if (!alert) throw new Error("Alerte introuvable");
+    if (!alert) throw new NotFoundException("Alerte introuvable");
 
     const data: any = {
       status: dto.status,
@@ -134,5 +134,79 @@ export class AttendanceAlertsService {
       where: { id: alertId },
       data,
     });
+  }
+    async getAlertDetails(schoolId: string, alertId: string) {
+    const alert = await this.prisma.attendanceAlert.findFirst({
+      where: { id: alertId, schoolId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            matricule: true,
+            gender: true,
+            photoUrl: true,
+          },
+        },
+        resolver: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+        parentContacts: {
+          include: {
+            guardian: { select: { id: true, firstName: true, lastName: true, phone: true } },
+            contactedByUser: { select: { id: true, firstName: true, lastName: true } },
+          },
+          orderBy: { contactDate: "desc" },
+        },
+      },
+    });
+
+    if (!alert) throw new Error("Alerte introuvable");
+
+    // Récupérer les 10 dernières absences
+    const absences = await this.prisma.dailyAttendanceRecord.findMany({
+      where: {
+        studentId: alert.studentId,
+        status: { in: ["ABSENT", "ABSENT_UNJUSTIFIED", "ABSENT_JUSTIFIED"] },
+      },
+      include: {
+        session: { select: { date: true } },
+      },
+      orderBy: { session: { date: "desc" } },
+      take: 10,
+    });
+
+    return {
+      alert: {
+        id: alert.id,
+        type: alert.type,
+        level: alert.level,
+        reason: alert.reason,
+        status: alert.status,
+        detectedAt: alert.detectedAt,
+        resolvedAt: alert.resolvedAt,
+        notes: alert.notes,
+        resolver: alert.resolver,
+      },
+      student: alert.student,
+      absences: absences.map((a) => ({
+        id: a.id,
+        date: a.session.date,
+        status: a.status,
+        justificationStatus: a.justificationStatus,
+      })),
+      contacts: alert.parentContacts.map((c) => ({
+        id: c.id,
+        contactDate: c.contactDate,
+        method: c.method,
+        result: c.result,
+        notes: c.notes,
+        nextAction: c.nextAction,
+        followUpDate: c.followUpDate,
+        guardian: c.guardian,
+        contactedBy: c.contactedByUser,
+      })),
+    };
   }
 }

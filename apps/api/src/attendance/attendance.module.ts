@@ -7,6 +7,8 @@ import { AttendanceStudentController } from "./attendance-student.controller";
 import { AttendanceStudentService } from "./attendance-student.service";
 import { AttendanceAlertsController } from "./attendance-alerts.controller";
 import { AttendanceAlertsService } from "./attendance-alerts.service";
+import { ParentContactsController } from "./parent-contacts.controller";
+import { ParentContactsService } from "./parent-contacts.service";
 
 @Module({
   controllers: [
@@ -14,12 +16,14 @@ import { AttendanceAlertsService } from "./attendance-alerts.service";
     DailyAttendanceController,
     AttendanceStudentController,
     AttendanceAlertsController,
+    ParentContactsController,
   ],
   providers: [
     AttendanceService,
     DailyAttendanceService,
     AttendanceStudentService,
     AttendanceAlertsService,
+    ParentContactsService,
   ],
   exports: [AttendanceService, DailyAttendanceService],
 })

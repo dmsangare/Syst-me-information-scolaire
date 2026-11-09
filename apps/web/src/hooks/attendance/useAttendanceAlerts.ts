@@ -40,3 +40,15 @@ export function useDetectAlerts() {
     },
   });
 }
+
+export function useAlertDetails(alertId: string | null) {
+  return useQuery({
+    queryKey: [KEY, "details", alertId],
+    queryFn: async () => {
+      const { data } = await api.get(`/attendance/alerts/${alertId}`);
+      return data;
+    },
+    enabled: !!alertId,
+    staleTime: 30_000,
+  });
+}

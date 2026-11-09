@@ -390,6 +390,7 @@ model School {
   documentTemplates         DocumentTemplate[]
   notifications             Notification[]
   auditLogs                 AuditLog[]
+  parentContacts ParentContact[]
   backups                   Backup[]
   expenseCategories         ExpenseCategory[]
   expenses                  Expense[]
@@ -610,6 +611,7 @@ model User {
   guardian           Guardian?
   studentProfile     Student?
   teacher            Teacher?
+  parentContactsCreated ParentContact[]  @relation("ParentContactUser")
   paymentsCashier    Payment[]           @relation("PaymentCashier")
   gradesEntered      Grade[]             @relation("GradeEnteredBy")
   documentsGenerated GeneratedDocument[] @relation("DocumentGeneratedBy")
@@ -756,7 +758,8 @@ model Student {
   dailyAttendanceRecords DailyAttendanceRecord[]
   attendanceCorrections  AttendanceCorrection[]
   attendanceAlerts       AttendanceAlert[]
-
+  parentContacts ParentContact[]
+  
   @@unique([schoolId, matricule])
   @@index([schoolId])
   @@index([lastName, firstName])
@@ -783,7 +786,7 @@ model Guardian {
   students      StudentGuardian[]
   notifications Notification[]
   messageLogs   MessageLog[]
-
+  parentContacts ParentContact[]
   @@index([schoolId])
   @@map("guardians")
 }
@@ -2199,12 +2202,41 @@ model AttendanceAlert {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  school       School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
-  resolver     User?        @relation("AlertResolvedBy", fields: [resolvedBy], references: [id])
+  school         School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student        Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear    @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  resolver       User?           @relation("AlertResolvedBy", fields: [resolvedBy], references: [id])
+  parentContacts ParentContact[]
 
   @@index([schoolId, status])
   @@index([studentId])
   @@map("attendance_alerts")
+}
+
+model ParentContact {
+  id           String    @id @default(uuid()) @db.Uuid
+  schoolId     String    @map("school_id") @db.Uuid
+  studentId    String    @map("student_id") @db.Uuid
+  guardianId   String?   @map("guardian_id") @db.Uuid
+  alertId      String?   @map("alert_id") @db.Uuid
+  contactDate  DateTime  @default(now()) @map("contact_date") @db.Timestamptz
+  method       String    @db.VarChar(20)
+  result       String    @db.VarChar(30)
+  notes        String?
+  nextAction   String?   @map("next_action") @db.VarChar(100)
+  followUpDate DateTime? @map("follow_up_date") @db.Date
+  contactedBy  String    @map("contacted_by") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  school          School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian        Guardian?        @relation(fields: [guardianId], references: [id])
+  alert           AttendanceAlert? @relation(fields: [alertId], references: [id])
+  contactedByUser User             @relation("ParentContactUser", fields: [contactedBy], references: [id])
+
+  @@index([schoolId, contactDate])
+  @@index([studentId])
+  @@index([alertId])
+  @@map("parent_contacts")
 }

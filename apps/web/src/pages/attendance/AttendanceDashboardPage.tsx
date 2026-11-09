@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {
-  ClipboardCheck, Users, UserCheck, UserX, Clock, TrendingUp, AlertCircle, CheckCircle2,
+  ClipboardCheck, Users, UserCheck, UserX, TrendingUp, AlertCircle, CheckCircle2, Clock, AlertTriangle,
 } from "lucide-react";
 import {
   Card, CardContent, CardHeader, CardTitle, KpiCard, PageLoader, EmptyState, Button,
@@ -11,6 +11,7 @@ import {
   useAttendanceClassesStatus,
   useAttendanceDayStats,
 } from "@/hooks/attendance/useDailyAttendance";
+import { useAttendanceAlerts } from "@/hooks/attendance/useAttendanceAlerts";
 
 const CYCLE_LABELS: Record<string, string> = {
   PREMIER_CYCLE: "1er cycle",
@@ -29,6 +30,11 @@ export function AttendanceDashboardPage() {
   const isReadOnly = useIsReadOnly();
   const { data: stats, isLoading: statsLoading } = useAttendanceDayStats();
   const { data: classesData, isLoading: classesLoading } = useAttendanceClassesStatus();
+  const { data: alerts } = useAttendanceAlerts();
+
+  const alertsCount = alerts?.filter(
+    (a: any) => a.status === "NEW" || a.status === "IN_PROGRESS"
+  ).length ?? 0;
 
   const today = new Date().toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -47,7 +53,6 @@ export function AttendanceDashboardPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* En-tête */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-sis-md bg-sis-brand-50 text-sis-brand mt-0.5">
@@ -70,8 +75,7 @@ export function AttendanceDashboardPage() {
         )}
       </div>
 
-      {/* Cartes stats du jour */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <KpiCard
           label="Élèves attendus"
           value={stats?.expected ?? 0}
@@ -89,7 +93,7 @@ export function AttendanceDashboardPage() {
         <KpiCard
           label="Absents"
           value={stats?.absent ?? 0}
-          hint={`${stats?.pending ?? 0} justification(s) en attente`}
+          hint={`${stats?.pending ?? 0} en attente`}
           icon={<UserX className="h-5 w-5" />}
           accent="danger"
         />
@@ -100,9 +104,17 @@ export function AttendanceDashboardPage() {
           icon={<TrendingUp className="h-5 w-5" />}
           accent="info"
         />
+        <Link to="/attendance/alerts" className="block">
+          <KpiCard
+            label="Alertes actives"
+            value={alertsCount}
+            hint="2 jours consécutifs"
+            icon={<AlertTriangle className="h-5 w-5" />}
+            accent={alertsCount > 0 ? "danger" : "neutral"}
+          />
+        </Link>
       </div>
 
-      {/* Liste des classes */}
       <Card className="rounded-3xl border border-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">

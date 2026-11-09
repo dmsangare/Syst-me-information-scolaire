@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Clock, Users } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Phone, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, PageLoader, EmptyState, Button } from "@/components/ui";
+import { useState } from "react";
+import { ParentContactModal } from "./components/ParentContactModal";
+import { AlertDetailsDrawer } from "./components/AlertDetailsDrawer";
 import {
   useAttendanceAlerts,
   useUpdateAlertStatus,
@@ -19,6 +22,12 @@ export function AttendanceAlertsPage() {
   const { data: alerts, isLoading } = useAttendanceAlerts();
   const updateMut = useUpdateAlertStatus();
   const detectMut = useDetectAlerts();
+  const [contactModal, setContactModal] = useState<{
+    studentId: string;
+    studentName: string;
+    alertId: string;
+  } | null>(null);
+  const [detailsAlertId, setDetailsAlertId] = useState<string | null>(null);
 
   if (isLoading) return <PageLoader label="Chargement des alertes..." />;
 
@@ -42,7 +51,7 @@ export function AttendanceAlertsPage() {
         </Button>
       </div>
 
-      {(!alerts || alerts.length === 0) ? (
+      {!alerts || alerts.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <EmptyState
@@ -65,8 +74,8 @@ export function AttendanceAlertsPage() {
                 const cfg = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.NEW;
                 return (
                   <div key={a.id} className="p-4 hover:bg-slate-50/50 transition-colors">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium text-slate-800">
                             {a.student?.lastName} {a.student?.firstName}
@@ -79,7 +88,29 @@ export function AttendanceAlertsPage() {
                           {a.student?.matricule} · {a.reason}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setDetailsAlertId(a.id)}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" />
+                          Détails
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setContactModal({
+                              studentId: a.student.id,
+                              studentName: `${a.student.lastName} ${a.student.firstName}`,
+                              alertId: a.id,
+                            })
+                          }
+                        >
+                          <Phone className="h-3.5 w-3.5 mr-1" />
+                          Contacter parent
+                        </Button>
                         {a.status === "NEW" && (
                           <Button
                             size="sm"
@@ -89,7 +120,7 @@ export function AttendanceAlertsPage() {
                             Traiter
                           </Button>
                         )}
-                        {(a.status === "NEW" || a.status === "IN_PROGRESS") && (
+                        {(a.status === "NEW" || a.status === "IN_PROGRESS" || a.status === "PARENT_CONTACTED") && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -107,6 +138,23 @@ export function AttendanceAlertsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {contactModal && (
+        <ParentContactModal
+          studentId={contactModal.studentId}
+          studentName={contactModal.studentName}
+          alertId={contactModal.alertId}
+          onClose={() => setContactModal(null)}
+          onSuccess={() => setContactModal(null)}
+        />
+      )}
+
+      {detailsAlertId && (
+        <AlertDetailsDrawer
+          alertId={detailsAlertId}
+          onClose={() => setDetailsAlertId(null)}
+        />
       )}
     </div>
   );
