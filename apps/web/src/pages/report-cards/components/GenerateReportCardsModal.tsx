@@ -308,8 +308,7 @@ export function GenerateReportCardsModal({ onClose }: Props) {
                         <option value="">-- Choisir --</option>
                         {sortedClasses.map((c) => {
                           const level = levels?.find((l) => l.id === c.levelId);
-                          const emoji =
-                            level?.cycle === "PREMIER_CYCLE" ? "ðŸ“—" : "ðŸ“˜";
+                          const emoji = level?.cycle === "PREMIER_CYCLE" ? "1er" : "2e";
                           return (
                             <option key={c.id} value={c.id}>
                               {emoji} {c.name}
