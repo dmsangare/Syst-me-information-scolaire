@@ -20,6 +20,7 @@ import { AdminReportsArchivesPage } from "@/pages/admin-reports/AdminReportsArch
 import { StateExamSessionsPage } from "@/pages/state-exam-dossiers/StateExamSessionsPage";
 import { StateExamSessionDetailPage } from "@/pages/state-exam-dossiers/StateExamSessionDetailPage";
 import { StateExamDossierDetailPage } from "@/pages/state-exam-dossiers/StateExamDossierDetailPage";
+import { CampaignsListPage } from "@/pages/campaigns";
 import { StudentsListPage } from "@/pages/students/StudentsListPage";
 import { StudentDetailPage } from "@/pages/students/StudentDetailPage";
 import { StudentFormPage } from "@/pages/students/StudentFormPage";
@@ -664,6 +665,13 @@ export function AppRoutes() {
             }
           />
         </Route>
+
+          {/* Campagnes */}
+          <Route path="/campaigns" element={
+            <ProtectedRoute requiredPermission="assessment:view">
+              <CampaignsListPage />
+            </ProtectedRoute>
+          } />
       </Route>
 
       <Route path="/v/:shortCode" element={<PublicVerificationPage />} />

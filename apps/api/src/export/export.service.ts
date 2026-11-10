@@ -14,7 +14,7 @@ export class ExportService {
    */
   async generateExcel(sheets: ExcelSheet[]): Promise<Buffer> {
     const wb = new ExcelJS.Workbook();
-    wb.creator = 'SIS-MALI';
+    wb.creator = 'Etablissement';
     wb.created = new Date();
 
     for (const sheet of sheets) {

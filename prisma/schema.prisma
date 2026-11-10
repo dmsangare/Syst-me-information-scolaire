@@ -461,6 +461,8 @@ model Term {
   assessments        Assessment[]
   reportCards        ReportCard[]
   exams              Exam[]
+  campaignTeacherValidations   CampaignTeacherValidation[]
+  campaignDirectorValidations  CampaignDirectorValidation[]
 
   @@index([academicYearId])
   @@map("terms")
@@ -563,6 +565,9 @@ model Class {
   @@index([schoolId])
   @@index([levelId])
   @@map("classes")
+
+  campaignTeacherValidations   CampaignTeacherValidation[]
+  campaignDirectorValidations  CampaignDirectorValidation[]
 }
 
 model Setting {
@@ -905,6 +910,8 @@ model Teacher {
   @@unique([schoolId, matricule])
   @@index([schoolId])
   @@map("teachers")
+
+  campaignTeacherValidations   CampaignTeacherValidation[]
 }
 
 model Subject {
@@ -934,6 +941,8 @@ model Subject {
   @@unique([schoolId, code])
   @@map("subjects")
   teacherSpecialties TeacherSpecialty[]
+
+  campaignTeacherValidations   CampaignTeacherValidation[]
 }
 
 model SubjectCoefficient {
@@ -2239,4 +2248,49 @@ model ParentContact {
   @@index([studentId])
   @@index([alertId])
   @@map("parent_contacts")
+}
+// ============================================================
+// CAMPAGNES DE COMPOSITIONS/TRIMESTRES
+// ============================================================
+
+model CampaignTeacherValidation {
+  id          String    @id @default(uuid()) @db.Uuid
+  termId      String    @map("term_id") @db.Uuid
+  classId     String    @map("class_id") @db.Uuid
+  subjectId   String    @map("subject_id") @db.Uuid
+  teacherId   String    @map("teacher_id") @db.Uuid
+  status      String    @db.VarChar(30)
+  validatedAt DateTime? @map("validated_at") @db.Timestamptz
+  validatedBy String?   @map("validated_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  term    Term    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([termId, classId, subjectId, teacherId])
+  @@index([termId, classId])
+  @@index([teacherId])
+  @@map("campaign_teacher_validations")
+}
+
+model CampaignDirectorValidation {
+  id          String    @id @default(uuid()) @db.Uuid
+  termId      String    @map("term_id") @db.Uuid
+  classId     String    @map("class_id") @db.Uuid
+  status      String    @db.VarChar(30)
+  activatedAt DateTime? @map("activated_at") @db.Timestamptz
+  validatedAt DateTime? @map("validated_at") @db.Timestamptz
+  validatedBy String?   @map("validated_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  term  Term  @relation(fields: [termId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([termId, classId])
+  @@index([termId])
+  @@map("campaign_director_validations")
 }

@@ -32,6 +32,7 @@ import type { ReportDecision } from "@/types/report-cards";
 import { DecisionEditor } from "./components/DecisionEditor";
 import { AppreciationEditor } from "./components/AppreciationEditor";
 import { ExportReportCardButton } from "./components/ExportReportCardButton";
+import { AttendanceSummaryCard } from "./components/AttendanceSummaryCard";
 
 export function ReportCardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -108,7 +109,6 @@ export function ReportCardDetailPage() {
 
   const handleValidate = async () => {
     if (!id) return;
-    // Sauvegarder d'abord si changement
     if (hasChanges) {
       await handleSave();
     }
@@ -124,7 +124,6 @@ export function ReportCardDetailPage() {
     ? `${report.student.lastName} ${report.student.firstName}`
     : "—";
 
-  // Trier les items par coefficient decroissant
   const items = (report.items || []).slice().sort((a, b) => {
     return Number(b.coefficient) - Number(a.coefficient);
   });
@@ -284,6 +283,14 @@ export function ReportCardDetailPage() {
           color="text-blue-600"
         />
       </div>
+
+      {/* ✅ NOUVEAU : SECTION ASSIDUITÉ */}
+      {report.studentId && report.academicYearId && (
+        <AttendanceSummaryCard
+          studentId={report.studentId}
+          academicYearId={report.academicYearId}
+        />
+      )}
 
       {/* DÉTAIL PAR MATIÈRE */}
       <Card>
@@ -476,7 +483,7 @@ export function ReportCardDetailPage() {
           )}
         </div>
       </div>
-    
+
       {/* DEC-6 : Modale de dérogation */}
       {showClearModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -519,7 +526,7 @@ export function ReportCardDetailPage() {
           </div>
         </div>
       )}
-</div>
+    </div>
   );
 }
 

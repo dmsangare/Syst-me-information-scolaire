@@ -14,6 +14,7 @@ import {
   RequirePermissions,
   CurrentUser,
   CurrentUserPayload,
+  AllowNoPermissions,
 } from "../common/decorators";
 import { SchoolScopeGuard } from "../common/guards";
 
@@ -25,6 +26,7 @@ export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 
   @Get("top-students")
+  @RequirePermissions("dashboard:view")
   @ApiOperation({ summary: "Top 3 eleves par cycle (tableau d'honneur)" })
   async topStudents(
     @CurrentUser() user: CurrentUserPayload,
@@ -52,6 +54,7 @@ export class DashboardController {
   }
 
   @Get("honor-roll")
+  @RequirePermissions("dashboard:view")
   @ApiOperation({ summary: "Tableau d'honneur : Top N classes par cycle" })
   async honorRoll(
     @CurrentUser() user: CurrentUserPayload,
@@ -69,6 +72,7 @@ export class DashboardController {
   }
 
   @Get("teacher")
+  @AllowNoPermissions()
   @ApiOperation({ summary: "Dashboard enseignant" })
   async teacherDashboard(@CurrentUser() user: CurrentUserPayload) {
     if (!user.schoolId) throw new BadRequestException("Utilisateur sans ecole");
@@ -76,6 +80,7 @@ export class DashboardController {
   }
 
   @Get("supervisor")
+  @AllowNoPermissions()
   @ApiOperation({ summary: "Dashboard surveillant" })
   async supervisorDashboard(@CurrentUser() user: CurrentUserPayload) {
     if (!user.schoolId) throw new BadRequestException("Utilisateur sans ecole");
@@ -83,6 +88,7 @@ export class DashboardController {
   }
 
   @Get("secretary")
+  @AllowNoPermissions()
   @ApiOperation({ summary: "Dashboard secretariat" })
   async secretaryDashboard(@CurrentUser() user: CurrentUserPayload) {
     if (!user.schoolId) throw new BadRequestException("Utilisateur sans ecole");

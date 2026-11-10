@@ -436,7 +436,7 @@ export class AssessmentsService {
     });
 
     return {
-      schoolName: school?.name || "SIS-MALI",
+      schoolName: school?.name || "Etablissement",
       schoolAddress: school?.address,
       schoolPhone: school?.phone,
       schoolLogoUrl: school?.logoUrl,

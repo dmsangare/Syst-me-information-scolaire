@@ -54,7 +54,7 @@ export async function generateSituationTemplate(
   academicYearLabel: string,
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "SIS-MALI";
+  wb.creator = "Etablissement";
   wb.created = new Date();
 
   // ============ Onglet SITUATION ============
@@ -127,7 +127,7 @@ export async function generateSituationTemplate(
   wsInstr.columns = [{ width: 100 }];
 
   const instructions = [
-    "SIS-MALI - Import de situation initiale",
+    "Import de situation initiale",
     `Annee scolaire : ${academicYearLabel}`,
     "",
     "OBJECTIF",
@@ -164,7 +164,7 @@ export async function generateSituationTemplate(
     "- Chaque facture sera marquee 'Import situation initiale'.",
     "",
     "SUPPORT",
-    "En cas de probleme, contactez votre installateur SIS-MALI.",
+    "En cas de probleme, contactez votre installateur.",
   ];
   instructions.forEach((line) => wsInstr.addRow([line]));
   wsInstr.getRow(1).font = { bold: true, size: 14 };

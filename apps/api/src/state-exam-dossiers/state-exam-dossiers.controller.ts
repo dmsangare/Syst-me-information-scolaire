@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RequirePermissions } from '../common/decorators';
 import { StateExamDossiersService } from './state-exam-dossiers.service';
 import {
   CreateSessionSchema,
@@ -37,6 +38,7 @@ export class StateExamDossiersController {
   // ============================================================
 
   @Get('sessions')
+  @RequirePermissions('exam:view')
   async listSessions(
     @Req() req: any,
     @Query('academicYearId') academicYearId?: string,
@@ -45,17 +47,20 @@ export class StateExamDossiersController {
   }
 
   @Get('sessions/:id')
+  @RequirePermissions('exam:view')
   async getSession(@Req() req: any, @Param('id') id: string) {
     return this.service.getSession(this.sid(req), id);
   }
 
   @Post('sessions')
+  @RequirePermissions('exam:create')
   async createSession(@Req() req: any, @Body() body: any) {
     const parsed = CreateSessionSchema.parse(body);
     return this.service.createSession(this.sid(req), this.uid(req), parsed);
   }
 
   @Post('sessions/:id/generate-dossiers')
+  @RequirePermissions('exam:create')
   async generateDossiers(
     @Req() req: any,
     @Param('id') id: string,
@@ -70,11 +75,13 @@ export class StateExamDossiersController {
   // ============================================================
 
   @Get('dossiers/:id')
+  @RequirePermissions('exam:view')
   async getDossier(@Req() req: any, @Param('id') id: string) {
     return this.service.getDossier(this.sid(req), id);
   }
 
   @Patch('dossiers/:id')
+  @RequirePermissions('exam:update')
   async patchDossier(
     @Req() req: any,
     @Param('id') id: string,
@@ -85,6 +92,7 @@ export class StateExamDossiersController {
   }
 
   @Post('dossiers/:id/status')
+  @RequirePermissions('exam:update')
   async changeStatus(
     @Req() req: any,
     @Param('id') id: string,
@@ -98,6 +106,7 @@ export class StateExamDossiersController {
   // ============================================================
 
   @Post('dossiers/:id/students/:studentId/pieces/:pieceType')
+  @RequirePermissions('exam:update')
   async upsertPiece(
     @Req() req: any,
     @Param('id') dossierId: string,
@@ -121,6 +130,7 @@ export class StateExamDossiersController {
   // ============================================================
 
   @Post('dossiers/:id/transmit')
+  @RequirePermissions('exam:update')
   async transmit(
     @Req() req: any,
     @Param('id') id: string,
@@ -131,6 +141,7 @@ export class StateExamDossiersController {
   }
 
   @Post('dossiers/:id/receive')
+  @RequirePermissions('exam:update')
   async receive(
     @Req() req: any,
     @Param('id') id: string,

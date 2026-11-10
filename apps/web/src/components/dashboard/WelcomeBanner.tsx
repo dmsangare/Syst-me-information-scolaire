@@ -50,7 +50,7 @@ export function WelcomeBanner({
           <p className="max-w-[260px] text-sm font-semibold leading-snug md:text-base">
             « Une école aujourd'hui, un meilleur avenir demain »
           </p>
-          <p className="mt-1 text-xs font-medium opacity-90">SIS-MALI</p>
+          <p className="mt-1 text-xs font-medium opacity-90">Établissement</p>
         </div>
       </div>
     </div>

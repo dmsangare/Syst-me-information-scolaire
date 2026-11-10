@@ -52,7 +52,7 @@ export function TechFooter() {
         PostgreSQL · Connecté
       </span>
       <span className="ml-auto text-sis-neutral-400">
-        SIS-MALI — L'éducation, notre priorité
+        L'éducation, notre priorité
       </span>
     </footer>
   );

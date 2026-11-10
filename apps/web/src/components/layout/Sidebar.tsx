@@ -1,4 +1,4 @@
-﻿import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   PieChart,
   LayoutDashboard,
@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   TrendingDown,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -104,6 +105,7 @@ const SECTIONS: NavSection[] = [
     title: "Système",
     items: [
       { label: "Années scolaires", to: "/academic-years", icon: Calendar, permission: "academic_year:view" },
+  { label: "Campagnes", to: "/campaigns", icon: ClipboardList, permission: "assessment:view" },
       { label: "Passage d'année", to: "/year-rollover", icon: GraduationCap, permission: "academic_year:create" },
       { label: "Examens d'État", to: "/state-exams", icon: Award, permission: "academic_year:view" },
       { label: "Rapports administratifs", to: "/admin-reports", icon: FileText, permission: "report_card:view", hideForRoles: ["TEACHER", "STUDENT", "PARENT"] },
@@ -118,7 +120,7 @@ export function Sidebar() {
   const { data: school } = useSchool();
 
   const hasLogo = !!school?.logoUrl;
-  const schoolName = school?.name || "SIS-MALI";
+  const schoolName = school?.name || "Établissement";
   const sigle = school?.sigle || "S";
 
   // Filtrage : permission + hideForRoles
@@ -198,7 +200,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t border-sis-neutral-200 p-3 dark:border-sis-neutral-800">
         <p className="text-xs text-muted-foreground text-center">
-          SIS-MALI v1.0
+          v1.0
         </p>
       </div>
     </aside>

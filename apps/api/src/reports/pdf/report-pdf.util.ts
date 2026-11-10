@@ -1,4 +1,4 @@
-﻿import { PdfGeneratorService } from "../../common/pdf";
+import { PdfGeneratorService } from "../../common/pdf";
 
 interface PDFOptions {
   title: string;
@@ -229,7 +229,7 @@ function buildHTML(opts: PDFOptions): string {
   <div class="header">
     <div class="school-info">
       <h1>${opts.schoolName}</h1>
-      <p>Système d'Information Scolaire — SIS-MALI</p>
+      
     </div>
     <div class="report-meta">
       <div class="report-title">${opts.title}</div>
@@ -246,7 +246,7 @@ function buildHTML(opts: PDFOptions): string {
   ${sectionsHTML}
 
   <div class="footer">
-    Document généré automatiquement par SIS-MALI · ${date}
+    Document généré automatiquement par ${opts.schoolName} · ${date}
   </div>
 </body>
 </html>`;

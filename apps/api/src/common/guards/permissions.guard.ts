@@ -1,6 +1,11 @@
 ﻿import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY, PERMISSIONS_KEY, CurrentUserPayload } from '../decorators';
+import {
+  IS_PUBLIC_KEY,
+  PERMISSIONS_KEY,
+  ALLOW_NO_PERMISSIONS_KEY,
+  CurrentUserPayload,
+} from '../decorators';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -20,7 +25,26 @@ export class PermissionsGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!required || required.length === 0) return true;
+    // ✅ FAIL-CLOSED : si aucune permission n'est déclarée,
+    // on rejette SAUF si la route est explicitement marquée
+    // @AllowNoPermissions() (routes globales authentifiées).
+    if (!required || required.length === 0) {
+      const allowNoPerms = this.reflector.getAllAndOverride<boolean>(
+        ALLOW_NO_PERMISSIONS_KEY,
+        [context.getHandler(), context.getClass()],
+      );
+      if (allowNoPerms) return true;
+
+      const user = context.switchToHttp().getRequest().user as CurrentUserPayload;
+      this.logger.error(
+        `[SECURITE] Route sans @RequirePermissions et sans @AllowNoPermissions : ` +
+        `${context.getClass().name}.${context.getHandler().name} — user=${user?.id}`,
+      );
+      throw new ForbiddenException(
+        'Acces refuse : aucune permission declaree sur cette route. ' +
+        'Ajoutez @RequirePermissions ou @AllowNoPermissions.',
+      );
+    }
 
     const user = context.switchToHttp().getRequest().user as CurrentUserPayload;
     if (!user) throw new ForbiddenException('Utilisateur non authentifie');

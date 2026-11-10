@@ -232,7 +232,7 @@ function CreateUserModal({
   const hasParentRole = selectedRoleCodes.includes("PARENT");
   const hasStudentRole = selectedRoleCodes.includes("STUDENT");
 
-  const emailDomain = schoolSigle ? `@${schoolSigle.toLowerCase()}.ml` : "@sis-mali.local";
+  const emailDomain = schoolSigle ? `@${schoolSigle.toLowerCase()}.ml` : "@etablissement.local";
   const fullEmail = emailLocal ? `${emailLocal}${emailDomain}` : "";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -558,7 +558,7 @@ function EditUserModal({ user, onClose }: { user: any; onClose: () => void }) {
 
   const emailDomain = school?.sigle
     ? `@${school.sigle.toLowerCase()}.ml`
-    : "@sis-mali.local";
+    : "@etablissement.local";
 
   // Extraction du local part de l'email
   const emailLocal = email.includes("@") ? email.split("@")[0] : email;

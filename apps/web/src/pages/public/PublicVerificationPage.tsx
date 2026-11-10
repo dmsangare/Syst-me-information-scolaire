@@ -52,7 +52,7 @@ export function PublicVerificationPage() {
     <div className="min-h-screen bg-slate-50 p-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">SIS-MALI</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Vérification de document</h1>
           <p className="text-sm text-slate-500">Vérification de document</p>
         </div>
 
@@ -72,7 +72,7 @@ export function PublicVerificationPage() {
               <p className={`text-sm ${isRevoked ? 'text-red-600' : 'text-green-600'}`}>
                 {isRevoked
                   ? `Révoqué le ${new Date(result.revokedAt!).toLocaleDateString('fr-FR')}`
-                  : 'Signé et vérifié par SIS-MALI'}
+                  : 'Signé et vérifié'}
               </p>
             </div>
           </div>

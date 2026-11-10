@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import {  Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -87,7 +87,8 @@ export class ClassPdfService {
           where: { id: report.student.schoolId },
           select: { name: true, address: true, phone: true, motto: true, logoUrl: true, stampUrl: true, academy: true, cap: true },
         });
-        const schoolName = school?.name ?? 'SIS-MALI';
+        if (!school?.name) { throw new BadRequestException("Le nom de l'établissement n'est pas configuré. Rendez-vous dans Paramètres → Établissement."); }
+        const schoolName = school.name;
 
         const data: any = {
           // C4 : nom réel de l'école

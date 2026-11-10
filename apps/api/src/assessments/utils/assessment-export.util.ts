@@ -228,7 +228,7 @@ function buildHTML(data: AssessmentExportData): string {
 </div>
 
 <div class="footer">
-  Document genere automatiquement par SIS-MALI le ${formatDate(new Date().toISOString())} — Annee scolaire ${data.academicYear}
+  Document genere automatiquement par ${escapeHtml(data.schoolName ?? "Etablissement")} le ${formatDate(new Date().toISOString())} — Annee scolaire ${data.academicYear}
 </div>
 
 </body>
@@ -242,7 +242,7 @@ export async function generateAssessmentExcel(
   data: AssessmentExportData,
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "SIS-MALI";
+  workbook.creator = "Etablissement";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet("Notes", {
@@ -329,7 +329,7 @@ export async function generateAssessmentExcel(
   // Pied de page
   sheet.addRow([]);
   const footerCell = sheet.addRow([
-    `Document genere par SIS-MALI · ${new Date().toLocaleDateString("fr-FR")}`,
+    `Document genere par ${data.schoolName ?? "Etablissement"} · ${new Date().toLocaleDateString("fr-FR")}`,
   ]);
   footerCell.font = { size: 9, italic: true, color: { argb: "FF9CA3AF" } };
 
@@ -396,4 +396,8 @@ export function generateAssessmentCSV(data: AssessmentExportData): string {
   lines.push([`Note maximale`, data.stats.max.toFixed(1)].map(escape).join(sep));
 
   return lines.join("\n");
+}
+
+function escapeHtml(text: string): string {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }

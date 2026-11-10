@@ -6,7 +6,7 @@ import { Request } from "express";
 import { AuthService } from "./auth.service";
 import { LoginSchema, ChangePasswordSchema } from "./dto";
 import { ZodValidationPipe } from "../common/pipes";
-import { Public, CurrentUser } from "../common/decorators";
+import { Public, CurrentUser, AllowNoPermissions } from "../common/decorators";
 
 @ApiTags("Authentication")
 @Controller("auth")
@@ -39,6 +39,7 @@ export class AuthController {
     return this.authService.refresh(user.id, user.tokenId, ip, ua);
   }
 
+  @AllowNoPermissions()
   @ApiBearerAuth("access-token")
   @Post("logout")
   @HttpCode(HttpStatus.OK)
@@ -47,6 +48,7 @@ export class AuthController {
     return this.authService.logout(userId);
   }
 
+  @AllowNoPermissions()
   @ApiBearerAuth("access-token")
   @Get("me")
   @ApiOperation({ summary: "Profil de l utilisateur connecte" })
@@ -54,6 +56,7 @@ export class AuthController {
     return this.authService.me(userId);
   }
 
+  @AllowNoPermissions()
   @ApiBearerAuth("access-token")
   @Post("password/change")
   @HttpCode(HttpStatus.OK)

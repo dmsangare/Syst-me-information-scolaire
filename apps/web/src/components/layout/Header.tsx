@@ -44,7 +44,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Button>
         <div className="hidden md:flex items-center gap-2">
           <span className="text-sm font-semibold text-muted-foreground">
-            {school?.name || "SIS-MALI"}
+            {school?.name || "Établissement"}
           </span>
         </div>
       </div>

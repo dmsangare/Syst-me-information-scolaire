@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RequirePermissions } from '../common/decorators';
 import { ExportService, ExcelSheet } from './export.service';
 
 @Controller('export')
@@ -20,6 +21,7 @@ export class ExportController {
    * Retourne un .xlsx (blob).
    */
   @Post('excel')
+  @RequirePermissions('student:export', 'report_card:export', 'assessment:export')
   async excel(
     @Body() body: { filename: string; sheets: ExcelSheet[] },
     @Res() res: Response,

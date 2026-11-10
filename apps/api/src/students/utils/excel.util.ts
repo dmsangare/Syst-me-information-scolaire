@@ -17,7 +17,7 @@ export interface ExcelOptions {
 
 export async function generateExcel(options: ExcelOptions): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "SIS-MALI";
+  workbook.creator = "Etablissement";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet(options.sheetName || "Liste", {

@@ -1,4 +1,4 @@
-﻿import { PdfGeneratorService } from "../../common/pdf";
+import { PdfGeneratorService } from "../../common/pdf";
 
 interface Movement {
   time: string;
@@ -215,6 +215,10 @@ table.movements td.empty { text-align: center; color: #9CA3AF; padding: 20px; fo
     <div class="signature-label">Le Directeur / Comptable</div>
   </div>
 </div>
-<div class="footer">Rapport de caisse genere automatiquement par SIS-MALI — Conservez ce document pour vos archives comptables.</div>
+<div class="footer">Rapport de caisse genere automatiquement par ${escapeHtml(data.schoolName ?? "Etablissement")} — Conservez ce document pour vos archives comptables.</div>
 </body></html>`;
+}
+
+function escapeHtml(text: string): string {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }

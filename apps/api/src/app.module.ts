@@ -44,6 +44,7 @@ import { DocumentsModule } from "./documents/documents.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { VerificationModule } from "./verification/verification.module";
 import { YearRolloverModule } from "./year-rollover/year-rollover.module";
+import { CampaignsModule } from "./campaigns/campaigns.module";
 import { FinanceClosureModule } from "./finance-closure/finance-closure.module";
 import { StateExamsModule } from "./state-exams/state-exams.module";
 import { ReportsModule } from "./reports/reports.module";
@@ -125,6 +126,7 @@ import { FilesModule } from "./files/files.module";
     NotificationsModule,
     VerificationModule,
     YearRolloverModule,
+    CampaignsModule,
     FinanceClosureModule,
     StateExamsModule,
     ReportsModule,

@@ -7,9 +7,10 @@ import { AnnualResultsService } from "./annual-results.service";
 import { DashboardModule } from "../dashboard/dashboard.module";
 import { VerificationModule } from "../verification/verification.module";
 import { PdfModule } from "../common/pdf";
+import { AttendanceModule } from "../attendance/attendance.module";
 
 @Module({
-  imports: [ClassPdfModule, DashboardModule, VerificationModule, PdfModule],
+  imports: [ClassPdfModule, DashboardModule, VerificationModule, PdfModule, AttendanceModule],
   controllers: [ReportCardsController, AnnualResultsController],
   providers: [ReportCardsService, AnnualResultsService],
   exports: [ReportCardsService, AnnualResultsService],

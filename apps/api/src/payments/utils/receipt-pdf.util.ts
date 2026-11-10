@@ -1,4 +1,4 @@
-﻿import { PdfGeneratorService } from "../../common/pdf";
+import { PdfGeneratorService } from "../../common/pdf";
 
 interface ReceiptData {
   schoolName: string;
@@ -176,6 +176,10 @@ body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1F293
     <div class="signature-label">Cachet etablissement</div>
   </div>
 </div>
-<div class="footer">Ce recu ne vaut que pour le montant indique. Toute reproduction non autorisee est interdite.<br/>Document genere par SIS-MALI</div>
+<div class="footer">Ce recu ne vaut que pour le montant indique. Toute reproduction non autorisee est interdite.<br/>Document genere par ${escapeHtml(data.schoolName ?? "Etablissement")}</div>
 </body></html>`;
+}
+
+function escapeHtml(text: string): string {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }

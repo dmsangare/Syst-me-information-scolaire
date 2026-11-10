@@ -14,3 +14,4 @@ export * from "./cash-sessions";
 export * from "./exams";
 export * from "./users";
 export * from "./schools";
+export * from "./campaigns";

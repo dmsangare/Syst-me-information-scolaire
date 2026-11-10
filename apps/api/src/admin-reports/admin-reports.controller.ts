@@ -3,6 +3,7 @@
 } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RequirePermissions, Public } from '../common/decorators';
 import { AdminReportsService } from './admin-reports.service';
 import { generateReportPDF } from '../reports/pdf/report-pdf.util';
 import { generateOfficialReportPDF } from './pdf/admin-report-pdf.util';
@@ -22,44 +23,53 @@ export class AdminReportsController {
   private uid(req: any): string { return req.user.id ?? req.user.userId; }
 
   @Get('health')
+  @Public()
   health() { return { status: 'ok', module: 'admin-reports' }; }
 
   @Post('seed')
+  @RequirePermissions('report:create')
   async seed() { return this.service.ensureSeed(); }
 
   // --- Templates ---
   @Get('templates')
+  @RequirePermissions('report:view')
   async listTemplates(@Req() req: any, @Query() query: any) {
     return this.service.listTemplates(this.sid(req), ListTemplatesQuerySchema.parse(query));
   }
 
   @Get('templates/:id')
+  @RequirePermissions('report:view')
   async getTemplate(@Req() req: any, @Param('id') id: string) {
     return this.service.getTemplate(this.sid(req), id);
   }
 
   // --- Reports ---
   @Get('reports')
+  @RequirePermissions('report:view')
   async listReports(@Req() req: any, @Query() query: any) {
     return this.service.listReports(this.sid(req), ListReportsQuerySchema.parse(query));
   }
 
   @Get('reports/:id')
+  @RequirePermissions('report:view')
   async getReport(@Req() req: any, @Param('id') id: string) {
     return this.service.getReport(this.sid(req), id);
   }
 
   @Post('reports')
+  @RequirePermissions('report:create')
   async createReport(@Req() req: any, @Body() body: any) {
     return this.service.createReport(this.sid(req), this.uid(req), body);
   }
 
   @Post('reports/:id/generate')
+  @RequirePermissions('report:create')
   async generate(@Req() req: any, @Param('id') id: string) {
     return this.service.generateReport(this.sid(req), this.uid(req), id);
   }
 
   @Patch('reports/:id')
+  @RequirePermissions('report:update')
   async patch(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.service.patchReport(this.sid(req), this.uid(req), id, body);
   }
@@ -69,6 +79,7 @@ export class AdminReportsController {
   // ============================================================
 
   @Get('reports/:id/pdf')
+  @RequirePermissions('report:export')
   async pdf(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
     const { data: report } = await this.service.getReport(this.sid(req), id);
 
@@ -149,6 +160,7 @@ export class AdminReportsController {
   // ============================================================
 
   @Get('reports/:id/excel')
+  @RequirePermissions('report:export')
   async excel(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
     const { data: report } = await this.service.getReport(this.sid(req), id);
     const opts = this.buildExcelOptions(report, req.user.schoolName ?? 'Établissement');
@@ -332,16 +344,19 @@ export class AdminReportsController {
   // ============================================================
 
   @Post('reports/:id/submit')
+  @RequirePermissions('report:update')
   async submit(@Req() req: any, @Param('id') id: string) {
     return this.service.submitForVerification(this.sid(req), this.uid(req), id);
   }
 
   @Post('reports/:id/validate')
+  @RequirePermissions('report:validate')
   async validate(@Req() req: any, @Param('id') id: string) {
     return this.service.validateReport(this.sid(req), this.uid(req), id);
   }
 
   @Post('reports/:id/unlock')
+  @RequirePermissions('report:update')
   async unlock(
     @Req() req: any,
     @Param('id') id: string,
@@ -351,6 +366,7 @@ export class AdminReportsController {
   }
 
   @Get('reports/:id/versions')
+  @RequirePermissions('report:view')
   async versions(@Req() req: any, @Param('id') id: string) {
     return this.service.listVersions(this.sid(req), id);
   }
@@ -360,6 +376,7 @@ export class AdminReportsController {
   // ============================================================
 
   @Post('reports/:id/transmit')
+  @RequirePermissions('report:update')
   async transmit(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.service.transmitReport(this.sid(req), this.uid(req), id, {
       recipient: body?.recipient,
@@ -372,6 +389,7 @@ export class AdminReportsController {
   }
 
   @Post('reports/:id/receive')
+  @RequirePermissions('report:update')
   async receive(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.service.receiveReport(this.sid(req), this.uid(req), id, {
       transmissionId: body?.transmissionId,
@@ -381,6 +399,7 @@ export class AdminReportsController {
   }
 
   @Get('reports/:id/transmissions')
+  @RequirePermissions('report:view')
   async transmissions(@Req() req: any, @Param('id') id: string) {
     return this.service.listTransmissions(this.sid(req), id);
   }
@@ -390,6 +409,7 @@ export class AdminReportsController {
   // ============================================================
 
   @Get('archives')
+  @RequirePermissions('report:view')
   async listArchives(@Req() req: any, @Query() query: any) {
     return this.service.listArchives(this.sid(req), {
       academicYearId: query?.academicYearId,
@@ -401,6 +421,7 @@ export class AdminReportsController {
   }
 
   @Get('archives/export')
+  @RequirePermissions('report:export')
   async exportArchives(@Req() req: any, @Query() query: any, @Res() res: Response) {
     const data = await this.service.buildArchivesExportData(
       this.sid(req),
@@ -442,27 +463,32 @@ export class AdminReportsController {
   // ============================================================
 
   @Get('deadlines')
+  @RequirePermissions('report:view')
   async listDeadlines(@Req() req: any, @Query() query: any) {
     return this.service.listDeadlines(this.sid(req), query?.academicYearId);
   }
 
   @Get('deadlines/upcoming')
+  @RequirePermissions('report:view')
   async listUpcoming(@Req() req: any, @Query() query: any) {
     const days = query?.days ? parseInt(query.days, 10) : 30;
     return this.service.listUpcomingDeadlines(this.sid(req), days);
   }
 
   @Post('deadlines')
+  @RequirePermissions('report:create')
   async createDeadline(@Req() req: any, @Body() body: any) {
     return this.service.createDeadline(this.sid(req), body);
   }
 
   @Patch('deadlines/:id')
+  @RequirePermissions('report:update')
   async patchDeadline(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.service.patchDeadline(this.sid(req), id, body);
   }
 
   @Delete('deadlines/:id')
+  @RequirePermissions('report:delete')
   async deleteDeadline(@Req() req: any, @Param('id') id: string) {
     return this.service.deleteDeadline(this.sid(req), id);
   }
@@ -472,6 +498,7 @@ export class AdminReportsController {
   // ============================================================
 
   @Get('dashboard')
+  @RequirePermissions('report:view')
   async dashboard(@Req() req: any, @Query() query: any) {
     return this.service.getDashboard(this.sid(req), query?.academicYearId);
   }
@@ -481,21 +508,25 @@ export class AdminReportsController {
   // ============================================================
 
   @Get('institutional/status')
+  @RequirePermissions('report:view')
   async institutionalStatus(@Req() req: any) {
     return this.service.getInstitutionalStatus(this.sid(req));
   }
 
   @Post('institutional/enable')
+  @RequirePermissions('report:update')
   async institutionalEnable(@Req() req: any) {
     return this.service.setInstitutionalMode(this.sid(req), true);
   }
 
   @Post('institutional/disable')
+  @RequirePermissions('report:update')
   async institutionalDisable(@Req() req: any) {
     return this.service.setInstitutionalMode(this.sid(req), false);
   }
 
   @Get('institutional/consolidated')
+  @RequirePermissions('report:view')
   async institutionalConsolidated(@Req() req: any, @Query() query: any) {
     return this.service.getConsolidatedView(this.sid(req), query?.academicYearId);
   }

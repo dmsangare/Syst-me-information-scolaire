@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { parseStudentsExcel, ParsedStudent } from "./utils/excel-import.util";
 import { StudentCreateDto, StudentUpdateDto } from "./dto";
@@ -808,7 +808,7 @@ export class StudentsService {
       schoolAddress,
       columns,
       data,
-      footerNote: "Document genere automatiquement par SIS-MALI — Signature et cachet du directeur",
+      footerNote: "Document genere automatiquement — Signature et cachet du directeur",
     }, this.pdfGenerator);
   }
 

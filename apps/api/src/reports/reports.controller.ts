@@ -1,6 +1,7 @@
 ﻿import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RequirePermissions } from '../common/decorators';
 import { ReportsService } from './reports.service';
 import { generateReportPDF } from './pdf/report-pdf.util';
 import { PdfGeneratorService } from '../common/pdf';
@@ -18,41 +19,49 @@ export class ReportsController {
   }
 
   @Get('dashboard')
+  @RequirePermissions('report:view')
   dashboard(@Req() req: any, @Query('academicYearId') academicYearId?: string) {
     return this.service.getDashboard(this.sid(req), academicYearId);
   }
 
   @Get('financial')
+  @RequirePermissions('report:view')
   financial(@Req() req: any, @Query('academicYearId') academicYearId?: string) {
     return this.service.getFinancial(this.sid(req), academicYearId);
   }
 
   @Get('unpaid')
+  @RequirePermissions('report:view')
   unpaid(@Req() req: any, @Query('classId') classId?: string) {
     return this.service.getUnpaid(this.sid(req), classId);
   }
 
   @Get('students')
+  @RequirePermissions('report:view')
   students(@Req() req: any, @Query('academicYearId') academicYearId?: string) {
     return this.service.getStudents(this.sid(req), academicYearId);
   }
 
   @Get('pedagogical')
+  @RequirePermissions('report:view')
   pedagogical(@Req() req: any, @Query('termId') termId?: string) {
     return this.service.getPedagogicalStats(this.sid(req), termId);
   }
 
   @Get('attendance')
+  @RequirePermissions('report:view')
   attendance(@Req() req: any, @Query('classId') classId?: string, @Query('termId') termId?: string) {
     return this.service.getAttendance(this.sid(req), classId, termId);
   }
 
   @Get('classes')
+  @RequirePermissions('report:view')
   classes(@Req() req: any) {
     return this.service.getClassesComparison(this.sid(req));
   }
 
   @Get('monthly')
+  @RequirePermissions('report:view')
   monthly(@Req() req: any) {
     return this.service.getMonthlyEvolution(this.sid(req));
   }
@@ -61,6 +70,7 @@ export class ReportsController {
   // PDF — FINANCIER
   // ============================================================
   @Get('pdf/financial')
+  @RequirePermissions('report:view')
   async pdfFinancial(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getFinancial(this.sid(req))).data;
     const schoolName = req.user.schoolName ?? 'École';
@@ -117,6 +127,7 @@ export class ReportsController {
   // PDF — IMPAYÉS
   // ============================================================
   @Get('pdf/unpaid')
+  @RequirePermissions('report:view')
   async pdfUnpaid(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getUnpaid(this.sid(req))).data;
     const schoolName = req.user.schoolName ?? 'École';
@@ -174,6 +185,7 @@ export class ReportsController {
   // PDF — EFFECTIFS
   // ============================================================
   @Get('pdf/students')
+  @RequirePermissions('report:view')
   async pdfStudents(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getStudents(this.sid(req))).data;
     const schoolName = req.user.schoolName ?? 'École';
@@ -226,6 +238,7 @@ export class ReportsController {
   // PDF — PÉDAGOGIQUE
   // ============================================================
   @Get('pdf/pedagogical')
+  @RequirePermissions('report:view')
   async pdfPedagogical(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getPedagogicalStats(this.sid(req))).data;
     const schoolName = req.user.schoolName ?? 'École';
@@ -285,6 +298,7 @@ export class ReportsController {
   // PDF — PRÉSENCES
   // ============================================================
   @Get('pdf/attendance')
+  @RequirePermissions('report:view')
   async pdfAttendance(@Req() req: any, @Res() res: Response) {
     const data = (await this.service.getAttendance(this.sid(req))).data;
     const schoolName = req.user.schoolName ?? 'École';

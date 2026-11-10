@@ -1,4 +1,4 @@
-﻿import { PdfGeneratorService } from "../../common/pdf";
+import { PdfGeneratorService } from "../../common/pdf";
 
 export interface PDFColumn {
   header: string;
@@ -31,7 +31,7 @@ export async function generatePDF(
     footerTemplate: `
       <div style="font-size: 8px; color: #9CA3AF; text-align: center; width: 100%; padding: 5px 0;">
         Page <span class="pageNumber"></span> / <span class="totalPages"></span> —
-        SIS-MALI — Genere le ${new Date().toLocaleDateString("fr-FR")}
+        ${escapeHtml(options.schoolName ?? "Etablissement")} — Genere le ${new Date().toLocaleDateString("fr-FR")}
       </div>
     `,
   });

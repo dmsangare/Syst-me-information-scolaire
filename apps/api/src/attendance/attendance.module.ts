@@ -25,6 +25,10 @@ import { ParentContactsService } from "./parent-contacts.service";
     AttendanceAlertsService,
     ParentContactsService,
   ],
-  exports: [AttendanceService, DailyAttendanceService],
+  exports: [
+    AttendanceService,
+    DailyAttendanceService,
+    AttendanceStudentService,  // ✅ NOUVEAU : exporté pour ReportCardsModule
+  ],
 })
 export class AttendanceModule {}

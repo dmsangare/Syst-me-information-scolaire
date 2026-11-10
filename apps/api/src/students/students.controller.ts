@@ -15,7 +15,7 @@ import {
   StudentListQueryDto,
 } from "./dto";
 import { ZodValidationPipe } from "../common/pipes";
-import { RequirePermissions, CurrentUser, CurrentUserPayload } from "../common/decorators";
+import { RequirePermissions, CurrentUser, CurrentUserPayload, AllowNoPermissions } from "../common/decorators";
 import { SchoolScopeGuard } from "../common/guards";
 
 @ApiTags("Students")
@@ -51,6 +51,7 @@ export class StudentsController {
   }
 
   @Get("me")
+  @AllowNoPermissions()
   @ApiOperation({ summary: "Profil de l'élève connecté (via son userId)" })
   async me(@CurrentUser() user: CurrentUserPayload) {
     const student = await this.service.findByUserId(
@@ -239,7 +240,7 @@ export class StudentsController {
     const school = schoolId
       ? await this.prisma.school.findUnique({ where: { id: schoolId } })
       : null;
-    const schoolName = school?.name || "SIS-MALI";
+    if (!school?.name) throw new BadRequestException("Le nom de l'établissement n'est pas configuré."); const schoolName = school.name;
 
     const buffer = await this.service.exportExcel(
       schoolId,
@@ -310,7 +311,7 @@ export class StudentsController {
     const school = schoolId
       ? await this.prisma.school.findUnique({ where: { id: schoolId } })
       : null;
-    const schoolName = school?.name || "SIS-MALI";
+    if (!school?.name) throw new BadRequestException("Le nom de l'établissement n'est pas configuré."); const schoolName = school.name;
     const schoolAddress = school?.address || undefined;
 
     const buffer = await this.service.exportPDF(

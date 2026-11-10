@@ -1,4 +1,4 @@
-﻿import { PdfGeneratorService } from "../../common/pdf";
+import { PdfGeneratorService } from "../../common/pdf";
 import QRCode from "qrcode";
 
 interface TransferCertificateData {
@@ -270,7 +270,7 @@ function buildCertificateHTML(
         </div>
 
         <div class="footer">
-          Document genere automatiquement par SIS-MALI le ${formatDate(data.issuedAt)} — Toute reproduction non autorisee est interdite.
+          Document genere automatiquement par ${escapeHtml(data.schoolName ?? "Etablissement")} le ${formatDate(data.issuedAt)} — Toute reproduction non autorisee est interdite.
         </div>
       </body>
     </html>
