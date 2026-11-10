@@ -89,3 +89,46 @@ nettoyage.ps1
 nettoyage2.js
 
 seed-permissions.js
+
+# Backups locaux
+_backup_*
+*.backup-*
+apps/api/src.backup-*
+
+
+# ============================================================
+# Ajouts (preparation depot public)
+# ============================================================
+
+# Secrets (ne jamais committer)
+.env
+.env.*
+!.env.example
+
+# Backups locaux
+_backup_*
+*.backup-*
+apps/api/src.backup-*
+
+# Rapports de dev
+LOT_*.md
+
+# Scripts jetables
+clean.js
+clean.ps1
+fix_*.js
+fix_*.ps1
+nettoyage*.js
+nettoyage*.ps1
+
+# Screenshots de tests
+playwright_screenshots/
+
+# Audit
+audit/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
