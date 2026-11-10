@@ -132,3 +132,4 @@ audit/
 Thumbs.db
 .vscode/
 .idea/
+check-tsc.ps1
