@@ -3,7 +3,7 @@
 # SIS-MALI — Installation sur Ubuntu LTS (22.04 / 24.04)
 # ============================================================
 # Usage :
-#   git clone git@github.com:dmsangare/Syst-me-information-scolaire.git
+#   git clone https://github.com/dmsangare/Syst-me-information-scolaire.git
 #   cd Syst-me-information-scolaire
 #   cp .env.example .env
 #   nano .env  # remplir les vraies valeurs

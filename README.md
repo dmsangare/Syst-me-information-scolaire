@@ -14,7 +14,7 @@ Application de gestion scolaire pour les établissements du Mali.
 ## Installation rapide (Ubuntu LTS 22.04 / 24.04)
 
 ```bash
-git clone git@github.com:dmsangare/Syst-me-information-scolaire.git
+git clone https://github.com/dmsangare/Syst-me-information-scolaire.git
 cd Syst-me-information-scolaire
 cp .env.example .env
 nano .env
