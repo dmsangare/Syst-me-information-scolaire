@@ -59,8 +59,22 @@ export interface ReportCardPDFData {
   absencesCount: number;
   latesCount: number;
 
-  decision: string | null;
+   decision: string | null;
   appreciation: string | null;
+  qrCodeDataUrl?: string | null;
+
+  // ✅ NOUVEAU : assiduité détaillée
+  attendanceStats?: {
+    totalDays: number;
+    presentDays: number;
+    absentDays: number;
+    justifiedDays: number;
+    unjustifiedDays: number;
+    pendingDays: number;
+    lateDays: number;
+    rate: number;
+  } | null;
+
 }
 
 const DECISION_LABELS: Record<string, string> = {
@@ -219,7 +233,7 @@ function buildHTML(data: ReportCardPDFData): string {
   .appreciation-text { font-size: 10px; line-height: 1.5; color: #374151; font-style: italic; min-height: 28px; }
   .decision-text { font-size: 12px; font-weight: bold; color: #1E40AF; text-align: center; padding: 4px 0; }
   table.sign { width: 100%; border-collapse: collapse; margin-top: 14px; page-break-inside: avoid; }
-  table.sign td { width: 33%; text-align: center; vertical-align: bottom; padding: 0 8px; border: 0; height: 80px; }
+  table.sign td { width: 24%; text-align: center; vertical-align: bottom; padding: 0 8px; border: 0; height: 80px; }
   .signature-line { border-top: 1px solid #1F2937; margin-top: 4px; padding-top: 3px; font-size: 8.5px; color: #4B5563; font-style: italic; }
   .footer { text-align: center; font-size: 7.5px; color: #6B7280; margin-top: 12px; padding-top: 6px; border-top: 1px solid #E5E7EB; }
 </style>
@@ -294,6 +308,49 @@ function buildHTML(data: ReportCardPDFData): string {
   </tr>
 </table>
 
+${data.attendanceStats ? `
+<div class="section" style="border-color:#FCD34D;background:#FFFBEB;">
+  <div class="section-title" style="color:#92400E;">Assiduité — Année ${escapeHtml(data.academicYear)}</div>
+  <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+    <tr>
+      <td style="padding:3px 6px;border-bottom:1px solid #FDE68A;">
+        <span style="color:#4B5563;">Total jours d'appel</span>
+        <strong style="float:right;">${data.attendanceStats.totalDays}</strong>
+      </td>
+      <td style="padding:3px 6px;border-bottom:1px solid #FDE68A;">
+        <span style="color:#4B5563;">Présences</span>
+        <strong style="float:right;color:#047857;">${data.attendanceStats.presentDays}</strong>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:3px 6px;border-bottom:1px solid #FDE68A;">
+        <span style="color:#4B5563;">Absences justifiées</span>
+        <strong style="float:right;color:#0369A1;">${data.attendanceStats.justifiedDays}</strong>
+      </td>
+      <td style="padding:3px 6px;border-bottom:1px solid #FDE68A;">
+        <span style="color:#4B5563;">Absences non justifiées</span>
+        <strong style="float:right;color:#B91C1C;">${data.attendanceStats.unjustifiedDays}</strong>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:3px 6px;border-bottom:1px solid #FDE68A;">
+        <span style="color:#4B5563;">Justifications en attente</span>
+        <strong style="float:right;color:#C2410C;">${data.attendanceStats.pendingDays}</strong>
+      </td>
+      <td style="padding:3px 6px;border-bottom:1px solid #FDE68A;">
+        <span style="color:#4B5563;">Retards</span>
+        <strong style="float:right;color:#92400E;">${data.attendanceStats.lateDays}</strong>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding:5px 6px;text-align:center;font-weight:bold;color:#92400E;background:#FEF3C7;">
+        Taux de présence annuel : ${data.attendanceStats.rate}%
+      </td>
+    </tr>
+  </table>
+</div>
+` : ""}
+
 <div class="section">
   <div class="section-title">Appréciation générale</div>
   <div class="appreciation-text">
@@ -310,12 +367,13 @@ ${hasDecision ? `<div class="section" style="border-color:#0EA5E9;background:#F0
   <tr>
     <td><div class="signature-line">Le Maître ou la Maîtresse / Le Titulaire de classe</div></td>
     <td>${stamp ? `<img src="${stamp}" alt="Cachet" style="height:70px;object-fit:contain;" />` : ""}<div class="signature-line">Le Directeur / La Directrice</div></td>
+    ${data.qrCodeDataUrl ? `<td style="text-align:center;vertical-align:top;"><img src="${data.qrCodeDataUrl}" alt="QR de verification" style="width:70px;height:70px;" /><div style="font-size:6.5px;color:#6B7280;margin-top:2px;">Scannez pour verifier</div></td>` : ""}
     <td><div class="signature-line">Visa du parent ou tuteur</div></td>
   </tr>
 </table>
 
 <div class="footer">
-  Document généré par SIS-MALI le ${formatDate(new Date().toISOString())}
+  Document généré par ${escapeHtml(data.schoolName)} le ${formatDate(new Date().toISOString())}
 </div>
 
 </body>

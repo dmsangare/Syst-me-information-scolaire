@@ -140,7 +140,7 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
   table.info td { padding: 5px 10px; font-size: 9.5px; border: 0; }
   .appreciation-text { font-size: 10px; line-height: 1.5; color: #374151; font-style: italic; min-height: 28px; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px; }
   table.sign { width: 100%; border-collapse: collapse; margin-top: 14px; page-break-inside: avoid; }
-  table.sign td { width: 33%; text-align: center; vertical-align: bottom; padding: 0 8px; border: 0; height: 80px; }
+  table.sign td { width: 24%; text-align: center; vertical-align: bottom; padding: 0 8px; border: 0; height: 80px; }
   .signature-line { border-top: 1px solid #1F2937; margin-top: 4px; padding-top: 3px; font-size: 8.5px; color: #4B5563; font-style: italic; }
   .footer { text-align: center; font-size: 7.5px; color: #6B7280; margin-top: 12px; padding-top: 6px; border-top: 1px solid #E5E7EB; }
 </style>
@@ -242,12 +242,13 @@ function buildAnnualHTML(data: AnnualReportCardPDFData): string {
   <tr>
     <td><div class="signature-line">Le Maître ou la Maîtresse / Le Titulaire de classe</div></td>
     <td>${stamp ? `<img src="${stamp}" alt="Cachet" style="height:70px;object-fit:contain;" />` : ""}<div class="signature-line">Le Directeur / La Directrice</div></td>
+    ${data.qrCodeDataUrl ? `<td style="text-align:center;vertical-align:top;"><img src="${data.qrCodeDataUrl}" alt="QR de verification" style="width:70px;height:70px;" /><div style="font-size:6.5px;color:#6B7280;margin-top:2px;">Scannez pour verifier</div></td>` : ""}
     <td><div class="signature-line">Visa du parent ou tuteur</div></td>
   </tr>
 </table>
 
 <div class="footer">
-  Document généré par SIS-MALI le ${formatDate(new Date().toISOString())}
+  Document généré par ${escapeHtml(data.schoolName)} le ${formatDate(new Date().toISOString())}
 </div>
 
 </body>
