@@ -162,96 +162,66 @@ function buildOfficialHTML(
   const { school, academicYear, report, signature } = opts;
   const dateStr = formatDate(new Date());
 
-  // Annee scolaire
-  let yearLabel = academicYear?.label ?? '—';
+  let yearLabel = academicYear?.label ?? "—";
   if (!academicYear?.label && academicYear?.startDate && academicYear?.endDate) {
     yearLabel = `${new Date(academicYear.startDate).getFullYear()}-${new Date(academicYear.endDate).getFullYear()}`;
   }
 
-  // Bloc logo (a droite du header)
   const logoBlock = images.logo
-    ? `<img src="${images.logo}" alt="Logo" style="max-height:70px; max-width:120px;" />`
-    : `<div style="width:70px;"></div>`;
+    ? `<img src="${images.logo}" alt="Logo" style="max-height:70px; max-width:120px; object-fit:contain;" />`
+    : `<div style="width:70px; height:70px; background:#f3f4f6; border-radius:8px;"></div>`;
 
-  // Bloc bordereau
   const bordereauBlock = report.bordereauNumber
     ? `<div class="bordereau">
          <span class="bordereau-label">Bordereau N°</span>
          <span class="bordereau-value">${escapeHtml(report.bordereauNumber)}</span>
        </div>`
-    : '';
+    : "";
 
-  // Summary cards
-  const summaryHTML =
-    opts.summary && opts.summary.length > 0
-      ? `<div class="summary">
-          ${opts.summary
-            .map(
-              (s) => `
-            <div class="summary-item">
-              <div class="summary-label">${escapeHtml(s.label)}</div>
-              <div class="summary-value">${escapeHtml(s.value)}</div>
-            </div>
-          `,
-            )
-            .join('')}
-        </div>`
-      : '';
+  const summaryHTML = opts.summary && opts.summary.length > 0
+    ? `<div class="summary">
+        ${opts.summary.map((s) => `
+          <div class="summary-item">
+            <div class="summary-label">${escapeHtml(s.label)}</div>
+            <div class="summary-value">${escapeHtml(s.value)}</div>
+          </div>
+        `).join("")}
+      </div>`
+    : "";
 
-  // Sections
-  const sectionsHTML = opts.sections
-    .map((sec) => {
-      const cols = sec.columns ?? [];
-      const thead = cols
-        .map(
-          (c) =>
-            `<th style="text-align:${c.align ?? 'left'}">${escapeHtml(c.label)}</th>`,
-        )
-        .join('');
-      const tbody = sec.rows
-        .map((row) => {
-          const tds = cols
-            .map((c) => {
-              const val = formatValue(row[c.key], c.format);
-              return `<td style="text-align:${c.align ?? 'left'}">${escapeHtml(val)}</td>`;
-            })
-            .join('');
-          return `<tr>${tds}</tr>`;
-        })
-        .join('');
+  const sectionsHTML = opts.sections.map((sec) => {
+    const cols = sec.columns ?? [];
+    const thead = cols.map((c) => `<th style="text-align:center">${escapeHtml(c.label)}</th>`).join("");
+    const tbody = sec.rows.map((row) => {
+      const tds = cols.map((c) => {
+        const val = formatValue(row[c.key], c.format);
+        return `<td style="text-align:center">${escapeHtml(val)}</td>`;
+      }).join("");
+      return `<tr>${tds}</tr>`;
+    }).join("");
 
-      return `
-        <div class="section">
-          <h2>${escapeHtml(sec.title)}</h2>
-          <table>
-            <thead><tr>${thead}</tr></thead>
-            <tbody>${tbody}</tbody>
-          </table>
-        </div>
-      `;
-    })
-    .join('');
+    return `
+      <div class="section">
+        <h2>${escapeHtml(sec.title)}</h2>
+        <table>
+          <thead><tr>${thead}</tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    `;
+  }).join("");
 
-  // Bloc signature + cachet
   const signatureBlock = `
     <div class="footer-signature">
       <div class="footer-left">
-        <div class="footer-place">Fait Ã  ${escapeHtml(signature?.place ?? school.commune ?? '—')}, le ${dateStr}</div>
+        <div class="footer-place">Fait à ${escapeHtml(signature?.place ?? school.commune ?? '—')}, le ${dateStr}</div>
         <div class="footer-role">${escapeHtml(signature?.role ?? 'Le Directeur')}</div>
-        ${
-          images.signature
-            ? `<img src="${images.signature}" alt="Signature" style="max-height:60px; margin:6px 0;" />`
-            : `<div style="height:60px;"></div>`
-        }
+        ${images.signature ? `<img src="${images.signature}" alt="Signature" style="max-height:60px; margin:6px 0;" />` : `<div style="height:60px;"></div>`}
         <div class="footer-name">${escapeHtml(signature?.name ?? school.directorName ?? '—')}</div>
       </div>
       <div class="footer-right">
         <div class="footer-stamp-label">Cachet de l'établissement</div>
-        ${
-          images.stamp
-            ? `<img src="${images.stamp}" alt="Cachet" style="max-height:80px; margin-top:6px;" />`
-            : `<div style="height:80px; border:1px dashed #ccc; width:120px; margin-top:6px;"></div>`
-        }
+        ${images.stamp ? `<img src="${images.stamp}" alt="Cachet" style="max-height:80px; margin-top:6px;" />` : `<div style="height:80px; border:1px dashed #ccc; width:120px; margin-top:6px;"></div>`}
       </div>
     </div>
   `;
@@ -265,204 +235,231 @@ function buildOfficialHTML(
 <style>
   * { box-sizing: border-box; }
   body {
-    font-family: 'Times New Roman', 'DejaVu Serif', serif;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 11px;
-    color: #111;
+    color: #374151;
     margin: 0;
     padding: 0;
-    line-height: 1.4;
+    line-height: 1.5;
   }
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 2px solid #111;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    align-items: center;
+    border-bottom: 3px solid #0D9488;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    background: #F0FDFA;
+    padding: 12px;
+    border-radius: 8px;
   }
   .header-left {
-    text-align: center;
+    text-align: left;
     flex: 1;
     font-size: 10px;
+    color: #4B5563;
   }
   .header-left .republic {
-    font-weight: bold;
-    font-size: 11px;
+    font-weight: 800;
+    font-size: 12px;
+    color: #0F766E;
     letter-spacing: 0.5px;
+    margin-bottom: 2px;
   }
   .header-left .motto {
     font-style: italic;
     font-size: 9px;
-    margin: 2px 0;
+    color: #6B7280;
+    margin-bottom: 6px;
   }
-  .header-left .ministry {
-    margin-top: 4px;
+  .header-left .ministry, .header-left .academy, .header-left .cap {
     font-size: 10px;
+    margin-bottom: 2px;
   }
-  .header-left .academy {
-    font-size: 10px;
-  }
-  .header-left .cap {
-    font-size: 10px;
-    font-weight: bold;
+  .header-left .school-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0F766E;
+    margin-top: 6px;
+    text-transform: uppercase;
   }
   .header-right {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 130px;
-    padding-left: 8px;
+    width: 140px;
+    padding-left: 12px;
   }
   .title-block {
     text-align: center;
-    margin: 12px 0;
+    margin: 16px 0 20px 0;
   }
   .title-block h1 {
-    font-size: 16px;
-    margin: 0 0 4px 0;
+    font-size: 18px;
+    margin: 0 0 6px 0;
     text-transform: uppercase;
+    color: #0F766E;
     letter-spacing: 0.5px;
+    font-weight: 800;
   }
   .title-block .subtitle {
-    font-size: 11px;
-    color: #444;
-    font-style: italic;
+    font-size: 12px;
+    color: #6B7280;
+    font-weight: 500;
   }
   .identification {
-    background: #f5f5f5;
-    border-left: 3px solid #333;
-    padding: 8px 10px;
-    margin-bottom: 10px;
-    font-size: 10.5px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-left: 4px solid #0D9488;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 11px;
   }
   .identification-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4px 16px;
+    gap: 6px 16px;
   }
   .identification .label {
-    font-weight: bold;
+    font-weight: 600;
+    color: #374151;
     margin-right: 4px;
   }
   .bordereau {
-    background: #e8f0ff;
-    border: 1px solid #3366cc;
-    padding: 5px 10px;
-    margin-bottom: 10px;
+    background: #F0FDFA;
+    border: 1px solid #0D9488;
+    padding: 8px 12px;
+    margin-bottom: 12px;
     text-align: right;
-    font-size: 10.5px;
+    font-size: 11px;
+    border-radius: 4px;
   }
-  .bordereau-label { font-weight: bold; margin-right: 6px; }
-  .bordereau-value { font-family: 'Courier New', monospace; font-size: 11px; }
+  .bordereau-label { font-weight: 700; color: #0F766E; margin-right: 8px; }
+  .bordereau-value { font-family: monospace; font-size: 12px; color: #111827; }
   .summary {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 20px;
   }
   .summary-item {
     flex: 1;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 6px 8px;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    padding: 10px;
     text-align: center;
-    background: #fafafa;
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
   .summary-label {
     font-size: 9px;
-    color: #666;
+    color: #6B7280;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
   }
   .summary-value {
-    font-size: 15px;
-    font-weight: bold;
-    margin-top: 2px;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0F766E;
+    margin-top: 4px;
   }
   .section {
-    margin-bottom: 12px;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
   }
   .section h2 {
-    font-size: 12px;
-    margin: 8px 0 4px 0;
-    padding: 4px 6px;
-    background: #333;
-    color: #fff;
-    font-weight: bold;
+    font-size: 13px;
+    margin: 0 0 8px 0;
+    padding: 8px 12px;
+    background: #0F766E;
+    color: #FFFFFF;
+    font-weight: 700;
+    border-radius: 4px 4px 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
   table {
     width: 100%;
     border-collapse: collapse;
     font-size: 10px;
+    border: 1px solid #E5E7EB;
   }
   th {
-    background: #eee;
-    border: 1px solid #999;
-    padding: 4px 6px;
-    font-weight: bold;
+    background: #F3F4F6;
+    border-bottom: 2px solid #D1D5DB;
+    padding: 8px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.5px;
   }
   td {
-    border: 1px solid #ccc;
-    padding: 3px 6px;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 6px 8px;
+    color: #4B5563;
   }
   tr:nth-child(even) td {
-    background: #fafafa;
+    background: #F9FAFB;
   }
   .footer-signature {
     display: flex;
     justify-content: space-between;
-    margin-top: 30px;
-    padding-top: 10px;
+    margin-top: 40px;
+    padding-top: 16px;
     page-break-inside: avoid;
   }
   .footer-left, .footer-right {
     width: 45%;
     text-align: center;
   }
-  .footer-place { font-size: 10px; font-style: italic; }
-  .footer-role { font-weight: bold; font-size: 11px; margin-top: 8px; }
+  .footer-place { font-size: 10px; font-style: italic; color: #6B7280; }
+  .footer-role { font-weight: 700; font-size: 12px; color: #111827; margin-top: 8px; }
   .footer-name {
-    border-top: 1px solid #111;
-    padding-top: 4px;
-    margin-top: 4px;
-    font-size: 10px;
-    font-weight: bold;
+    border-top: 2px solid #0D9488;
+    padding-top: 6px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0F766E;
   }
   .footer-stamp-label {
     font-size: 10px;
     font-style: italic;
-    color: #666;
+    color: #6B7280;
   }
 </style>
 </head>
 <body>
 
   <div class="header">
+    <div class="header-right">${logoBlock}</div>
     <div class="header-left">
       <div class="republic">RÉPUBLIQUE DU MALI</div>
       <div class="motto">Un Peuple - Un But - Une Foi</div>
       <div class="ministry">Ministère de l'Éducation Nationale</div>
-      ${school.academy ? `<div class="academy">Académie d'Enseignement de ${escapeHtml(school.academy)}</div>` : ''}
-      ${school.cap ? `<div class="cap">CAP de ${escapeHtml(school.cap)}</div>` : ''}
-      <div class="academy" style="margin-top:4px; font-weight:bold;">${escapeHtml(school.name)}</div>
+      ${school.academy ? `<div class="academy">Académie d'Enseignement de ${escapeHtml(school.academy)}</div>` : ""}
+      ${school.cap ? `<div class="cap">CAP de ${escapeHtml(school.cap)}</div>` : ""}
+      <div class="school-name">${escapeHtml(school.name)}</div>
     </div>
-    <div class="header-right">${logoBlock}</div>
   </div>
 
   <div class="title-block">
     <h1>${escapeHtml(report.title)}</h1>
-    <div class="subtitle">${escapeHtml(report.code)} — Année scolaire ${escapeHtml(yearLabel)}${report.version && report.version > 1 ? ` — Version ${report.version}` : ''}</div>
+    <div class="subtitle">${escapeHtml(report.code)} — Année scolaire ${escapeHtml(yearLabel)}${report.version && report.version > 1 ? ` — Version ${report.version}` : ""}</div>
   </div>
 
   <div class="identification">
     <div class="identification-grid">
       <div><span class="label">Établissement :</span>${escapeHtml(school.name)}</div>
-      <div><span class="label">Code :</span>${escapeHtml(school.code ?? '—')}</div>
+      <div><span class="label">Code :</span>${escapeHtml(school.code ?? "—")}</div>
       <div><span class="label">Type :</span>${escapeHtml(labelSchoolType(school.type))}</div>
-      <div><span class="label">Région :</span>${escapeHtml(school.region ?? '—')}</div>
-      <div><span class="label">Commune :</span>${escapeHtml(school.commune ?? '—')}</div>
-      <div><span class="label">Téléphone :</span>${escapeHtml(school.phone ?? '—')}</div>
-      <div><span class="label">Email :</span>${escapeHtml(school.email ?? '—')}</div>
-      <div><span class="label">Directeur :</span>${escapeHtml(school.directorName ?? '—')}</div>
+      <div><span class="label">Région :</span>${escapeHtml(school.region ?? "—")}</div>
+      <div><span class="label">Commune :</span>${escapeHtml(school.commune ?? "—")}</div>
+      <div><span class="label">Téléphone :</span>${escapeHtml(school.phone ?? "—")}</div>
+      <div><span class="label">Email :</span>${escapeHtml(school.email ?? "—")}</div>
+      <div><span class="label">Directeur :</span>${escapeHtml(school.directorName ?? "—")}</div>
     </div>
   </div>
 

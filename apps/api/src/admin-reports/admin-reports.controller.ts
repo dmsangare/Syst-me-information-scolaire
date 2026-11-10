@@ -7,6 +7,7 @@ import { RequirePermissions, Public } from '../common/decorators';
 import { AdminReportsService } from './admin-reports.service';
 import { generateReportPDF } from '../reports/pdf/report-pdf.util';
 import { generateOfficialReportPDF } from './pdf/admin-report-pdf.util';
+import { generateOfficialReportExcel } from './excel/admin-report-excel.util';
 import { PdfGeneratorService } from '../common/pdf';
 import { generateExcel } from '../students/utils/excel.util';
 import { ListTemplatesQuerySchema, ListReportsQuerySchema } from './dto';
@@ -164,8 +165,7 @@ export class AdminReportsController {
   async excel(@Req() req: any, @Param('id') id: string, @Res() res: Response) {
     const { data: report } = await this.service.getReport(this.sid(req), id);
     const opts = this.buildExcelOptions(report, req.user.schoolName ?? 'Établissement');
-
-    const excel = await generateExcel(opts);
+    const buffer = await generateOfficialReportExcel(opts);
 
     res.setHeader(
       'Content-Type',
@@ -175,12 +175,82 @@ export class AdminReportsController {
       'Content-Disposition',
       `attachment; filename="${report.code}-${report.id.slice(0, 8)}.xlsx"`,
     );
-    res.send(excel);
+    res.send(buffer);
   }
 
-  private buildExcelOptions(report: any, schoolName: string): any {
+    private buildExcelOptions(report: any, schoolName: string): any {
     const d = (report.data as any) ?? {};
     const subtitle = `${report.code} — ${report.periodLabel ?? ''}`;
+    const sections: Array<{ title: string; columns: any[]; data: any[] }> = [];
+
+    // === RAP-04 : personnel ===
+    if (report.code === 'RAP-04') {
+      const teachers: any[] = d.enseignants ?? [];
+      sections.push({
+        title: 'Liste des enseignants',
+        columns: [
+          { header: 'Matricule', key: 'matricule', width: 15 },
+          { header: 'Nom complet', key: 'fullName', width: 30 },
+          { header: 'Sexe', key: 'gender', width: 8 },
+          { header: 'Diplôme', key: 'diploma', width: 15 },
+          { header: 'Contrat', key: 'contractType', width: 15 },
+          { header: 'Matières', key: 'subjects', width: 20 },
+        ],
+        data: teachers.map((t: any) => ({
+          matricule: t.matricule,
+          fullName: t.fullName,
+          gender: t.gender,
+          diploma: t.diploma,
+          contractType: t.contractType,
+          subjects: (t.subjects ?? []).join(', '),
+        })),
+      });
+
+      const repartMat = d.repartitionParMatiere ?? {};
+      sections.push({
+        title: 'Répartition des enseignants par matière',
+        columns: [
+          { header: 'Matière', key: 'matiere', width: 30 },
+          { header: 'Nb enseignants', key: 'count', width: 15 },
+        ],
+        data: Object.entries(repartMat).map(([k, v]) => ({ matiere: k, count: v })),
+      });
+
+      const repartDip = d.repartitionParDiplome ?? {};
+      sections.push({
+        title: 'Répartition par diplôme',
+        columns: [
+          { header: 'Diplôme', key: 'diplome', width: 30 },
+          { header: 'Nb', key: 'count', width: 10 },
+        ],
+        data: Object.entries(repartDip).map(([k, v]) => ({ diplome: k, count: v })),
+      });
+
+      const admins: any[] = d.personnelAdministratif ?? [];
+      sections.push({
+        title: 'Personnel administratif',
+        columns: [
+          { header: 'Nom', key: 'fullName', width: 30 },
+          { header: 'Rôle(s)', key: 'roles', width: 25 },
+          { header: 'Email', key: 'email', width: 25 },
+          { header: 'Téléphone', key: 'phone', width: 15 },
+        ],
+        data: admins.map((a: any) => ({
+          fullName: a.fullName,
+          roles: (a.roles ?? []).join(', '),
+          email: a.email,
+          phone: a.phone ?? '—',
+        })),
+      });
+
+      return {
+        title: report.title,
+        subtitle,
+        sheetName: 'Rapport',
+        schoolName,
+        sections,
+      };
+    }
 
     // === RAP-02 / RAP-03 : effectifs ===
     if (report.code === 'RAP-02' || report.code === 'RAP-03') {
@@ -211,133 +281,21 @@ export class AdminReportsController {
       };
     }
 
-    // === RAP-04 : personnel ===
-    if (report.code === 'RAP-04') {
-      const teachers: any[] = d.enseignants ?? [];
-      return {
-        title: report.title,
-        subtitle,
-        sheetName: 'Enseignants',
-        schoolName,
-        columns: [
-          { header: 'Matricule', key: 'matricule', width: 15 },
-          { header: 'Nom complet', key: 'fullName', width: 30 },
-          { header: 'Sexe', key: 'gender', width: 8 },
-          { header: 'Spécialité', key: 'specialty', width: 20 },
-          { header: 'Diplôme', key: 'diploma', width: 20 },
-          { header: 'Contrat', key: 'contractType', width: 15 },
-          { header: 'Matières', key: 'subjects', width: 40 },
-        ],
-        data: teachers.map((t) => ({
-          matricule: t.matricule,
-          fullName: t.fullName,
-          gender: t.gender ?? '',
-          specialty: t.specialty ?? '',
-          diploma: t.diploma ?? '',
-          contractType: t.contractType ?? '',
-          subjects: (t.subjects ?? []).join(', '),
-        })),
-      };
-    }
-
-    // === RAP-05 : infrastructures ===
-    if (report.code === 'RAP-05') {
-      const salles: any[] = d.salles ?? [];
-      return {
-        title: report.title,
-        subtitle,
-        sheetName: 'Salles',
-        schoolName,
-        columns: [
-          { header: 'Salle', key: 'name', width: 25 },
-          { header: 'Type', key: 'type', width: 18 },
-          { header: 'Capacité', key: 'capacity', width: 12 },
-          { header: 'Emplacement', key: 'location', width: 25 },
-          { header: 'Disponible', key: 'available', width: 12 },
-          { header: 'Équipements', key: 'equipmentCount', width: 14 },
-        ],
-        data: salles.map((r) => ({
-          name: r.name,
-          type: r.type,
-          capacity: r.capacity ?? '',
-          location: r.location ?? '',
-          available: r.isAvailable ? 'Oui' : 'Non',
-          equipmentCount: r.equipmentCount ?? 0,
-        })),
-      };
-    }
-
-    // === RAP-06 : situation annuelle (synthese) ===
-    if (report.code === 'RAP-06') {
-      const peda = d.situationPedagogique ?? {};
-      const mat = d.situationMaterielle ?? {};
-      const admin = d.situationAdministrative ?? {};
-      return {
-        title: report.title,
-        subtitle,
-        sheetName: 'Synthèse',
-        schoolName,
-        columns: [
-          { header: 'Rubrique', key: 'label', width: 40 },
-          { header: 'Valeur', key: 'value', width: 40 },
-        ],
-        data: [
-          { label: 'Statut établissement', value: admin.statutEtablissement ?? '—' },
-          { label: 'Directeur', value: admin.directeur ?? '—' },
-          { label: 'Classes ouvertes', value: admin.classesOuvertes ?? 0 },
-          { label: 'Effectif total', value: peda.effectifsTotal ?? 0 },
-          { label: 'Filles', value: peda.effectifsFilles ?? 0 },
-          { label: 'Garçons', value: peda.effectifsGarcons ?? 0 },
-          { label: 'Enseignants', value: peda.personnelEnseignant ?? 0 },
-          { label: 'Salles totales', value: mat.sallesTotal ?? 0 },
-          { label: 'Salles disponibles', value: mat.sallesDisponibles ?? 0 },
-        ],
-      };
-    }
-
-    // === RAP-07 : fin d'annee (resultats par classe) ===
-    if (report.code === 'RAP-07') {
-      const classes: any[] = d.resultatsParClasse ?? [];
-      return {
-        title: report.title,
-        subtitle,
-        sheetName: 'Resultats',
-        schoolName,
-        columns: [
-          { header: 'Classe', key: 'className', width: 20 },
-          { header: 'Niveau', key: 'levelName', width: 15 },
-          { header: 'Total', key: 'total', width: 10 },
-          { header: 'Admis', key: 'passed', width: 10 },
-          { header: 'Redoublants', key: 'repeated', width: 12 },
-          { header: 'Exclus', key: 'excluded', width: 10 },
-          { header: 'Transférés', key: 'transferred', width: 12 },
-        ],
-        data: classes.map((c) => ({
-          className: c.className,
-          levelName: c.levelName,
-          total: c.total,
-          passed: c.passed,
-          repeated: c.repeated,
-          excluded: c.excluded,
-          transferred: c.transferred,
-        })),
-      };
-    }
-
-    // === Fallback ===
+    // === Par defaut : un seul tableau ===
+    const teachers: any[] = d.enseignants ?? d.classes ?? [];
     return {
       title: report.title,
       subtitle,
-      sheetName: 'Donnees',
+      sheetName: 'Rapport',
       schoolName,
       columns: [
-        { header: 'Code', key: 'code', width: 15 },
-        { header: 'Titre', key: 'title', width: 40 },
-        { header: 'Statut', key: 'status', width: 20 },
+        { header: 'Donnée', key: 'key', width: 30 },
+        { header: 'Valeur', key: 'value', width: 40 },
       ],
-      data: [{ code: report.code, title: report.title, status: report.status }],
+      data: Object.entries(d).map(([k, v]) => ({ key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v) })),
     };
   }
+
 
   // ============================================================
   // RAP-09 : Validation + verrouillage + versions
