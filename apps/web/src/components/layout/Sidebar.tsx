@@ -105,7 +105,7 @@ const SECTIONS: NavSection[] = [
     title: "Système",
     items: [
       { label: "Années scolaires", to: "/academic-years", icon: Calendar, permission: "academic_year:view" },
-  { label: "Campagnes", to: "/campaigns", icon: ClipboardList, permission: "assessment:view" },
+  { label: "Compositions", to: "/campaigns", icon: ClipboardList, permission: "assessment:view" },
       { label: "Passage d'année", to: "/year-rollover", icon: GraduationCap, permission: "academic_year:create" },
       { label: "Examens d'État", to: "/state-exams", icon: Award, permission: "academic_year:view" },
       { label: "Rapports administratifs", to: "/admin-reports", icon: FileText, permission: "report_card:view", hideForRoles: ["TEACHER", "STUDENT", "PARENT"] },

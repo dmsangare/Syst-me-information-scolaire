@@ -54,7 +54,7 @@ export function CreateCampaignModal({ onClose }: Props) {
     }
     try {
       const result = await createMutation.mutateAsync({ termId, classIds: selectedClassIds });
-      alert(`${result.created} campagne(s) creee(s). ${result.skipped} ignoree(s).`);
+      alert(`${result.created} composition(s) creee(s). ${result.skipped} ignoree(s).`);
       onClose();
     } catch (e: any) {
       alert(e?.response?.data?.message || "Erreur lors de la creation");
@@ -65,7 +65,7 @@ export function CreateCampaignModal({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-lg rounded-sis-lg bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Nouvelle campagne</h2>
+          <h2 className="text-lg font-semibold">Nouvelle composition</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>

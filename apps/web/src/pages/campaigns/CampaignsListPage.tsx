@@ -26,7 +26,7 @@ export function CampaignsListPage() {
   const validateMutation = useValidateCampaign();
 
   const handleActivate = async (id: string) => {
-    if (!confirm("Activer cette campagne ? Les enseignants pourront saisir les notes.")) return;
+    if (!confirm("Activer cette composition ? Les enseignants pourront saisir les notes.")) return;
     try {
       await activateMutation.mutateAsync(id);
     } catch (e: any) {
@@ -35,7 +35,7 @@ export function CampaignsListPage() {
   };
 
   const handleValidate = async (id: string) => {
-    if (!confirm("Valider cette campagne ? Tous les enseignants doivent avoir valide leurs notes.")) return;
+    if (!confirm("Valider cette composition ? Tous les enseignants doivent avoir valide leurs notes.")) return;
     try {
       await validateMutation.mutateAsync(id);
     } catch (e: any) {
@@ -51,32 +51,32 @@ export function CampaignsListPage() {
             <ClipboardList className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Campagnes de compositions</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Compositions</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Gelez les campagnes mensuelles (1er cycle) et trimestrielles (2e cycle).
+              Gelez les compositions mensuelles (1er cycle) et trimestrielles (2e cycle).
             </p>
           </div>
         </div>
         {canCreate && (
           <Button onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Nouvelle campagne
+            Nouvelle composition
           </Button>
         )}
       </div>
 
       {isLoading ? (
-        <PageLoader label="Chargement des campagnes..." />
+        <PageLoader label="Chargement des compositions..." />
       ) : !campaigns || campaigns.length === 0 ? (
         <EmptyState
           icon={<ClipboardList className="h-7 w-7" />}
-          title="Aucune campagne"
-          description="Creez votre premiere campagne pour commencer."
+          title="Aucune composition"
+          description="Creez votre premiere composition pour commencer."
           action={
             canCreate ? (
               <Button onClick={() => setModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nouvelle campagne
+                Nouvelle composition
               </Button>
             ) : undefined
           }
