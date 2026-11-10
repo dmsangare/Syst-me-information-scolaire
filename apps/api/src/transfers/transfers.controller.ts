@@ -1,4 +1,4 @@
-import {
+﻿import {
   Res,
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
   HttpCode, HttpStatus, UseGuards,
@@ -178,7 +178,7 @@ export class TransfersController {
     const baseUrl = process.env.FRONTEND_URL || "http://localhost";
 
     // Recuperer les infos de l'ecole
-    let schoolName = "SIS-MALI";
+    let schoolName = "Etablissement";
     let schoolAddress: string | null = null;
     let schoolPhone: string | null = null;
     let schoolDirector: string | null = null;

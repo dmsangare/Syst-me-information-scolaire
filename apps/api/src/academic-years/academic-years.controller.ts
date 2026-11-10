@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
   HttpCode, HttpStatus, UseGuards, BadRequestException,
 } from "@nestjs/common";
@@ -6,7 +6,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { AcademicYearsService } from "./academic-years.service";
 import { AcademicYearCreateSchema, AcademicYearUpdateSchema } from "./dto";
 import { ZodValidationPipe } from "../common/pipes";
-import { RequirePermissions, CurrentUser, CurrentUserPayload } from "../common/decorators";
+import { AllowNoPermissions, RequirePermissions, CurrentUser, CurrentUserPayload } from "../common/decorators";
 import { SchoolScopeGuard } from "../common/guards";
 import { PaginationDto } from "../common/dto/pagination.dto";
 
@@ -17,6 +17,7 @@ import { PaginationDto } from "../common/dto/pagination.dto";
 export class AcademicYearsController {
   constructor(private readonly service: AcademicYearsService) {}
 
+  @AllowNoPermissions()
   @Get("current")
   @ApiOperation({ summary: "Annee scolaire en cours (accessible a tous)" })
   async getCurrent(@CurrentUser() user: CurrentUserPayload) {
