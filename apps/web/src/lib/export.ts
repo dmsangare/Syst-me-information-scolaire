@@ -67,3 +67,14 @@ function downloadBlob(blob: Blob, filename: string) {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 100);
 }
+
+// ============================================================
+// EXCEL VIA ENDPOINT BACKEND (design vert, sections multiples)
+// ============================================================
+export async function exportExcelFromBackend(endpoint: string, filename: string) {
+  const res = await api.get(endpoint, { responseType: "blob" });
+  const blob = new Blob([res.data], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  downloadBlob(blob, `${filename}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}

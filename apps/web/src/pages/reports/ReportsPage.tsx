@@ -245,6 +245,7 @@ export function ReportsPage() {
                       { name: "Par méthode", rows: financial.byMethod ?? [] },
                     ]}
                     pdfEndpoint="/reports/pdf/financial"
+                    excelEndpoint="/reports/export/financial"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -465,6 +466,7 @@ export function ReportsPage() {
                         { name: "Par classe", rows: unpaid.byClass },
                       ]}
                       pdfEndpoint="/reports/pdf/unpaid"
+                      excelEndpoint="/reports/export/unpaid"
                     />
                   </CardHeader>
                   <CardContent>
@@ -620,6 +622,7 @@ export function ReportsPage() {
                         { name: "Par niveau", rows: students.byLevel },
                       ]}
                       pdfEndpoint="/reports/pdf/students"
+                      excelEndpoint="/reports/export/students"
                     />
                   </CardHeader>
                   <CardContent>
@@ -700,6 +703,7 @@ export function ReportsPage() {
                         { name: "Par classe", rows: pedagogical.byClass },
                       ]}
                       pdfEndpoint="/reports/pdf/pedagogical"
+                      excelEndpoint="/reports/export/pedagogical"
                     />
                   </CardHeader>
                   <CardContent>
@@ -830,6 +834,7 @@ export function ReportsPage() {
                         { name: "Présences par classe", rows: attendance.byClass },
                       ]}
                       pdfEndpoint="/reports/pdf/attendance"
+                      excelEndpoint="/reports/export/attendance"
                     />
                   </CardHeader>
                   <CardContent>

@@ -1,17 +1,18 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Download, FileSpreadsheet, FileText, FileType, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { exportCSV, exportExcel, exportPDF } from "@/lib/export";
+import { exportCSV, exportExcel, exportPDF, exportExcelFromBackend } from "@/lib/export";
 
 interface ExportMenuProps {
   csvRows?: any[];
   excelSheets?: Array<{ name: string; rows: any[] }>;
   pdfEndpoint?: string;
+  excelEndpoint?: string;
   filename: string;
 }
 
-export function ExportMenu({ csvRows, excelSheets, pdfEndpoint, filename }: ExportMenuProps) {
+export function ExportMenu({ csvRows, excelSheets, pdfEndpoint, excelEndpoint, filename }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -30,6 +31,22 @@ export function ExportMenu({ csvRows, excelSheets, pdfEndpoint, filename }: Expo
   };
 
   const handleExcel = async () => {
+    // Si un endpoint backend est fourni, on l'utilise
+    if (excelEndpoint) {
+      setLoading("excel");
+      try {
+        await exportExcelFromBackend(excelEndpoint, filename);
+        toast.success("Excel téléchargé");
+        setOpen(false);
+      } catch (e: any) {
+        toast.error("Erreur lors de la génération de l'Excel");
+      } finally {
+        setLoading(null);
+      }
+      return;
+    }
+
+    // Sinon, on garde l'ancien comportement
     if (!excelSheets || excelSheets.length === 0) {
       toast.error("Aucune donnée à exporter");
       return;
@@ -78,7 +95,7 @@ export function ExportMenu({ csvRows, excelSheets, pdfEndpoint, filename }: Expo
                 <FileText className="h-4 w-4 text-green-600" /> Export CSV
               </button>
             )}
-            {excelSheets && (
+            {(excelSheets || excelEndpoint) && (
               <button
                 onClick={handleExcel}
                 disabled={loading === "excel"}
