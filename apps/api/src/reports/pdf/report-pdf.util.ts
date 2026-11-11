@@ -1,253 +1,114 @@
 import { PdfGeneratorService } from "../../common/pdf";
+import { fileToBase64 } from '../../common/utils/file-to-base64.util';
 
-interface PDFOptions {
+export interface ReportPdfOptions {
   title: string;
-  schoolName: string;
-  subtitle?: string;
-  period?: string;
+  schoolName?: string;
+  subtitle: string;
   user: string;
-  sections: Array<{
-    title: string;
-    rows: any[];
-    columns?: Array<{ key: string; label: string; align?: 'left' | 'right' | 'center'; format?: 'currency' | 'percent' | 'text' }>;
-  }>;
+  school: any;
   summary?: Array<{ label: string; value: string | number }>;
+  sections?: Array<{
+    title: string;
+  schoolName?: string;
+    columns: Array<{ header?: string; label?: string; key: string; align?: string; format?: string }>;
+    data: any[];
+  }>;
 }
 
-export async function generateReportPDF(
-  opts: PDFOptions,
-  pdfGenerator: PdfGeneratorService,
-): Promise<Buffer> {
-  const html = buildHTML(opts);
-  return pdfGenerator.generateFromHtml(html, {
-    format: "A4",
-    printBackground: true,
-    margin: { top: "15mm", bottom: "15mm", left: "12mm", right: "12mm" },
-  });
-}
+export async function generateReportPDF(opts: ReportPdfOptions, pdfGenerator: PdfGeneratorService): Promise<Buffer> {
+  const logoBase64 = await fileToBase64(opts.school?.logoUrl);
+  const stampBase64 = await fileToBase64(opts.school?.stampUrl);
+  const signatureBase64 = await fileToBase64(opts.school?.signatureUrl);
 
-function formatValue(v: any, format?: string): string {
-  if (v === null || v === undefined || v === '') return '—';
-  if (format === 'currency') {
-    return new Intl.NumberFormat('fr-FR').format(Number(v)) + ' FCFA';
-  }
-  if (format === 'percent') {
-    return Number(v).toFixed(1) + ' %';
-  }
-  return String(v);
-}
-
-function buildHTML(opts: PDFOptions): string {
-  const date = new Date().toLocaleDateString('fr-FR', {
-    day: '2-digit', month: 'long', year: 'numeric',
-  });
-
-  const summaryHTML = opts.summary?.length
-    ? `
-      <div class="summary">
-        ${opts.summary.map((s) => `
-          <div class="summary-item">
-            <div class="summary-label">${s.label}</div>
-            <div class="summary-value">${s.value}</div>
-          </div>
-        `).join('')}
-      </div>
-    `
-    : '';
-
-  const sectionsHTML = opts.sections.map((sec) => {
-    if (!sec.rows || sec.rows.length === 0) {
-      return `
-        <div class="section">
-          <h3>${sec.title}</h3>
-          <p class="empty">Aucune donnée</p>
-        </div>
-      `;
-    }
-
-    const cols = sec.columns ?? Object.keys(sec.rows[0]).map((k) => ({
-      key: k, label: k, align: 'left' as const, format: 'text' as const,
-    }));
-
-    const headerHTML = cols.map((c) =>
-      `<th class="col-${c.align ?? 'left'}">${c.label}</th>`
-    ).join('');
-
-    const rowsHTML = sec.rows.map((r) =>
-      '<tr>' + cols.map((c) => {
-        const val = formatValue(r[c.key], c.format);
-        return `<td class="col-${c.align ?? 'left'}">${val}</td>`;
-      }).join('') + '</tr>'
-    ).join('');
-
-    return `
-      <div class="section">
-        <h3>${sec.title}</h3>
-        <table>
-          <thead><tr>${headerHTML}</tr></thead>
-          <tbody>${rowsHTML}</tbody>
-        </table>
-      </div>
-    `;
-  }).join('');
-
-  return `<!DOCTYPE html>
+  const html = `
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>${opts.title}</title>
+<meta charset="UTF-8" />
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Helvetica', 'Arial', sans-serif;
-    font-size: 11px;
-    color: #1a1a1a;
-    line-height: 1.4;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 12px;
-    border-bottom: 3px solid #1e40af;
-    margin-bottom: 16px;
-  }
-  .school-info h1 {
-    font-size: 16px;
-    color: #1e40af;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .school-info p {
-    font-size: 10px;
-    color: #666;
-  }
-  .report-meta {
-    text-align: right;
-    font-size: 10px;
-    color: #666;
-  }
-  .report-meta .report-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 4px;
-  }
-  h2.title {
-    font-size: 18px;
-    color: #1e40af;
-    text-align: center;
-    margin: 12px 0 20px 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .summary {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .summary-item {
-    flex: 1;
-    min-width: 100px;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    padding: 8px;
-    text-align: center;
-    background: #f9fafb;
-  }
-  .summary-label {
-    font-size: 9px;
-    color: #6b7280;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-  .summary-value {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1e40af;
-  }
-  .section {
-    margin-bottom: 20px;
-  }
-  .section h3 {
-    font-size: 12px;
-    color: #1e40af;
-    margin-bottom: 6px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #e5e7eb;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  th {
-    background: #f3f4f6;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #4b5563;
-    padding: 6px 8px;
-    border: 1px solid #e5e7eb;
-    letter-spacing: 0.3px;
-  }
-  td {
-    padding: 5px 8px;
-    border: 1px solid #e5e7eb;
-    font-size: 10px;
-  }
-  tbody tr:nth-child(even) { background: #f9fafb; }
-  .col-left { text-align: left; }
-  .col-right { text-align: right; }
-  .col-center { text-align: center; }
-  .empty {
-    text-align: center;
-    color: #9ca3af;
-    font-style: italic;
-    padding: 12px;
-  }
-  .footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 9px;
-    color: #9ca3af;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 4px;
-    background: white;
-  }
-  .footer-page::after {
-    content: counter(page);
-  }
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #374151; margin: 0; padding: 0; line-height: 1.5; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0D9488; padding-bottom: 12px; margin-bottom: 16px; background: #F0FDFA; padding: 12px; border-radius: 8px; }
+  .header-left { text-align: left; flex: 1; font-size: 10px; color: #4B5563; }
+  .header-left .republic { font-weight: 800; font-size: 12px; color: #0F766E; margin-bottom: 2px; }
+  .header-left .school-name { font-size: 14px; font-weight: 700; color: #0F766E; margin-top: 6px; text-transform: uppercase; }
+  .header-left .school-info { font-size: 9px; color: #6B7280; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; justify-content: center; width: 140px; }
+  .title-block { text-align: center; margin: 16px 0 20px 0; }
+  .title-block h1 { font-size: 18px; margin: 0 0 6px 0; text-transform: uppercase; color: #0F766E; font-weight: 800; }
+  .title-block .subtitle { font-size: 12px; color: #6B7280; font-weight: 500; }
+  .summary { display: flex; gap: 10px; margin-bottom: 20px; }
+  .summary-item { flex: 1; border: 1px solid #E5E7EB; border-radius: 6px; padding: 10px; text-align: center; background: #FFFFFF; }
+  .summary-label { font-size: 9px; color: #6B7280; text-transform: uppercase; font-weight: 600; }
+  .summary-value { font-size: 18px; font-weight: 800; color: #0F766E; margin-top: 4px; }
+  .section { margin-bottom: 20px; page-break-inside: avoid; }
+  .section h2 { font-size: 13px; margin: 0 0 8px 0; padding: 8px 12px; background: #0F766E; color: #FFFFFF; font-weight: 700; border-radius: 4px 4px 0 0; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #E5E7EB; }
+  th { background: #F3F4F6; border-bottom: 2px solid #D1D5DB; padding: 8px; font-weight: 700; color: #374151; text-transform: uppercase; font-size: 9px; }
+  td { border-bottom: 1px solid #E5E7EB; padding: 6px 8px; color: #4B5563; }
+  tr:nth-child(even) td { background: #F9FAFB; }
+  .footer-signature { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 16px; page-break-inside: avoid; }
+  .footer-left, .footer-right { width: 45%; text-align: center; }
+  .footer-role { font-weight: 700; font-size: 12px; color: #111827; margin-top: 8px; }
+  .footer-name { border-top: 2px solid #0D9488; padding-top: 6px; margin-top: 6px; font-size: 11px; font-weight: 700; color: #0F766E; }
 </style>
 </head>
 <body>
   <div class="header">
-    <div class="school-info">
-      <h1>${opts.schoolName}</h1>
-      
-    </div>
-    <div class="report-meta">
-      <div class="report-title">${opts.title}</div>
-      ${opts.subtitle ? `<div>${opts.subtitle}</div>` : ''}
-      ${opts.period ? `<div>Période : ${opts.period}</div>` : ''}
-      <div>Édité le ${date}</div>
-      <div>Par ${opts.user}</div>
+    <div class="header-right">${logoBase64 ? `<img src="${logoBase64}" style="max-height:70px; max-width:120px;" />` : ''}</div>
+    <div class="header-left">
+      <div class="republic">RÉPUBLIQUE DU MALI</div>
+      <div class="school-name">${opts.school?.name || 'Établissement'}</div>
+      <div class="school-info">${opts.school?.address || ''}</div>
+      <div class="school-info">${opts.school?.phone ? 'Tél : ' + opts.school.phone : ''} ${opts.school?.email ? '- ' + opts.school.email : ''}</div>
     </div>
   </div>
 
-  <h2 class="title">${opts.title}</h2>
+  <div class="title-block">
+    <h1>${opts.title}</h1>
+    <div class="subtitle">${opts.subtitle}</div>
+  </div>
 
-  ${summaryHTML}
-  ${sectionsHTML}
+  <div class="summary">
+    ${(opts.summary ?? []).map(s => `
+      <div class="summary-item">
+        <div class="summary-label">${s.label}</div>
+        <div class="summary-value">${s.value}</div>
+      </div>
+    `).join('')}
+  </div>
 
-  <div class="footer">
-    Document généré automatiquement par ${opts.schoolName} · ${date}
+  ${(opts.sections ?? []).map(sec => `
+    <div class="section">
+      <h2>${sec.title}</h2>
+      <table>
+        <thead><tr>${sec.columns.map(c => `<th style="text-align:center">${c.label || c.header || c.key}</th>`).join('')}</tr></thead>
+        <tbody>${sec.data.map((row) => `
+          <tr>${sec.columns.map(c => `<td style="text-align:center">${row[c.key] ?? '—'}</td>`).join('')}</tr>
+        `).join('')}</tbody>
+      </table>
+    </div>
+  `).join('')}
+
+  <div class="footer-signature">
+    <div class="footer-left">
+      <div class="footer-role">Le Directeur</div>
+      ${signatureBase64 ? `<img src="${signatureBase64}" style="max-height:50px; margin:6px 0;" />` : ''}
+      <div class="footer-name">${opts.school?.directorName || opts.user}</div>
+    </div>
+    <div class="footer-right">
+      <div style="font-size:10px; font-style:italic; color:#6B7280;">Cachet de l'établissement</div>
+      ${stampBase64 ? `<img src="${stampBase64}" style="max-height:80px; margin-top:6px;" />` : ''}
+    </div>
   </div>
 </body>
-</html>`;
+</html>
+  `;
+
+  return pdfGenerator.generateFromHtml(html, {
+    format: "A4",
+    printBackground: true,
+    margin: { top: "15mm", bottom: "20mm", left: "15mm", right: "15mm" },
+  });
 }

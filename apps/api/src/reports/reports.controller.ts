@@ -1,18 +1,69 @@
-﻿import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Query, Req, Res, UseGuards, Param } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RequirePermissions } from '../common/decorators';
 import { ReportsService } from './reports.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { generateReportPDF } from './pdf/report-pdf.util';
+import { generateReportExcel } from './pdf/report-excel.util';
 import { PdfGeneratorService } from '../common/pdf';
 
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
 export class ReportsController {
+
+  @Get('export/:type')
+  @RequirePermissions('report:export')
+  async exportExcel(
+    @Param('type') type: string,
+    @Query('yearId') yearId: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    let title = '';
+    let sections: any[] = [];
+
+    // On génère les sections selon le type
+    switch (type) {
+      case 'financial':
+        title = 'Rapport Financier';
+        sections = [
+          { title: 'Recettes par mois', columns: [{ header: 'Mois', key: 'month' }, { header: 'Montant', key: 'amount' }], data: [] },
+          { title: 'Par catégorie', columns: [{ header: 'Catégorie', key: 'category' }, { header: 'Montant', key: 'amount' }], data: [] },
+        ];
+        break;
+      case 'students':
+        title = 'Rapport des Effectifs';
+        sections = [
+          { title: 'Par classe', columns: [{ header: 'Classe', key: 'className' }, { header: 'Total', key: 'total' }, { header: 'Filles', key: 'girls' }, { header: 'Garçons', key: 'boys' }], data: [] },
+        ];
+        break;
+      default:
+        title = 'Rapport';
+        sections = [{ title: 'Données', columns: [{ header: 'Donnée', key: 'value' }], data: [] }];
+    }
+
+    const buffer = await generateReportExcel({
+      title,
+      schoolName: req.user.schoolName || 'Établissement',
+      sections,
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}-${Date.now()}.xlsx"`);
+    res.send(buffer);
+  }
+
   constructor(
     private service: ReportsService,
     private pdfGenerator: PdfGeneratorService,
+    private prisma: PrismaService,
   ) {}
+
+  private async getSchool(req: any) {
+    if (req.user.school) return req.user.school;
+    return this.prisma.school.findUnique({ where: { id: req.user.schoolId } });
+  }
 
   private sid(req: any) {
     return req.user.schoolId;
@@ -78,6 +129,7 @@ export class ReportsController {
     const pdf = await generateReportPDF({
       title: 'Rapport financier',
       schoolName,
+      school: await this.getSchool(req),
       subtitle: 'Situation des recettes et impayés',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
@@ -89,7 +141,7 @@ export class ReportsController {
       sections: [
         {
           title: 'Recettes par mois',
-          rows: data.byMonth,
+          data: data.byMonth,
           columns: [
             { key: 'month', label: 'Mois' },
             { key: 'amount', label: 'Montant', align: 'right', format: 'currency' },
@@ -97,7 +149,7 @@ export class ReportsController {
         },
         {
           title: 'Recettes par catégorie',
-          rows: data.byCategory,
+          data: data.byCategory,
           columns: [
             { key: 'category', label: 'Catégorie' },
             { key: 'amount', label: 'Montant', align: 'right', format: 'currency' },
@@ -105,7 +157,7 @@ export class ReportsController {
         },
         {
           title: 'Recettes par méthode de paiement',
-          rows: data.byMethod,
+          data: data.byMethod,
           columns: [
             { key: 'method', label: 'Méthode' },
             { key: 'count', label: 'Nombre', align: 'right' },
@@ -135,6 +187,7 @@ export class ReportsController {
     const pdf = await generateReportPDF({
       title: 'Rapport des impayés',
       schoolName,
+      school: await this.getSchool(req),
       subtitle: `${data.count} facture(s) non soldée(s)`,
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
@@ -144,7 +197,7 @@ export class ReportsController {
       sections: [
         {
           title: 'Impayés par classe',
-          rows: data.byClass,
+          data: data.byClass,
           columns: [
             { key: 'className', label: 'Classe' },
             { key: 'count', label: 'Nb factures', align: 'right' },
@@ -153,7 +206,7 @@ export class ReportsController {
         },
         {
           title: 'Détail des impayés',
-          rows: data.items.map((i: any) => ({
+          data: data.items.map((i: any) => ({
             number: i.number,
             studentName: i.studentName,
             className: i.className,
@@ -193,6 +246,7 @@ export class ReportsController {
     const pdf = await generateReportPDF({
       title: 'Rapport des effectifs',
       schoolName,
+      school: await this.getSchool(req),
       subtitle: 'Répartition des élèves',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
@@ -203,7 +257,7 @@ export class ReportsController {
       sections: [
         {
           title: 'Effectifs par niveau',
-          rows: data.byLevel,
+          data: data.byLevel,
           columns: [
             { key: 'code', label: 'Code' },
             { key: 'name', label: 'Niveau' },
@@ -214,7 +268,7 @@ export class ReportsController {
         },
         {
           title: 'Effectifs par classe',
-          rows: data.byClass,
+          data: data.byClass,
           columns: [
             { key: 'className', label: 'Classe' },
             { key: 'levelName', label: 'Niveau' },
@@ -246,6 +300,7 @@ export class ReportsController {
     const pdf = await generateReportPDF({
       title: 'Rapport pédagogique',
       schoolName,
+      school: await this.getSchool(req),
       subtitle: 'Moyennes et résultats',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
@@ -255,7 +310,7 @@ export class ReportsController {
       sections: [
         {
           title: 'Moyennes par matière',
-          rows: data.bySubject.map((s: any) => ({
+          data: data.bySubject.map((s: any) => ({
             subject: s.subject,
             count: s.count,
             avgPct: s.avgPct,
@@ -272,7 +327,7 @@ export class ReportsController {
         },
         {
           title: 'Moyennes par classe',
-          rows: data.byClass.map((c: any) => ({
+          data: data.byClass.map((c: any) => ({
             className: c.className,
             count: c.count,
             avgPct: c.avgPct,
@@ -306,6 +361,7 @@ export class ReportsController {
     const pdf = await generateReportPDF({
       title: 'Rapport des présences',
       schoolName,
+      school: await this.getSchool(req),
       subtitle: 'Assiduité et absences',
       user: `${req.user.firstName} ${req.user.lastName}`,
       summary: [
@@ -317,7 +373,7 @@ export class ReportsController {
       sections: [
         {
           title: 'Présences par classe',
-          rows: data.byClass.map((c: any) => ({
+          data: data.byClass.map((c: any) => ({
             className: c.className,
             sessionsCount: c.sessionsCount,
             present: c.present,
