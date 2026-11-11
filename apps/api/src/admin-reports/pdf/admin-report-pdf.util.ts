@@ -172,25 +172,54 @@ function buildOfficialHTML(
     : `<div style="width:70px; height:70px; background:#f3f4f6; border-radius:8px;"></div>`;
 
   const bordereauBlock = report.bordereauNumber
-    ? `<div class="bordereau">
-         <span class="bordereau-label">Bordereau N°</span>
-         <span class="bordereau-value">${escapeHtml(report.bordereauNumber)}</span>
-       </div>`
+    ? `<div class="bordereau"><span class="bordereau-label">Bordereau N°</span><span class="bordereau-value">${escapeHtml(report.bordereauNumber)}</span></div>`
     : "";
 
   const summaryHTML = opts.summary && opts.summary.length > 0
-    ? `<div class="summary">
-        ${opts.summary.map((s) => `
-          <div class="summary-item">
-            <div class="summary-label">${escapeHtml(s.label)}</div>
-            <div class="summary-value">${escapeHtml(s.value)}</div>
-          </div>
-        `).join("")}
-      </div>`
+    ? `<div class="summary">${opts.summary.map((s) => `<div class="summary-item"><div class="summary-label">${escapeHtml(s.label)}</div><div class="summary-value">${escapeHtml(s.value)}</div></div>`).join("")}</div>`
     : "";
 
+  // --- GRAPHIQUES EN CSS ---
+  // On cherche les sections de repartition et on les transforme en barres
   const sectionsHTML = opts.sections.map((sec) => {
     const cols = sec.columns ?? [];
+    
+    // Si c'est une section de repartition (ex: Diplome, Contrat, Matiere)
+    const isChart = sec.title.toLowerCase().includes('répartition') || sec.title.toLowerCase().includes('repartition');
+    
+    if (isChart && cols.length >= 2) {
+      // On calcule le total pour les pourcentages
+      const total = sec.rows.reduce((sum, row) => sum + Number(row[cols[1].key] || 0), 0);
+      
+      const bars = sec.rows.map(row => {
+        const label = row[cols[0].key] || '—';
+        const value = Number(row[cols[1].key] || 0);
+        const percent = total > 0 ? Math.round((value / total) * 100) : 0;
+        
+        return `
+          <div style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px;">
+              <span style="font-weight: 600; color: #374151;">${escapeHtml(label)}</span>
+              <span style="color: #6B7280;">${value} (${percent}%)</span>
+            </div>
+            <div style="width: 100%; background: #F3F4F6; height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="width: ${percent}%; background: #0D9488; height: 100%; border-radius: 4px;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="section">
+          <h2>${escapeHtml(sec.title)}</h2>
+          <div style="padding: 10px; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 4px 4px;">
+            ${bars}
+          </div>
+        </div>
+      `;
+    }
+
+    // Sinon, tableau classique
     const thead = cols.map((c) => `<th style="text-align:center">${escapeHtml(c.label)}</th>`).join("");
     const tbody = sec.rows.map((row) => {
       const tds = cols.map((c) => {
@@ -203,10 +232,7 @@ function buildOfficialHTML(
     return `
       <div class="section">
         <h2>${escapeHtml(sec.title)}</h2>
-        <table>
-          <thead><tr>${thead}</tr></thead>
-          <tbody>${tbody}</tbody>
-        </table>
+        <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
       </div>
     `;
   }).join("");
@@ -234,205 +260,42 @@ function buildOfficialHTML(
 <title>${escapeHtml(report.title)}</title>
 <style>
   * { box-sizing: border-box; }
-  body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 11px;
-    color: #374151;
-    margin: 0;
-    padding: 0;
-    line-height: 1.5;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 3px solid #0D9488;
-    padding-bottom: 12px;
-    margin-bottom: 16px;
-    background: #F0FDFA;
-    padding: 12px;
-    border-radius: 8px;
-  }
-  .header-left {
-    text-align: left;
-    flex: 1;
-    font-size: 10px;
-    color: #4B5563;
-  }
-  .header-left .republic {
-    font-weight: 800;
-    font-size: 12px;
-    color: #0F766E;
-    letter-spacing: 0.5px;
-    margin-bottom: 2px;
-  }
-  .header-left .motto {
-    font-style: italic;
-    font-size: 9px;
-    color: #6B7280;
-    margin-bottom: 6px;
-  }
-  .header-left .ministry, .header-left .academy, .header-left .cap {
-    font-size: 10px;
-    margin-bottom: 2px;
-  }
-  .header-left .school-name {
-    font-size: 13px;
-    font-weight: 700;
-    color: #0F766E;
-    margin-top: 6px;
-    text-transform: uppercase;
-  }
-  .header-right {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 140px;
-    padding-left: 12px;
-  }
-  .title-block {
-    text-align: center;
-    margin: 16px 0 20px 0;
-  }
-  .title-block h1 {
-    font-size: 18px;
-    margin: 0 0 6px 0;
-    text-transform: uppercase;
-    color: #0F766E;
-    letter-spacing: 0.5px;
-    font-weight: 800;
-  }
-  .title-block .subtitle {
-    font-size: 12px;
-    color: #6B7280;
-    font-weight: 500;
-  }
-  .identification {
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
-    border-left: 4px solid #0D9488;
-    border-radius: 4px;
-    padding: 12px;
-    margin-bottom: 16px;
-    font-size: 11px;
-  }
-  .identification-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 16px;
-  }
-  .identification .label {
-    font-weight: 600;
-    color: #374151;
-    margin-right: 4px;
-  }
-  .bordereau {
-    background: #F0FDFA;
-    border: 1px solid #0D9488;
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    text-align: right;
-    font-size: 11px;
-    border-radius: 4px;
-  }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #374151; margin: 0; padding: 0; line-height: 1.5; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0D9488; padding-bottom: 12px; margin-bottom: 16px; background: #F0FDFA; padding: 12px; border-radius: 8px; }
+  .header-left { text-align: left; flex: 1; font-size: 10px; color: #4B5563; }
+  .header-left .republic { font-weight: 800; font-size: 12px; color: #0F766E; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .header-left .motto { font-style: italic; font-size: 9px; color: #6B7280; margin-bottom: 6px; }
+  .header-left .ministry, .header-left .academy, .header-left .cap { font-size: 10px; margin-bottom: 2px; }
+  .header-left .school-name { font-size: 13px; font-weight: 700; color: #0F766E; margin-top: 6px; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; justify-content: center; width: 140px; padding-left: 12px; }
+  .title-block { text-align: center; margin: 16px 0 20px 0; }
+  .title-block h1 { font-size: 18px; margin: 0 0 6px 0; text-transform: uppercase; color: #0F766E; letter-spacing: 0.5px; font-weight: 800; }
+  .title-block .subtitle { font-size: 12px; color: #6B7280; font-weight: 500; }
+  .identification { background: #F9FAFB; border: 1px solid #E5E7EB; border-left: 4px solid #0D9488; border-radius: 4px; padding: 12px; margin-bottom: 16px; font-size: 11px; }
+  .identification-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+  .identification .label { font-weight: 600; color: #374151; margin-right: 4px; }
+  .bordereau { background: #F0FDFA; border: 1px solid #0D9488; padding: 8px 12px; margin-bottom: 12px; text-align: right; font-size: 11px; border-radius: 4px; }
   .bordereau-label { font-weight: 700; color: #0F766E; margin-right: 8px; }
   .bordereau-value { font-family: monospace; font-size: 12px; color: #111827; }
-  .summary {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .summary-item {
-    flex: 1;
-    border: 1px solid #E5E7EB;
-    border-radius: 6px;
-    padding: 10px;
-    text-align: center;
-    background: #FFFFFF;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  }
-  .summary-label {
-    font-size: 9px;
-    color: #6B7280;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 600;
-  }
-  .summary-value {
-    font-size: 18px;
-    font-weight: 800;
-    color: #0F766E;
-    margin-top: 4px;
-  }
-  .section {
-    margin-bottom: 20px;
-    page-break-inside: avoid;
-  }
-  .section h2 {
-    font-size: 13px;
-    margin: 0 0 8px 0;
-    padding: 8px 12px;
-    background: #0F766E;
-    color: #FFFFFF;
-    font-weight: 700;
-    border-radius: 4px 4px 0 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10px;
-    border: 1px solid #E5E7EB;
-  }
-  th {
-    background: #F3F4F6;
-    border-bottom: 2px solid #D1D5DB;
-    padding: 8px;
-    font-weight: 700;
-    color: #374151;
-    text-transform: uppercase;
-    font-size: 9px;
-    letter-spacing: 0.5px;
-  }
-  td {
-    border-bottom: 1px solid #E5E7EB;
-    padding: 6px 8px;
-    color: #4B5563;
-  }
-  tr:nth-child(even) td {
-    background: #F9FAFB;
-  }
-  .footer-signature {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 40px;
-    padding-top: 16px;
-    page-break-inside: avoid;
-  }
-  .footer-left, .footer-right {
-    width: 45%;
-    text-align: center;
-  }
+  .summary { display: flex; gap: 10px; margin-bottom: 20px; }
+  .summary-item { flex: 1; border: 1px solid #E5E7EB; border-radius: 6px; padding: 10px; text-align: center; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .summary-label { font-size: 9px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .summary-value { font-size: 18px; font-weight: 800; color: #0F766E; margin-top: 4px; }
+  .section { margin-bottom: 20px; page-break-inside: avoid; }
+  .section h2 { font-size: 13px; margin: 0 0 8px 0; padding: 8px 12px; background: #0F766E; color: #FFFFFF; font-weight: 700; border-radius: 4px 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid #E5E7EB; }
+  th { background: #F3F4F6; border-bottom: 2px solid #D1D5DB; padding: 8px; font-weight: 700; color: #374151; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; }
+  td { border-bottom: 1px solid #E5E7EB; padding: 6px 8px; color: #4B5563; }
+  tr:nth-child(even) td { background: #F9FAFB; }
+  .footer-signature { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 16px; page-break-inside: avoid; }
+  .footer-left, .footer-right { width: 45%; text-align: center; }
   .footer-place { font-size: 10px; font-style: italic; color: #6B7280; }
   .footer-role { font-weight: 700; font-size: 12px; color: #111827; margin-top: 8px; }
-  .footer-name {
-    border-top: 2px solid #0D9488;
-    padding-top: 6px;
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #0F766E;
-  }
-  .footer-stamp-label {
-    font-size: 10px;
-    font-style: italic;
-    color: #6B7280;
-  }
+  .footer-name { border-top: 2px solid #0D9488; padding-top: 6px; margin-top: 6px; font-size: 11px; font-weight: 700; color: #0F766E; }
+  .footer-stamp-label { font-size: 10px; font-style: italic; color: #6B7280; }
 </style>
 </head>
 <body>
-
   <div class="header">
     <div class="header-right">${logoBlock}</div>
     <div class="header-left">
@@ -467,8 +330,6 @@ function buildOfficialHTML(
   ${summaryHTML}
   ${sectionsHTML}
   ${signatureBlock}
-
 </body>
-</html>
-  `;
+</html>`;
 }

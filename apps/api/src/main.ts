@@ -34,6 +34,24 @@ async function bootstrap() {
   // Indispensable pour le ThrottlerGuard.
   app.set('trust proxy', 1);
 
+  // Configuration pour servir les fichiers statiques (logos, signatures, cachets)
+  const fs = require('fs');
+  const path = require('path');
+  const storagePaths = [
+    path.join(process.cwd(), 'app', 'storage'),
+    path.join(process.cwd(), 'storage'),
+    '/app/storage'
+  ];
+  
+  for (const p of storagePaths) {
+    if (fs.existsSync(p)) {
+      app.useStaticAssets(path.join(p, 'uploads'), { prefix: '/api/v1/files/uploads/' });
+      app.useStaticAssets(path.join(p, 'generated'), { prefix: '/api/v1/files/documents/' });
+      console.log('Fichiers statiques servis depuis:', p);
+      break;
+    }
+  }
+
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT', 3000);
   const nodeEnv = config.get<string>('NODE_ENV', 'development');
