@@ -39,6 +39,16 @@ export class FeeStructuresController {
     return this.service.getForLevel(user.schoolId!, academicYearId, levelId);
   }
 
+  @Get("coverage/:yearId")
+  @RequirePermissions("fee:view")
+  @ApiOperation({ summary: "Rapport de couverture : niveaux sans grille" })
+  async getCoverage(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param("yearId") yearId: string,
+  ) {
+    return this.service.getCoverage(user.schoolId!, yearId);
+  }
+
   @Get(":id")
   @RequirePermissions("fee:view")
   async findOne(@Param("id") id: string) {

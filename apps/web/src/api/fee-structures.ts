@@ -1,5 +1,5 @@
 import { api } from "@/lib/axios";
-import type { FeeStructure, CreateFeeStructureInput } from "@/types/finance";
+import type { FeeStructure, CreateFeeStructureInput, FeeCoverage } from "@/types/finance";
 
 export interface FeeStructureFilters {
   academicYearId?: string;
@@ -35,5 +35,10 @@ export const feeStructuresApi = {
 
   async remove(id: string): Promise<void> {
     await api.delete(`/fee-structures/${id}`);
+  },
+
+  async getCoverage(yearId: string): Promise<FeeCoverage> {
+    const { data } = await api.get(`/fee-structures/coverage/${yearId}`);
+    return data;
   },
 };

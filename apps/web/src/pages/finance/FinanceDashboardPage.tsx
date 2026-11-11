@@ -14,15 +14,19 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui";
 import { useFinanceDashboard } from "@/hooks/finance";
+import { useCurrentAcademicYear } from "@/hooks/classes/useClasses";
+import { CoverageWarning } from "./components/CoverageWarning";
 import { formatFCFA } from "@/types/finance";
 import { cn } from "@/lib/utils";
 
 export function FinanceDashboardPage() {
   const { data, isLoading, error } = useFinanceDashboard();
+  const { data: currentYear } = useCurrentAcademicYear();
 
   if (isLoading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
+      <CoverageWarning academicYearId={currentYear?.id} />
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );

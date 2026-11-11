@@ -398,3 +398,18 @@ export const EXPENSE_CATEGORY_EMOJIS: Record<string, string> = {
   SANTE: "💊",
   AUTRE: "📦",
 };
+
+
+export interface FeeCoverage {
+  academicYearId: string;
+  levelsTotal: number;
+  levelsWithGrid: number;
+  levelsMissingGrid: Array<{
+    id: string;
+    code: string;
+    name: string;
+    studentsCount: number;
+  }>;
+  totalStudentsAffected: number;
+  isReadyForBulk: boolean;
+}

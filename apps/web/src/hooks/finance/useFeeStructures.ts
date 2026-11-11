@@ -58,3 +58,13 @@ export function useDeleteFeeStructure() {
     onError: (err) => toast.error(getErrorMessage(err)),
   });
 }
+
+
+export function useFeeCoverage(academicYearId?: string) {
+  return useQuery({
+    queryKey: [KEY, "coverage", academicYearId],
+    queryFn: () => feeStructuresApi.getCoverage(academicYearId!),
+    enabled: !!academicYearId,
+    staleTime: 60_000,
+  });
+}

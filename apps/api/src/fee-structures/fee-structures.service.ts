@@ -69,4 +69,47 @@ export class FeeStructuresService {
       orderBy: { feeType: { category: "asc" } },
     });
   }
+
+  async getCoverage(schoolId: string, academicYearId: string) {
+    const levels = await this.prisma.level.findMany({
+      where: { schoolId, isActive: true },
+      select: { id: true, code: true, name: true, orderIndex: true },
+      orderBy: { orderIndex: "asc" },
+    });
+    const coveredRows = await this.prisma.feeStructure.findMany({
+      where: { schoolId, academicYearId, levelId: { not: null } },
+      select: { levelId: true },
+      distinct: ["levelId"],
+    });
+    const coveredIds = new Set(coveredRows.map((r) => r.levelId as string));
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { academicYearId, student: { schoolId } },
+      select: { levelId: true },
+    });
+    const studentsByLevel = new Map<string, number>();
+    for (const e of enrollments) {
+      if (!e.levelId) continue;
+      studentsByLevel.set(e.levelId, (studentsByLevel.get(e.levelId) ?? 0) + 1);
+    }
+    const levelsMissingGrid = levels
+      .filter((l) => !coveredIds.has(l.id))
+      .map((l) => ({
+        id: l.id,
+        code: l.code,
+        name: l.name,
+        studentsCount: studentsByLevel.get(l.id) || 0,
+      }))
+      .filter((l) => l.studentsCount > 0);
+    const totalStudentsAffected = levelsMissingGrid.reduce(
+      (sum, l) => sum + l.studentsCount, 0,
+    );
+    return {
+      academicYearId,
+      levelsTotal: levels.length,
+      levelsWithGrid: levels.length - levelsMissingGrid.length,
+      levelsMissingGrid,
+      totalStudentsAffected,
+      isReadyForBulk: levelsMissingGrid.length === 0,
+    };
+  }
 }
